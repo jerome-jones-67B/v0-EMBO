@@ -16,8 +16,8 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "EMBO - Manuscript Validation Dashboard",
-  description: "EMBO editorial workflow management for scientific manuscript validation and curation",
+  title: "Data4Rev - Manuscript Validation Dashboard",
+  description: "Editorial workflow management for scientific manuscript validation and curation",
   generator: "v0.app",
 }
 
