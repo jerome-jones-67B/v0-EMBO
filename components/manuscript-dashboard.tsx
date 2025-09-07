@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Settings2 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Settings2, Database, Zap } from "lucide-react"
 import { ManuscriptDetail } from "./manuscript-detail" // Import the new manuscript detail component
 import { Eye, Download, MoreHorizontal, UserPlus, UserMinus, Pause, Play } from "lucide-react"
 import {
@@ -336,6 +337,9 @@ export default function ManuscriptDashboard() {
   const [editedAccessionValue, setEditedAccessionValue] = useState("")
   const [mockManuscripts, setMockManuscripts] = useState(initialMockManuscripts)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const [useApiData, setUseApiData] = useState(false)
+  const [apiManuscripts, setApiManuscripts] = useState<any[]>([])
+  const [isLoadingApi, setIsLoadingApi] = useState(false)
 
   const [visibleColumns, setVisibleColumns] = useState({
     actions: true,
@@ -416,7 +420,8 @@ export default function ManuscriptDashboard() {
   }
 
   const filteredAndSortedManuscripts = useMemo(() => {
-    const filtered = mockManuscripts.filter((manuscript) => {
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    const filtered = currentManuscripts.filter((manuscript) => {
       if (manuscript.workflowState !== activeTab) return false
 
       if (statusFilter !== "all" && manuscript.status !== statusFilter) return false
@@ -482,7 +487,7 @@ export default function ManuscriptDashboard() {
 
       return 0
     })
-  }, [searchTerm, statusFilter, priorityFilter, assigneeFilter, sortField, sortDirection, activeTab, mockManuscripts])
+  }, [searchTerm, statusFilter, priorityFilter, assigneeFilter, sortField, sortDirection, activeTab, mockManuscripts, apiManuscripts, useApiData])
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -572,6 +577,64 @@ export default function ManuscriptDashboard() {
   }
 
   const currentUser = "Dr. Sarah Chen" // This would typically come from auth context
+
+  // Function to fetch API data
+  const fetchApiData = async () => {
+    setIsLoadingApi(true)
+    try {
+      const response = await fetch(
+        'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api/api/v1/manuscripts',
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_AUTH_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      // Transform API data to match our mock data structure
+      const transformedManuscripts = data.manuscripts.map((manuscript: any) => ({
+        msid: manuscript.msid,
+        receivedDate: manuscript.received_at?.split('T')[0] || '2024-01-01',
+        title: manuscript.title,
+        authors: manuscript.authors,
+        doi: manuscript.doi,
+        accessionNumber: manuscript.accession_number,
+        assignedTo: "Dr. Sarah Chen", // API doesn't have this field
+        status: manuscript.status === 'segmented' ? 'In Progress' : 
+                manuscript.status === 'received' ? 'New submission' : 
+                manuscript.status,
+        workflowState: "ready-for-curation",
+        priority: manuscript.note && manuscript.note.includes('missing') ? 'urgent' : 'normal',
+        hasErrors: manuscript.note && manuscript.note.includes('error'),
+        hasWarnings: manuscript.note && manuscript.note.includes('updating'),
+        notes: manuscript.note || "API manuscript - no additional notes",
+        lastModified: manuscript.received_at || new Date().toISOString(),
+      }))
+      
+      setApiManuscripts(transformedManuscripts)
+    } catch (error) {
+      console.error('Failed to fetch API data:', error)
+      // Keep using mock data on error
+      setUseApiData(false)
+    } finally {
+      setIsLoadingApi(false)
+    }
+  }
+
+  // Switch between API and mock data
+  const handleDataSourceSwitch = async (useApi: boolean) => {
+    setUseApiData(useApi)
+    if (useApi && apiManuscripts.length === 0) {
+      await fetchApiData()
+    }
+  }
 
   const getUniqueAssignees = () => {
     const assignees = [...new Set(mockManuscripts.map((m) => m.assignedTo))]
@@ -742,7 +805,38 @@ export default function ManuscriptDashboard() {
           <div className="flex flex-col space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">EMBO Dashboard</h1>
+                <div className="flex items-center gap-4 mb-2">
+                  <h1 className="text-3xl font-bold text-foreground">EMBO Dashboard</h1>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2">
+                          <Database className={`w-4 h-4 ${!useApiData ? 'text-blue-600' : 'text-gray-400'}`} />
+                          <span className="text-sm font-medium">Mock</span>
+                          <Switch
+                            checked={useApiData}
+                            onCheckedChange={handleDataSourceSwitch}
+                            disabled={isLoadingApi}
+                            className="data-[state=checked]:bg-green-600"
+                          />
+                          <span className="text-sm font-medium">API</span>
+                          <Zap className={`w-4 h-4 ${useApiData ? 'text-green-600' : 'text-gray-400'}`} />
+                          {isLoadingApi && (
+                            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{useApiData ? 'Using live Data4Rev API data' : 'Using rich mock data for demonstration'}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {useApiData 
+                            ? `${apiManuscripts.length} real manuscripts from API`
+                            : `${mockManuscripts.length} varied mock manuscripts`}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
                 <p className="text-muted-foreground">Manuscript validation and curation workflow management</p>
               </div>
               <div className="flex items-center gap-2">
