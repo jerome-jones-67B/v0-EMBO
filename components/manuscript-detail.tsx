@@ -404,7 +404,8 @@ const getManuscriptDetail = (msid: string) => {
       description: "Heat shock 70 kDa protein 1A",
     },
   ],
-})
+  }
+}
 
 const ManuscriptDetail = ({ msid, onBack }: ManuscriptDetailProps) => {
   const [selectedView, setSelectedView] = useState<"manuscript" | "list">("manuscript")
