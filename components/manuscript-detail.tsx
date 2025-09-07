@@ -360,32 +360,6 @@ const getManuscriptDetail = (msid: string) => {
       return "Mitochondrial dysfunction plays a central role in neurodegenerative diseases. This research investigates the dynamic regulation of mitochondrial networks in neuronal cells under pathological conditions using live-cell imaging and proteomics."
     } else if (title.includes('DNA repair')) {
       return "DNA repair mechanisms are frequently dysregulated in cancer cells, contributing to genomic instability and therapeutic resistance. This study examines molecular pathways involved in DNA damage response in various cancer cell lines."
-    } else if (title.includes('Epigenetic')) {
-      return "Epigenetic modifications play crucial roles in regulating gene expression during development and disease. This research investigates chromatin remodeling mechanisms and histone modifications that control developmental gene expression programs using cutting-edge genomics and epigenomics approaches."
-    } else if (title.includes('neurodegenerative')) {
-      return "Protein misfolding and aggregation are hallmarks of neurodegenerative diseases. This study examines the molecular mechanisms underlying protein folding dysfunction in neurodegeneration, focusing on therapeutic targets and potential interventions using cellular and animal models."
-    } else if (title.includes('Metabolic') || title.includes('T cell')) {
-      return "T cell activation and differentiation involve extensive metabolic reprogramming to meet the energetic and biosynthetic demands of immune responses. This study investigates the molecular mechanisms controlling metabolic switches during T cell activation, revealing novel therapeutic targets for immunomodulation."
-    } else if (title.includes('Chromatin') || title.includes('embryonic')) {
-      return "Chromatin remodeling complexes are essential regulators of gene expression during embryonic development. This research examines the role of ATP-dependent chromatin remodeling in controlling developmental gene expression programs and cell fate determination using genomics and developmental biology approaches."
-    } else if (title.includes('Autophagy') || title.includes('aging')) {
-      return "Autophagy is a fundamental cellular process that degrades damaged organelles and proteins, playing crucial roles in aging and longevity. This study investigates the molecular mechanisms regulating autophagy during aging and identifies potential interventions to promote healthy longevity."
-    } else if (title.includes('Immune checkpoint') || title.includes('cancer immunotherapy')) {
-      return "Immune checkpoint inhibitors have revolutionized cancer treatment by unleashing the immune system against tumors. This research investigates the molecular mechanisms of checkpoint inhibition and identifies biomarkers for predicting therapeutic response in various cancer types."
-    } else if (title.includes('Stem cell') || title.includes('regeneration')) {
-      return "Stem cell niches provide specialized microenvironments that regulate stem cell behavior during tissue homeostasis and regeneration. This study examines the molecular signals controlling stem cell niche dynamics and their implications for regenerative medicine approaches."
-    } else if (title.includes('Circadian') || title.includes('metabolic pathways')) {
-      return "Circadian rhythms coordinate metabolic processes with daily environmental cycles, and their disruption contributes to metabolic diseases. This research investigates the molecular mechanisms linking circadian clocks to metabolic regulation using systems biology approaches."
-    } else if (title.includes('Neuroplasticity') || title.includes('learning')) {
-      return "Neuroplasticity underlies the brain's ability to adapt and form memories throughout life. This study examines the molecular mechanisms controlling synaptic plasticity during learning and memory formation using advanced neuroscience techniques and behavioral analyses."
-    } else if (title.includes('Tumor microenvironment') || title.includes('cancer progression')) {
-      return "The tumor microenvironment plays critical roles in cancer progression and therapeutic resistance. This research investigates the cellular and molecular interactions within tumor microenvironments and identifies potential therapeutic targets for cancer treatment."
-    } else if (title.includes('inheritance') && title.includes('generations')) {
-      return "Epigenetic inheritance allows environmental influences to be transmitted across generations without changes to DNA sequence. This study investigates the molecular mechanisms of transgenerational epigenetic inheritance using model organisms and genomics approaches."
-    } else if (title.includes('Microbiome') || title.includes('host interactions')) {
-      return "The human microbiome plays essential roles in health and disease through complex interactions with host physiology. This research examines microbiome-host interactions and their implications for therapeutic interventions and personalized medicine approaches."
-    } else if (title.includes('Gene therapy') || title.includes('inherited diseases')) {
-      return "Gene therapy offers promising approaches for treating inherited diseases by correcting genetic defects at their source. This study investigates novel gene therapy strategies and delivery systems for treating monogenic disorders using preclinical models."
     }
     return "This manuscript presents novel research findings that advance our understanding of fundamental biological processes and their implications for human health."
   }
@@ -399,32 +373,6 @@ const getManuscriptDetail = (msid: string) => {
       return ["mitochondria", "neurodegeneration", "mitochondrial dynamics", "neuronal cells", "therapeutic targets"]
     } else if (title.includes('DNA repair')) {
       return ["DNA repair", "cancer", "genomic instability", "therapeutic resistance", "molecular pathways"]
-    } else if (title.includes('Epigenetic')) {
-      return ["epigenetics", "gene expression", "chromatin remodeling", "histone modifications", "developmental biology"]
-    } else if (title.includes('neurodegenerative')) {
-      return ["neurodegeneration", "protein aggregation", "misfolding", "therapeutic targets", "cellular models"]
-    } else if (title.includes('Metabolic') || title.includes('T cell')) {
-      return ["T cell activation", "metabolic reprogramming", "immunometabolism", "cellular differentiation", "immune responses"]
-    } else if (title.includes('Chromatin') || title.includes('embryonic')) {
-      return ["chromatin remodeling", "embryonic development", "gene expression", "cell fate determination", "developmental biology"]
-    } else if (title.includes('Autophagy') || title.includes('aging')) {
-      return ["autophagy", "aging", "longevity", "cellular degradation", "protein homeostasis"]
-    } else if (title.includes('Immune checkpoint') || title.includes('cancer immunotherapy')) {
-      return ["immune checkpoint inhibitors", "cancer immunotherapy", "T cell activation", "tumor immunity", "therapeutic resistance"]
-    } else if (title.includes('Stem cell') || title.includes('regeneration')) {
-      return ["stem cells", "tissue regeneration", "stem cell niche", "cellular differentiation", "regenerative medicine"]
-    } else if (title.includes('Circadian') || title.includes('metabolic pathways')) {
-      return ["circadian rhythms", "metabolic regulation", "biological clocks", "temporal biology", "metabolic diseases"]
-    } else if (title.includes('Neuroplasticity') || title.includes('learning')) {
-      return ["neuroplasticity", "learning and memory", "synaptic plasticity", "cognitive function", "neural adaptation"]
-    } else if (title.includes('Tumor microenvironment') || title.includes('cancer progression')) {
-      return ["tumor microenvironment", "cancer progression", "metastasis", "tumor-stroma interactions", "therapeutic resistance"]
-    } else if (title.includes('inheritance') && title.includes('generations')) {
-      return ["epigenetic inheritance", "transgenerational effects", "developmental programming", "environmental adaptation", "genomic imprinting"]
-    } else if (title.includes('Microbiome') || title.includes('host interactions')) {
-      return ["microbiome", "host-microbe interactions", "microbial ecology", "personalized medicine", "therapeutic interventions"]
-    } else if (title.includes('Gene therapy') || title.includes('inherited diseases')) {
-      return ["gene therapy", "inherited diseases", "genetic correction", "viral vectors", "precision medicine"]
     }
     return ["cell biology", "molecular medicine", "research", "biomedical science"]
   }
