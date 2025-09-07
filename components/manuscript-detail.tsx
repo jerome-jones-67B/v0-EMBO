@@ -149,6 +149,32 @@ const mockManuscriptDetails = {
     currentStatus: "On hold",
     modifiedBy: "Dr. Michael Rodriguez", 
     priority: "normal",
+  },
+  "EMBO-2024-005": {
+    id: "EMBO-2024-005",
+    title: "Epigenetic regulation of gene expression in developmental biology",
+    authors: ["Martin, S.", "Johnson, A.", "Taylor, R.", "Anderson, K."],
+    received: "2024-01-05",
+    doi: "10.1038/s41588-024-01789-2",
+    lastModified: "2024-01-12T14:45:00Z",
+    status: "failed-to-deposit",
+    assignedTo: "Dr. Emily Davis",
+    currentStatus: "Failed to deposit",
+    modifiedBy: "Dr. Emily Davis",
+    priority: "urgent",
+  },
+  "EMBO-2024-006": {
+    id: "EMBO-2024-006", 
+    title: "Protein folding mechanisms in neurodegenerative disease progression",
+    authors: ["Brown, T.", "White, J.", "Clark, M.", "Lewis, P."],
+    received: "2024-01-03",
+    doi: "10.1038/s41593-024-01234-5",
+    lastModified: "2024-01-10T16:20:00Z",
+    status: "waiting-for-data",
+    assignedTo: "Dr. Sarah Wilson",
+    currentStatus: "Waiting for data",
+    modifiedBy: "Dr. Sarah Wilson",
+    priority: "high",
   }
 }
 
@@ -178,6 +204,10 @@ const getManuscriptDetail = (msid: string) => {
       return "Mitochondrial dysfunction plays a central role in neurodegenerative diseases. This research investigates the dynamic regulation of mitochondrial networks in neuronal cells under pathological conditions using live-cell imaging and proteomics."
     } else if (title.includes('DNA repair')) {
       return "DNA repair mechanisms are frequently dysregulated in cancer cells, contributing to genomic instability and therapeutic resistance. This study examines molecular pathways involved in DNA damage response in various cancer cell lines."
+    } else if (title.includes('Epigenetic')) {
+      return "Epigenetic modifications play crucial roles in regulating gene expression during development and disease. This research investigates chromatin remodeling mechanisms and histone modifications that control developmental gene expression programs using cutting-edge genomics and epigenomics approaches."
+    } else if (title.includes('neurodegenerative')) {
+      return "Protein misfolding and aggregation are hallmarks of neurodegenerative diseases. This study examines the molecular mechanisms underlying protein folding dysfunction in neurodegeneration, focusing on therapeutic targets and potential interventions using cellular and animal models."
     }
     return "This manuscript presents novel research findings that advance our understanding of fundamental biological processes and their implications for human health."
   }
@@ -191,6 +221,10 @@ const getManuscriptDetail = (msid: string) => {
       return ["mitochondria", "neurodegeneration", "mitochondrial dynamics", "neuronal cells", "therapeutic targets"]
     } else if (title.includes('DNA repair')) {
       return ["DNA repair", "cancer", "genomic instability", "therapeutic resistance", "molecular pathways"]
+    } else if (title.includes('Epigenetic')) {
+      return ["epigenetics", "gene expression", "chromatin remodeling", "histone modifications", "developmental biology"]
+    } else if (title.includes('neurodegenerative')) {
+      return ["neurodegeneration", "protein aggregation", "misfolding", "therapeutic targets", "cellular models"]
     }
     return ["cell biology", "molecular medicine", "research", "biomedical science"]
   }
