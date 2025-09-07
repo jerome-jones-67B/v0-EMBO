@@ -390,112 +390,86 @@ const getManuscriptDetail = (msid: string) => {
       "Requires additional validation for protein structure data. Missing figure legends for panels C-E. Author contacted for clarification on methodology section.",
   dataAvailability:
     "The datasets generated and analyzed during the current study are available in the Gene Expression Omnibus repository under accession number GSE123456. Protein structure data are deposited in the Protein Data Bank under accession code 7ABC. All other data supporting the conclusions of this article are included within the article and its additional files.",
-  figures: [
-    {
-      id: "fig1",
-      title: "Figure 1: Protein folding dynamics under normal conditions",
-      legend:
-        "Fig. 1 Protein folding dynamics under normal conditions. (A) Western blot analysis of HSP70 expression levels in control and stress conditions. Molecular weight markers are shown on the left. (B) Fluorescence microscopy of protein aggregates (red) and nuclei (blue) in cultured cells. Scale bar = 10 μm. (C) Quantitative analysis of folding rates measured by fluorescence recovery after photobleaching. Error bars represent SEM from n=3 independent experiments.",
-      panels: [
-        {
-          id: "1A",
-          description:
-            "Western blot analysis of HSP70 expression levels in control and stress conditions. Molecular weight markers are shown on the left.",
-          hasIssues: false,
-        },
-        {
-          id: "1B",
-          description:
-            "Fluorescence microscopy of protein aggregates (red) and nuclei (blue) in cultured cells. Scale bar = 10 μm.",
-          hasIssues: true,
-        },
-        {
-          id: "1C",
-          description:
-            "Quantitative analysis of folding rates measured by fluorescence recovery after photobleaching. Error bars represent SEM from n=3 independent experiments.",
-          hasIssues: false,
-        },
-      ],
-      qcChecks: [
-        {
-          type: "info",
-          message: "Statistical analysis appears appropriate",
-          details: "Error bars represent SEM from n=3 independent experiments",
-          aiGenerated: true,
-          dismissed: false,
-        },
-      ],
-    },
-    {
-      id: "fig2",
-      title: "Figure 2: Oxidative stress response pathways",
-      legend:
-        "Fig. 2 UTP binding to uncoupling protein 1. (A) Structure of UCP1 with bound UTP (green) and three cardiolipin molecules (wheat). Core elements 1, 2, and 3 are coloured by domain in blue, yellow, and red, respectively, and the gate elements in grey. (B) UTP binding site. Residues are coloured by function: matrix network residues are shown in blue, arginine triplet residues are shown in black, and other residues involved in binding are shown in grey. Ionic interactions are shown with green broken lines, hydrogen bonds with black broken lines and the cation-π interaction with purple broken line.",
-      panels: [
-        {
-          id: "2A",
-          description:
-            "Structure of UCP1 with bound UTP (green) and three cardiolipin molecules (wheat). Core elements 1, 2, and 3 are coloured by domain in blue, yellow, and red, respectively, and the gate elements in grey.",
-          hasIssues: false,
-        },
-        {
-          id: "2B",
-          description:
-            "UTP binding site. Residues are coloured by function: matrix network residues are shown in blue, arginine triplet residues are shown in black, and other residues involved in binding are shown in grey. Ionic interactions are shown with green broken lines, hydrogen bonds with black broken lines and the cation-π interaction with purple broken line.",
-          hasIssues: false,
-        },
-      ],
-      qcChecks: [
-        {
-          type: "warning",
-          message: "Color scheme may not be colorblind-friendly",
-          details: "Consider using colorblind-safe palette for heat map",
-          aiGenerated: true,
-          dismissed: false,
-        },
-      ],
-    },
-    {
-      id: "fig3",
-      title: "Figure 3: Molecular chaperone interactions",
-      legend:
-        "Fig. 3 Molecular chaperone interactions. (A) Co-immunoprecipitation results showing HSP70 binding partners. Input and immunoprecipitated samples are shown with molecular weight markers. (B) Protein-protein interaction network derived from mass spectrometry analysis. Node size represents interaction confidence. (C) Structural modeling of HSP70-cochaperone complexes based on crystal structures. (D) Binding affinity measurements using surface plasmon resonance. (E) Kinetic analysis of chaperone-substrate interactions measured by fluorescence anisotropy.",
-      panels: [
-        {
-          id: "3A",
-          description:
-            "Co-immunoprecipitation results showing HSP70 binding partners. Input and immunoprecipitated samples are shown with molecular weight markers.",
-          hasIssues: false,
-        },
-        {
-          id: "3B",
-          description:
-            "Protein-protein interaction network derived from mass spectrometry analysis. Node size represents interaction confidence.",
-          hasIssues: false,
-        },
-        {
-          id: "3C",
-          description: "Structural modeling of HSP70-cochaperone complexes based on crystal structures.",
-          hasIssues: true,
-        },
-        { id: "3D", description: "Binding affinity measurements using surface plasmon resonance.", hasIssues: true },
-        {
-          id: "3E",
-          description: "Kinetic analysis of chaperone-substrate interactions measured by fluorescence anisotropy.",
-          hasIssues: true,
-        },
-      ],
-      qcChecks: [
-        {
+  figures: (() => {
+    // Generate varied figure data based on manuscript ID
+    const baseId = parseInt(manuscriptData.id.split('-')[2]) || 1;
+    const figureCount = 1 + (baseId % 3); // 1-3 figures per manuscript
+    const figures = [];
+    
+    for (let i = 1; i <= figureCount; i++) {
+      const panelCount = 2 + ((baseId + i) % 4); // 2-5 panels per figure
+      const panels = [];
+      
+      for (let j = 1; j <= panelCount; j++) {
+        panels.push({
+          id: `${i}${String.fromCharCode(64 + j)}`, // 1A, 1B, etc.
+          description: `Panel ${i}${String.fromCharCode(64 + j)}: ${j === 1 ? 'Primary experimental data' : j === 2 ? 'Control conditions' : j === 3 ? 'Quantitative analysis' : j === 4 ? 'Statistical validation' : 'Supplementary results'}`,
+          hasIssues: ((baseId + i + j) % 6) === 0 // Some panels have issues
+        });
+      }
+      
+      // Generate QC checks with variation
+      const qcChecks = [];
+      const errorChance = ((baseId + i) % 8) === 0;
+      const warningChance = ((baseId + i) % 4) === 0;
+      const infoChance = ((baseId + i) % 3) === 0;
+      
+      if (errorChance) {
+        qcChecks.push({
           type: "error",
-          message: "Missing figure legend for panels C-E",
-          details: "Figure 3 panels C, D, and E lack proper legends describing the experimental conditions.",
+          message: "Missing figure legend",
+          details: `Figure ${i} requires additional legend information`,
           aiGenerated: false,
-          dismissed: false,
-        },
-      ],
-    },
-  ],
+          dismissed: false
+        });
+      }
+      
+      if (warningChance && !errorChance) {
+        qcChecks.push({
+          type: "warning", 
+          message: "Image resolution check",
+          details: `Figure ${i} may need higher resolution for publication`,
+          aiGenerated: true,
+          dismissed: false
+        });
+      }
+      
+      if (infoChance && !errorChance && !warningChance) {
+        qcChecks.push({
+          type: "info",
+          message: "Figure quality check passed",
+          details: `Figure ${i} meets all journal standards`,
+          aiGenerated: true,
+          dismissed: false
+        });
+      }
+      
+      figures.push({
+        id: `fig${i}`,
+        title: `Figure ${i}: ${manuscriptData.title.includes('protein') ? 'Protein structure analysis' : 
+               manuscriptData.title.includes('CRISPR') ? 'CRISPR editing efficiency' : 
+               manuscriptData.title.includes('Mitochondrial') ? 'Mitochondrial dynamics' : 
+               manuscriptData.title.includes('DNA repair') ? 'DNA repair mechanisms' :
+               manuscriptData.title.includes('Metabolic') ? 'T cell activation pathways' :
+               manuscriptData.title.includes('Chromatin') ? 'Developmental gene expression' :
+               manuscriptData.title.includes('Autophagy') ? 'Cellular degradation pathways' :
+               manuscriptData.title.includes('Immune') ? 'Checkpoint inhibitor responses' :
+               manuscriptData.title.includes('Stem cell') ? 'Tissue regeneration mechanisms' :
+               manuscriptData.title.includes('Circadian') ? 'Metabolic rhythm analysis' :
+               manuscriptData.title.includes('Neuroplasticity') ? 'Learning and memory formation' :
+               manuscriptData.title.includes('Tumor') ? 'Microenvironment interactions' :
+               manuscriptData.title.includes('inheritance') ? 'Epigenetic transmission patterns' :
+               manuscriptData.title.includes('Microbiome') ? 'Host-microbe interactions' :
+               manuscriptData.title.includes('Gene therapy') ? 'Therapeutic delivery systems' :
+               'Research findings'}`,
+        legend: `Figure ${i} shows detailed analysis related to ${manuscriptData.title.toLowerCase()}. Multiple panels demonstrate experimental results and controls.`,
+        panels: panels,
+        qcChecks: qcChecks
+      });
+    }
+    
+    return figures;
+  })(),
   linkedData: [
     {
       type: "PDB",
@@ -528,28 +502,108 @@ const getManuscriptDetail = (msid: string) => {
       description: "Supplementary materials and methods",
     },
   ],
-  qcChecks: [
-    {
-      level: "manuscript",
-      type: "error",
-      category: "metadata",
-      message: "Missing author ORCID for corresponding author",
-      details: "The corresponding author Dr. John Smith is missing a valid ORCID identifier.",
-      aiGenerated: false,
-      dismissed: false,
-      followUp: true,
-    },
-    {
-      level: "manuscript",
-      type: "warning",
-      category: "formatting",
-      message: "Inconsistent reference formatting",
-      details: "References 15-18 use different formatting style than the rest of the manuscript.",
-      aiGenerated: true,
-      dismissed: false,
-      followUp: false,
-    },
-  ],
+  qcChecks: (() => {
+    // Generate varied QC checks based on manuscript ID
+    const baseId = parseInt(manuscriptData.id.split('-')[2]) || 1;
+    const checks = [];
+    
+    // Add errors based on manuscript ID
+    if (baseId % 7 === 0) {
+      checks.push({
+        level: "manuscript",
+        type: "error",
+        category: "metadata",
+        message: "Missing author ORCID for corresponding author",
+        details: "The corresponding author is missing a valid ORCID identifier.",
+        aiGenerated: false,
+        dismissed: false,
+        followUp: true,
+      });
+    }
+    
+    if (baseId % 9 === 0) {
+      checks.push({
+        level: "manuscript",
+        type: "error", 
+        category: "data",
+        message: "Data availability statement incomplete",
+        details: "Required data repository information is missing from the manuscript.",
+        aiGenerated: false,
+        dismissed: false,
+        followUp: true,
+      });
+    }
+    
+    // Add warnings based on manuscript ID
+    if (baseId % 5 === 0) {
+      checks.push({
+        level: "manuscript",
+        type: "warning",
+        category: "formatting",
+        message: "Inconsistent reference formatting",
+        details: "Some references use different formatting style than journal requirements.",
+        aiGenerated: true,
+        dismissed: false,
+        followUp: false,
+      });
+    }
+    
+    if (baseId % 6 === 0) {
+      checks.push({
+        level: "manuscript",
+        type: "warning",
+        category: "ethics",
+        message: "Ethics approval statement needs clarification",
+        details: "Ethics committee approval details require additional information.",
+        aiGenerated: false,
+        dismissed: false,
+        followUp: true,
+      });
+    }
+    
+    // Add info checks for most manuscripts
+    if (baseId % 3 === 0) {
+      checks.push({
+        level: "manuscript",
+        type: "info",
+        category: "quality",
+        message: "Manuscript structure follows journal guidelines",
+        details: "All required sections are present and properly formatted.",
+        aiGenerated: true,
+        dismissed: false,
+        followUp: false,
+      });
+    }
+    
+    if (baseId % 4 === 0) {
+      checks.push({
+        level: "manuscript",
+        type: "info",
+        category: "language",
+        message: "Language quality check passed",
+        details: "No significant grammar or spelling issues detected.",
+        aiGenerated: true,
+        dismissed: false,
+        followUp: false,
+      });
+    }
+    
+    // Ensure at least one check exists
+    if (checks.length === 0) {
+      checks.push({
+        level: "manuscript",
+        type: "info",
+        category: "general",
+        message: "Initial review completed",
+        details: "Manuscript has passed initial quality assessment.",
+        aiGenerated: true,
+        dismissed: false,
+        followUp: false,
+      });
+    }
+    
+    return checks;
+  })(),
   collaborationStatus: {
     isBeingEdited: false,
     editedBy: null,
