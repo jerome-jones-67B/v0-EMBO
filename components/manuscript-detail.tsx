@@ -96,23 +96,116 @@ interface ManuscriptDetailProps {
   onBack: () => void
 }
 
-const getManuscriptDetail = (msid: string) => ({
-  id: msid,
-  title: "Molecular mechanisms of heat shock protein 70 in cellular stress response and protein folding dynamics",
-  authors: ["Dr. Sarah Chen", "Dr. Michael Rodriguez", "Dr. Lisa Wang"],
-  received: "2024-01-15",
-  doi: "10.15252/embj.2024123456",
-  lastModified: "2024-01-20T14:30:00Z",
-  status: "in-progress",
-  assignedTo: "Dr. Sarah Wilson",
-  currentStatus: "In progress",
-  modifiedBy: "Dr. Sarah Chen",
-  priority: "high",
-  abstract:
-    "Protein folding is a critical cellular process that can be disrupted under stress conditions. This study investigates novel mechanisms by which cells maintain protein homeostasis during oxidative stress. Using advanced proteomics and structural biology approaches, we identified key regulatory pathways that coordinate protein folding responses. Our findings reveal previously unknown interactions between molecular chaperones and oxidative stress sensors, providing new insights into cellular adaptation mechanisms.",
-  keywords: ["protein folding", "oxidative stress", "molecular chaperones", "proteostasis", "cellular adaptation"],
-  notes:
-    "Requires additional validation for protein structure data. Missing figure legends for panels C-E. Author contacted for clarification on methodology section.",
+// Mock manuscripts matching the dashboard data
+const mockManuscriptDetails = {
+  "EMBO-2024-001": {
+    id: "EMBO-2024-001",
+    title: "Novel mechanisms of protein folding in cellular stress responses under oxidative conditions",
+    authors: ["Smith, J.", "Johnson, A.", "Williams, R.", "Chen, L.", "Rodriguez, M."],
+    received: "2024-12-14",
+    doi: "10.1038/s41586-024-07123-4",
+    lastModified: "2024-12-30T10:30:00Z",
+    status: "on-hold",
+    assignedTo: "Dr. Sarah Chen",
+    currentStatus: "On hold",
+    modifiedBy: "Dr. Sarah Chen",
+    priority: "high",
+  },
+  "EMBO-2024-002": {
+    id: "EMBO-2024-002", 
+    title: "CRISPR-Cas9 mediated genome editing in pluripotent stem cells",
+    authors: ["Brown, K.", "Davis, M.", "Wilson, P.", "Thompson, S."],
+    received: "2024-12-25",
+    doi: "10.1016/j.cell.2024.02.015",
+    lastModified: "2024-12-28T09:15:00Z",
+    status: "in-progress",
+    assignedTo: "Dr. Michael Rodriguez",
+    currentStatus: "In Progress", 
+    modifiedBy: "Dr. Michael Rodriguez",
+    priority: "normal",
+  },
+  "EMBO-2024-003": {
+    id: "EMBO-2024-003",
+    title: "Mitochondrial dynamics in neurodegeneration",
+    authors: ["Garcia, L.", "Martinez, A.", "Lopez, C."],
+    received: "2024-12-17",
+    doi: "10.1038/s41593-024-01567-8", 
+    lastModified: "2024-12-28T16:18:01Z",
+    status: "new-submission",
+    assignedTo: "Dr. Emily Watson",
+    currentStatus: "New submission",
+    modifiedBy: "Dr. Emily Watson",
+    priority: "urgent",
+  },
+  "EMBO-2024-004": {
+    id: "EMBO-2024-004",
+    title: "Molecular mechanisms of DNA repair in cancer cells", 
+    authors: ["Harris, K.", "Moore, L.", "Jackson, P.", "White, S."],
+    received: "2024-12-17",
+    doi: "10.1038/s41467-024-45678-9",
+    lastModified: "2024-12-29T11:22:33Z", 
+    status: "on-hold",
+    assignedTo: "Dr. Michael Rodriguez",
+    currentStatus: "On hold",
+    modifiedBy: "Dr. Michael Rodriguez", 
+    priority: "normal",
+  }
+}
+
+const getManuscriptDetail = (msid: string) => {
+  // Get specific manuscript details or fallback
+  const manuscriptData = mockManuscriptDetails[msid as keyof typeof mockManuscriptDetails] || {
+    id: msid,
+    title: "Molecular mechanisms of heat shock protein 70 in cellular stress response and protein folding dynamics",
+    authors: ["Dr. Sarah Chen", "Dr. Michael Rodriguez", "Dr. Lisa Wang"],
+    received: "2024-01-15",
+    doi: "10.15252/embj.2024123456",
+    lastModified: "2024-01-20T14:30:00Z",
+    status: "in-progress",
+    assignedTo: "Dr. Sarah Wilson",
+    currentStatus: "In progress",
+    modifiedBy: "Dr. Sarah Chen",
+    priority: "high",
+  }
+  
+  // Generate content based on manuscript title
+  const generateAbstract = (title: string) => {
+    if (title.includes('protein folding')) {
+      return "Protein folding is a critical cellular process that can be disrupted under stress conditions. This study investigates novel mechanisms by which cells maintain protein homeostasis during oxidative stress. Using advanced proteomics and structural biology approaches, we identified key regulatory pathways that coordinate protein folding responses."
+    } else if (title.includes('CRISPR')) {
+      return "CRISPR-Cas9 technology has revolutionized genome editing in mammalian cells. This study focuses on optimizing CRISPR-mediated editing in pluripotent stem cells, addressing challenges related to efficiency and specificity. We developed new protocols for guide RNA design and delivery."
+    } else if (title.includes('Mitochondrial')) {
+      return "Mitochondrial dysfunction plays a central role in neurodegenerative diseases. This research investigates the dynamic regulation of mitochondrial networks in neuronal cells under pathological conditions using live-cell imaging and proteomics."
+    } else if (title.includes('DNA repair')) {
+      return "DNA repair mechanisms are frequently dysregulated in cancer cells, contributing to genomic instability and therapeutic resistance. This study examines molecular pathways involved in DNA damage response in various cancer cell lines."
+    }
+    return "This manuscript presents novel research findings that advance our understanding of fundamental biological processes and their implications for human health."
+  }
+
+  const generateKeywords = (title: string) => {
+    if (title.includes('protein folding')) {
+      return ["protein folding", "oxidative stress", "molecular chaperones", "proteostasis", "cellular adaptation"]
+    } else if (title.includes('CRISPR')) {
+      return ["CRISPR-Cas9", "genome editing", "pluripotent stem cells", "guide RNA", "precision medicine"]
+    } else if (title.includes('Mitochondrial')) {
+      return ["mitochondria", "neurodegeneration", "mitochondrial dynamics", "neuronal cells", "therapeutic targets"]
+    } else if (title.includes('DNA repair')) {
+      return ["DNA repair", "cancer", "genomic instability", "therapeutic resistance", "molecular pathways"]
+    }
+    return ["cell biology", "molecular medicine", "research", "biomedical science"]
+  }
+
+  return {
+    ...manuscriptData,
+    abstract: generateAbstract(manuscriptData.title),
+    keywords: generateKeywords(manuscriptData.title),
+    notes: manuscriptData.id === msid ? 
+      (msid === "EMBO-2024-001" ? "Waiting for additional experimental data from authors" :
+       msid === "EMBO-2024-002" ? "Comprehensive review in progress" :
+       msid === "EMBO-2024-003" ? "Missing required metadata files" :
+       msid === "EMBO-2024-004" ? "Pending author response to reviewer comments" :
+       "Standard review process") :
+      "Requires additional validation for protein structure data. Missing figure legends for panels C-E. Author contacted for clarification on methodology section.",
   dataAvailability:
     "The datasets generated and analyzed during the current study are available in the Gene Expression Omnibus repository under accession number GSE123456. Protein structure data are deposited in the Protein Data Bank under accession code 7ABC. All other data supporting the conclusions of this article are included within the article and its additional files.",
   figures: [
