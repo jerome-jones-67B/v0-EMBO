@@ -175,6 +175,162 @@ const mockManuscriptDetails = {
     currentStatus: "Waiting for data",
     modifiedBy: "Dr. Sarah Wilson",
     priority: "high",
+  },
+  "EMBO-2024-007": {
+    id: "EMBO-2024-007",
+    title: "Metabolic reprogramming in T cell activation and differentiation",
+    authors: ["Wang, X.", "Liu, Y.", "Zhang, Z.", "Chen, W."],
+    received: "2024-12-29",
+    doi: "10.1038/s41590-024-01789-0",
+    lastModified: "2024-12-30T08:45:00Z",
+    status: "new-submission",
+    assignedTo: "Dr. Sarah Chen",
+    currentStatus: "New submission",
+    modifiedBy: "Dr. Sarah Chen",
+    priority: "normal",
+  },
+  "EMBO-2024-008": {
+    id: "EMBO-2024-008",
+    title: "Chromatin remodeling complexes in embryonic development",
+    authors: ["Johnson, P.", "Williams, R.", "Brown, A.", "Davis, K."],
+    received: "2024-12-23",
+    doi: "10.1016/j.devcel.2024.04.008",
+    lastModified: "2024-12-29T15:10:00Z",
+    status: "in-progress",
+    assignedTo: "Dr. Michael Rodriguez",
+    currentStatus: "In Progress",
+    modifiedBy: "Dr. Michael Rodriguez",
+    priority: "high",
+  },
+  "EMBO-2024-009": {
+    id: "EMBO-2024-009",
+    title: "Autophagy regulation in aging and longevity",
+    authors: ["Martinez, C.", "Garcia, L.", "Rodriguez, M."],
+    received: "2024-12-30",
+    doi: "10.1038/s43587-024-00567-8",
+    lastModified: "2024-12-30T17:30:00Z",
+    status: "deposited",
+    assignedTo: "Dr. Emily Watson",
+    currentStatus: "Deposited",
+    modifiedBy: "Dr. Emily Watson",
+    priority: "normal",
+  },
+  "EMBO-2024-010": {
+    id: "EMBO-2024-010",
+    title: "Immune checkpoint inhibitors in cancer immunotherapy",
+    authors: ["Thompson, D.", "Anderson, S.", "Wilson, J.", "Taylor, M.", "Clark, R."],
+    received: "2024-12-22",
+    doi: "10.1126/scitranslmed.abc4567",
+    lastModified: "2024-12-28T12:00:00Z",
+    status: "waiting-for-data",
+    assignedTo: "Dr. Sarah Chen",
+    currentStatus: "Waiting for data",
+    modifiedBy: "Dr. Sarah Chen",
+    priority: "urgent",
+  },
+  "EMBO-2024-011": {
+    id: "EMBO-2024-011",
+    title: "Molecular mechanisms of DNA repair in cancer cells",
+    authors: ["Harris, K.", "Moore, L.", "Jackson, P.", "White, S."],
+    received: "2024-12-17",
+    doi: "10.1038/s41467-024-45678-9",
+    lastModified: "2024-12-29T10:45:00Z",
+    status: "on-hold",
+    assignedTo: "Dr. Michael Rodriguez",
+    currentStatus: "On hold",
+    modifiedBy: "Dr. Michael Rodriguez",
+    priority: "high",
+  },
+  "EMBO-2024-012": {
+    id: "EMBO-2024-012",
+    title: "Stem cell niche dynamics in tissue regeneration",
+    authors: ["Lee, S.", "Kim, H.", "Park, J.", "Choi, Y."],
+    received: "2024-12-21",
+    doi: "10.1016/j.stem.2024.05.012",
+    lastModified: "2024-12-28T14:15:00Z",
+    status: "failed-to-deposit",
+    assignedTo: "Dr. Emily Watson",
+    currentStatus: "Failed to deposit",
+    modifiedBy: "Dr. Emily Watson",
+    priority: "normal",
+  },
+  "EMBO-2024-013": {
+    id: "EMBO-2024-013",
+    title: "Circadian rhythm regulation of metabolic pathways",
+    authors: ["Zhang, L.", "Wang, M.", "Liu, X.", "Chen, H."],
+    received: "2024-12-31",
+    doi: "10.1038/s41586-024-07890-1",
+    lastModified: "2024-12-31T09:00:00Z",
+    status: "new-submission",
+    assignedTo: "Dr. Sarah Chen",
+    currentStatus: "New submission",
+    modifiedBy: "Dr. Sarah Chen",
+    priority: "normal",
+  },
+  "EMBO-2024-014": {
+    id: "EMBO-2024-014",
+    title: "Neuroplasticity mechanisms in learning and memory",
+    authors: ["Brown, M.", "Davis, R.", "Wilson, K.", "Johnson, L."],
+    received: "2024-12-20",
+    doi: "10.1016/j.neuron.2024.06.015",
+    lastModified: "2024-12-30T11:20:00Z",
+    status: "in-progress",
+    assignedTo: "Dr. Michael Rodriguez",
+    currentStatus: "In Progress",
+    modifiedBy: "Dr. Michael Rodriguez",
+    priority: "high",
+  },
+  "EMBO-2024-015": {
+    id: "EMBO-2024-015",
+    title: "Tumor microenvironment and cancer progression",
+    authors: ["Garcia, P.", "Martinez, R.", "Lopez, A.", "Rodriguez, C."],
+    received: "2024-12-19",
+    doi: "10.1038/s41568-024-00678-2",
+    lastModified: "2024-12-27T16:30:00Z",
+    status: "waiting-for-data",
+    assignedTo: "Dr. Emily Watson",
+    currentStatus: "Waiting for data",
+    modifiedBy: "Dr. Emily Watson",
+    priority: "normal",
+  },
+  "EMBO-2024-016": {
+    id: "EMBO-2024-016",
+    title: "Epigenetic inheritance across generations",
+    authors: ["Taylor, J.", "Anderson, M.", "White, P.", "Harris, L."],
+    received: "2024-12-18",
+    doi: "10.1126/science.def7890",
+    lastModified: "2024-12-29T13:45:00Z",
+    status: "deposited",
+    assignedTo: "Dr. Sarah Chen",
+    currentStatus: "Deposited",
+    modifiedBy: "Dr. Sarah Chen",
+    priority: "urgent",
+  },
+  "EMBO-2024-017": {
+    id: "EMBO-2024-017",
+    title: "Microbiome-host interactions in health and disease",
+    authors: ["Miller, K.", "Moore, S.", "Clark, J.", "Thompson, A."],
+    received: "2024-12-16",
+    doi: "10.1038/s41579-024-00890-3",
+    lastModified: "2024-12-28T10:15:00Z",
+    status: "in-progress",
+    assignedTo: "Dr. Michael Rodriguez",
+    currentStatus: "In Progress",
+    modifiedBy: "Dr. Michael Rodriguez",
+    priority: "normal",
+  },
+  "EMBO-2024-018": {
+    id: "EMBO-2024-018",
+    title: "Gene therapy approaches for inherited diseases",
+    authors: ["Lee, R.", "Kim, S.", "Park, H.", "Choi, K.", "Wang, L."],
+    received: "2024-12-15",
+    doi: "10.1016/j.ymthe.2024.07.020",
+    lastModified: "2024-12-27T14:30:00Z",
+    status: "in-progress",
+    assignedTo: "Dr. Emily Watson",
+    currentStatus: "In Progress",
+    modifiedBy: "Dr. Emily Watson",
+    priority: "high",
   }
 }
 
@@ -208,6 +364,28 @@ const getManuscriptDetail = (msid: string) => {
       return "Epigenetic modifications play crucial roles in regulating gene expression during development and disease. This research investigates chromatin remodeling mechanisms and histone modifications that control developmental gene expression programs using cutting-edge genomics and epigenomics approaches."
     } else if (title.includes('neurodegenerative')) {
       return "Protein misfolding and aggregation are hallmarks of neurodegenerative diseases. This study examines the molecular mechanisms underlying protein folding dysfunction in neurodegeneration, focusing on therapeutic targets and potential interventions using cellular and animal models."
+    } else if (title.includes('Metabolic') || title.includes('T cell')) {
+      return "T cell activation and differentiation involve extensive metabolic reprogramming to meet the energetic and biosynthetic demands of immune responses. This study investigates the molecular mechanisms controlling metabolic switches during T cell activation, revealing novel therapeutic targets for immunomodulation."
+    } else if (title.includes('Chromatin') || title.includes('embryonic')) {
+      return "Chromatin remodeling complexes are essential regulators of gene expression during embryonic development. This research examines the role of ATP-dependent chromatin remodeling in controlling developmental gene expression programs and cell fate determination using genomics and developmental biology approaches."
+    } else if (title.includes('Autophagy') || title.includes('aging')) {
+      return "Autophagy is a fundamental cellular process that degrades damaged organelles and proteins, playing crucial roles in aging and longevity. This study investigates the molecular mechanisms regulating autophagy during aging and identifies potential interventions to promote healthy longevity."
+    } else if (title.includes('Immune checkpoint') || title.includes('cancer immunotherapy')) {
+      return "Immune checkpoint inhibitors have revolutionized cancer treatment by unleashing the immune system against tumors. This research investigates the molecular mechanisms of checkpoint inhibition and identifies biomarkers for predicting therapeutic response in various cancer types."
+    } else if (title.includes('Stem cell') || title.includes('regeneration')) {
+      return "Stem cell niches provide specialized microenvironments that regulate stem cell behavior during tissue homeostasis and regeneration. This study examines the molecular signals controlling stem cell niche dynamics and their implications for regenerative medicine approaches."
+    } else if (title.includes('Circadian') || title.includes('metabolic pathways')) {
+      return "Circadian rhythms coordinate metabolic processes with daily environmental cycles, and their disruption contributes to metabolic diseases. This research investigates the molecular mechanisms linking circadian clocks to metabolic regulation using systems biology approaches."
+    } else if (title.includes('Neuroplasticity') || title.includes('learning')) {
+      return "Neuroplasticity underlies the brain's ability to adapt and form memories throughout life. This study examines the molecular mechanisms controlling synaptic plasticity during learning and memory formation using advanced neuroscience techniques and behavioral analyses."
+    } else if (title.includes('Tumor microenvironment') || title.includes('cancer progression')) {
+      return "The tumor microenvironment plays critical roles in cancer progression and therapeutic resistance. This research investigates the cellular and molecular interactions within tumor microenvironments and identifies potential therapeutic targets for cancer treatment."
+    } else if (title.includes('inheritance') && title.includes('generations')) {
+      return "Epigenetic inheritance allows environmental influences to be transmitted across generations without changes to DNA sequence. This study investigates the molecular mechanisms of transgenerational epigenetic inheritance using model organisms and genomics approaches."
+    } else if (title.includes('Microbiome') || title.includes('host interactions')) {
+      return "The human microbiome plays essential roles in health and disease through complex interactions with host physiology. This research examines microbiome-host interactions and their implications for therapeutic interventions and personalized medicine approaches."
+    } else if (title.includes('Gene therapy') || title.includes('inherited diseases')) {
+      return "Gene therapy offers promising approaches for treating inherited diseases by correcting genetic defects at their source. This study investigates novel gene therapy strategies and delivery systems for treating monogenic disorders using preclinical models."
     }
     return "This manuscript presents novel research findings that advance our understanding of fundamental biological processes and their implications for human health."
   }
@@ -225,6 +403,28 @@ const getManuscriptDetail = (msid: string) => {
       return ["epigenetics", "gene expression", "chromatin remodeling", "histone modifications", "developmental biology"]
     } else if (title.includes('neurodegenerative')) {
       return ["neurodegeneration", "protein aggregation", "misfolding", "therapeutic targets", "cellular models"]
+    } else if (title.includes('Metabolic') || title.includes('T cell')) {
+      return ["T cell activation", "metabolic reprogramming", "immunometabolism", "cellular differentiation", "immune responses"]
+    } else if (title.includes('Chromatin') || title.includes('embryonic')) {
+      return ["chromatin remodeling", "embryonic development", "gene expression", "cell fate determination", "developmental biology"]
+    } else if (title.includes('Autophagy') || title.includes('aging')) {
+      return ["autophagy", "aging", "longevity", "cellular degradation", "protein homeostasis"]
+    } else if (title.includes('Immune checkpoint') || title.includes('cancer immunotherapy')) {
+      return ["immune checkpoint inhibitors", "cancer immunotherapy", "T cell activation", "tumor immunity", "therapeutic resistance"]
+    } else if (title.includes('Stem cell') || title.includes('regeneration')) {
+      return ["stem cells", "tissue regeneration", "stem cell niche", "cellular differentiation", "regenerative medicine"]
+    } else if (title.includes('Circadian') || title.includes('metabolic pathways')) {
+      return ["circadian rhythms", "metabolic regulation", "biological clocks", "temporal biology", "metabolic diseases"]
+    } else if (title.includes('Neuroplasticity') || title.includes('learning')) {
+      return ["neuroplasticity", "learning and memory", "synaptic plasticity", "cognitive function", "neural adaptation"]
+    } else if (title.includes('Tumor microenvironment') || title.includes('cancer progression')) {
+      return ["tumor microenvironment", "cancer progression", "metastasis", "tumor-stroma interactions", "therapeutic resistance"]
+    } else if (title.includes('inheritance') && title.includes('generations')) {
+      return ["epigenetic inheritance", "transgenerational effects", "developmental programming", "environmental adaptation", "genomic imprinting"]
+    } else if (title.includes('Microbiome') || title.includes('host interactions')) {
+      return ["microbiome", "host-microbe interactions", "microbial ecology", "personalized medicine", "therapeutic interventions"]
+    } else if (title.includes('Gene therapy') || title.includes('inherited diseases')) {
+      return ["gene therapy", "inherited diseases", "genetic correction", "viral vectors", "precision medicine"]
     }
     return ["cell biology", "molecular medicine", "research", "biomedical science"]
   }
