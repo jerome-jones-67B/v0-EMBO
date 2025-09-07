@@ -187,7 +187,7 @@ const initialMockManuscripts: Manuscript[] = [
   {
     msid: "EMBO-2024-008",
     receivedDate: "2024-12-23",
-    title: "Unraveling the complexities of protein glycosylation in cellular signaling pathways",
+    title: "Novel research in molecular biology: protein glycosylation and cellular mechanisms",
     authors: ["Dr. Felix Schmidt", "Dr. Lena Hoffmann", "Dr. Markus Bauer"],
     doi: "10.15252/embj.008123456",
     accessionNumber: "EMBO-2024-008-ACC",
@@ -197,7 +197,8 @@ const initialMockManuscripts: Manuscript[] = [
     priority: "high",
     hasErrors: false,
     hasWarnings: true,
-    notes: "Protein glycosylation research in cell signaling. Under review, minor formatting issues identified.",
+    notes:
+      "Novel molecular biology research on protein glycosylation mechanisms. Under review, minor formatting issues identified.",
     lastModified: "2024-01-20T14:30:00Z",
     assignee: "",
     figureImage: "/crispr-chromatin-remodeling.jpg",
@@ -264,7 +265,7 @@ const initialMockManuscripts: Manuscript[] = [
   {
     msid: "EMBO-2024-012",
     receivedDate: "2024-12-21",
-    title: "Dissecting the signaling pathways involved in neuroinflammation and neuronal damage",
+    title: "Novel research in molecular biology: neuroinflammation and cellular damage mechanisms",
     authors: ["Dr. Marco Costa", "Dr. Francesca Rizzo", "Dr. Giulia Lombardi"],
     doi: "10.15252/embj.012123456",
     accessionNumber: "EMBO-2024-012-ACC",
@@ -274,7 +275,8 @@ const initialMockManuscripts: Manuscript[] = [
     priority: "normal",
     hasErrors: true,
     hasWarnings: false,
-    notes: "Neuroinflammation and neuronal damage research. Technical issues during BioStudies submission.",
+    notes:
+      "Novel molecular biology research on neuroinflammation and cellular damage mechanisms. Technical issues during BioStudies submission.",
     lastModified: "2024-01-20T14:30:00Z",
     assignee: "",
     figureImage: "/biofilm-bacteria.jpg",
@@ -378,7 +380,7 @@ const initialMockManuscripts: Manuscript[] = [
     researchArea: "plant-biology",
   },
   {
-    msid: "EMBO-2024-018",
+    msid: "EMBO-2024-0018",
     receivedDate: "2024-12-15",
     title: "Investigating the potential of gene therapy for treating inherited metabolic disorders",
     authors: ["Dr. Benoit Bernard", "Dr. Camille Leclerc", "Dr. Emilie Fournier"],
@@ -1510,13 +1512,6 @@ export function ManuscriptDashboard() {
                               )}
                             </TableRow>
                           ))}
-                          {filteredAndSortedManuscripts.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={visibleColumns.actions ? 10 : 9} className="text-center py-4">
-                                No manuscripts found.
-                              </TableCell>
-                            </TableRow>
-                          )}
                         </TableBody>
                       </Table>
                     </div>
