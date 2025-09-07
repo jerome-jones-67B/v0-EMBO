@@ -34,7 +34,7 @@ const initialMockManuscripts = [
     msid: "EMBO-2024-001",
     receivedDate: "2024-12-14",
     title: "Novel mechanisms of protein folding in cellular stress responses under oxidative conditions",
-    authors: "Smith, J., Johnson, A., Williams, R., Chen,L., Rodriguez, M.",
+    authors: "Smith, J., Johnson, A., Williams, R., Chen, L., Rodriguez, M.",
     doi: "10.1038/s41586-024-07123-4",
     accessionNumber: "EMBO-2024-001-ACC",
     assignedTo: "Dr. Sarah Chen",
@@ -45,7 +45,6 @@ const initialMockManuscripts = [
     hasWarnings: true,
     notes: "Waiting for additional experimental data from authors",
     lastModified: "2024-12-30T10:30:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-002",
@@ -62,7 +61,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Initial review completed, awaiting final validation",
     lastModified: "2024-12-30T14:20:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-003",
@@ -79,7 +77,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Missing required metadata files",
     lastModified: "2024-12-30T09:15:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-004",
@@ -96,7 +93,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Successfully deposited to BioStudies",
     lastModified: "2024-12-29T16:45:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-005",
@@ -113,7 +109,6 @@ const initialMockManuscripts = [
     hasWarnings: true,
     notes: "Deposition failed due to file format issues",
     lastModified: "2024-12-29T11:30:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-006",
@@ -130,7 +125,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Manuscript processed, awaiting pipeline analysis",
     lastModified: "2024-12-28T13:20:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-007",
@@ -147,7 +141,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Recently submitted, pending initial review",
     lastModified: "2024-12-30T08:45:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-008",
@@ -164,7 +157,6 @@ const initialMockManuscripts = [
     hasWarnings: true,
     notes: "Under review, minor formatting issues identified",
     lastModified: "2024-12-29T15:10:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-009",
@@ -181,7 +173,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Successfully processed and deposited",
     lastModified: "2024-12-30T17:30:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-010",
@@ -198,7 +189,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "High priority manuscript awaiting computational analysis",
     lastModified: "2024-12-28T12:00:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-011",
@@ -215,7 +205,6 @@ const initialMockManuscripts = [
     hasWarnings: true,
     notes: "Pending author response to reviewer comments",
     lastModified: "2024-12-29T10:45:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-012",
@@ -232,7 +221,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Technical issues during BioStudies submission",
     lastModified: "2024-12-28T14:15:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-013",
@@ -249,7 +237,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Just received, awaiting assignment",
     lastModified: "2024-12-31T09:00:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-014",
@@ -266,7 +253,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Comprehensive review in progress",
     lastModified: "2024-12-30T11:20:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-015",
@@ -283,7 +269,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Awaiting bioinformatics pipeline completion",
     lastModified: "2024-12-27T16:30:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-016",
@@ -300,7 +285,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Priority manuscript successfully deposited",
     lastModified: "2024-12-29T13:45:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-017",
@@ -317,7 +301,6 @@ const initialMockManuscripts = [
     hasWarnings: true,
     notes: "Minor metadata corrections needed",
     lastModified: "2024-12-28T10:15:00Z",
-    assignee: "",
   },
   {
     msid: "EMBO-2024-018",
@@ -334,7 +317,6 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Awaiting regulatory approval documentation",
     lastModified: "2024-12-27T14:30:00Z",
-    assignee: "",
   },
 ]
 
@@ -426,7 +408,7 @@ export default function ManuscriptDashboard() {
     setMockManuscripts((prev) =>
       prev.map((manuscript) => {
         if (manuscript.msid === msid) {
-          return { ...manuscript, assignee: "" }
+          return { ...manuscript }
         }
         return manuscript
       }),
@@ -1260,12 +1242,15 @@ export default function ManuscriptDashboard() {
                               )}
                               {visibleColumns.status && (
                                 <TableCell>
-                                  {getStatusBadge(
-                                    manuscript.status,
-                                    manuscript.hasErrors,
-                                    manuscript.hasWarnings,
-                                    manuscript.priority,
-                                  )}
+                                  <div className="flex flex-col gap-1">
+                                    {getStatusBadge(
+                                      manuscript.status,
+                                      manuscript.hasErrors,
+                                      manuscript.hasWarnings,
+                                      manuscript.priority,
+                                    )}
+                                    {getPriorityBadge(manuscript.priority)}
+                                  </div>
                                 </TableCell>
                               )}
                               {visibleColumns.received && (
@@ -1322,13 +1307,19 @@ export default function ManuscriptDashboard() {
                                 <TableCell className="text-sm">
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <span className="cursor-help">
+                                      <a
+                                        href={`https://doi.org/${manuscript.doi}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
                                         {highlightSearchTerm(manuscript.doi, searchTerm)}
-                                      </span>
+                                      </a>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       <p>Digital Object Identifier</p>
-                                      <p className="text-xs text-muted-foreground">Click to copy DOI</p>
+                                      <p className="text-xs text-muted-foreground">Click to open DOI link</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TableCell>
