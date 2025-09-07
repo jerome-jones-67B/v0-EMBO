@@ -48,55 +48,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Bot } from "lucide-react"
 
-// Function to assign appropriate images based on manuscript content and figure
+// Function to assign diverse images with much more variety
 function getFigureImage(manuscriptTitle: string, figureId: string, figureTitle: string): string {
-  const title = manuscriptTitle.toLowerCase()
-  const figTitle = figureTitle.toLowerCase()
-  
-  // Map different research areas to appropriate images
-  if (title.includes('protein') || figTitle.includes('protein')) {
-    // Protein-related studies
-    const proteinImages = [
-      '/protein-structures.png',
-      '/protein-structure-control.png', 
-      '/hsp70-binding.png',
-      '/atp-folding-cycle.png',
-      '/protein-aggregation-time-course.png'
-    ]
-    return proteinImages[Math.abs(hashCode(figureId)) % proteinImages.length]
-  }
-  
-  if (title.includes('dna') || title.includes('repair') || figTitle.includes('dna')) {
-    // DNA/repair studies
-    return '/molecular-interactions.png'
-  }
-  
-  if (title.includes('microscopy') || title.includes('cellular') || figTitle.includes('microscopy')) {
-    // Microscopy/cellular studies
-    const microscopyImages = [
-      '/microscopy-0-hours.png',
-      '/microscopy-two-hours.png', 
-      '/microscopy-6-hours.png',
-      '/microscopy-24-hours.png'
-    ]
-    return microscopyImages[Math.abs(hashCode(figureId)) % microscopyImages.length]
-  }
-  
-  if (title.includes('neural') || title.includes('neurodegeneration')) {
-    // Neuroscience studies
-    return '/co-chaperone-recruitment.png'
-  }
-  
-  if (title.includes('quantitative') || figTitle.includes('analysis') || figTitle.includes('quantitative')) {
-    // Quantitative analysis
-    const quantImages = [
-      '/quantitative-analysis-graph.png',
-      '/quantitative-aggregation-graph.png'
-    ]
-    return quantImages[Math.abs(hashCode(figureId)) % quantImages.length]
-  }
-  
-  // Default fallback - cycle through all scientific images
+  // All available scientific images - use them all!
   const allImages = [
     '/protein-structures.png',
     '/protein-structure-control.png',
@@ -105,10 +59,25 @@ function getFigureImage(manuscriptTitle: string, figureId: string, figureTitle: 
     '/co-chaperone-recruitment.png',
     '/atp-folding-cycle.png',
     '/microscopy-0-hours.png',
-    '/quantitative-analysis-graph.png'
+    '/microscopy-two-hours.png', 
+    '/microscopy-6-hours.png',
+    '/microscopy-24-hours.png',
+    '/quantitative-analysis-graph.png',
+    '/quantitative-aggregation-graph.png',
+    '/protein-aggregation-time-course.png'
   ]
   
-  return allImages[Math.abs(hashCode(figureId + manuscriptTitle)) % allImages.length]
+  // Create maximum diversity by combining multiple factors
+  const seed = manuscriptTitle + figureId + figureTitle
+  const hash1 = Math.abs(hashCode(seed))
+  const hash2 = Math.abs(hashCode(seed.split('').reverse().join('')))
+  const hash3 = Math.abs(hashCode(figureId + manuscriptTitle.length))
+  const hash4 = Math.abs(hashCode(figureTitle + figureId.length))
+  
+  // Use multiple hash combinations with different multipliers for maximum distribution
+  const imageIndex = (hash1 + hash2 * 7 + hash3 * 13 + hash4 * 23) % allImages.length
+  
+  return allImages[imageIndex]
 }
 
 // Simple hash function for consistent image assignment
