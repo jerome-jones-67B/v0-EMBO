@@ -470,38 +470,139 @@ const getManuscriptDetail = (msid: string) => {
     
     return figures;
   })(),
-  linkedData: [
-    {
-      type: "PDB",
-      identifier: "7ABC",
-      url: "https://www.rcsb.org/structure/7ABC",
-      description: "Crystal structure of HSP70 complex",
-    },
-    {
-      type: "UniProt",
-      identifier: "P08107",
-      url: "https://www.uniprot.org/uniprot/P08107",
-      description: "Heat shock 70 kDa protein 1A",
-    },
-    {
-      type: "GEO",
-      identifier: "GSE123456",
-      url: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE123456",
-      description: "RNA-seq data under oxidative stress",
-    },
-  ],
-  linkedInfo: [
-    {
+  linkedData: (() => {
+    // Generate varied linked data based on manuscript ID and research area
+    const baseId = parseInt(manuscriptData.id.split('-')[2]) || 1;
+    const linkedData = [];
+    
+    // Research area specific data repositories
+    if (manuscriptData.title.includes('protein') || manuscriptData.title.includes('structure')) {
+      linkedData.push({
+        type: "PDB",
+        identifier: `${7 + baseId}ABC`,
+        url: `https://www.rcsb.org/structure/${7 + baseId}ABC`,
+        description: "Crystal structure of protein complex",
+      });
+      linkedData.push({
+        type: "UniProt",
+        identifier: `P0${8100 + baseId}`,
+        url: `https://www.uniprot.org/uniprot/P0${8100 + baseId}`,
+        description: "Protein sequence and functional annotation",
+      });
+    }
+    
+    if (manuscriptData.title.includes('CRISPR') || manuscriptData.title.includes('gene')) {
+      linkedData.push({
+        type: "GEO",
+        identifier: `GSE${123000 + baseId * 10}`,
+        url: `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE${123000 + baseId * 10}`,
+        description: "Gene expression profiling data",
+      });
+      linkedData.push({
+        type: "SRA",
+        identifier: `SRP${300000 + baseId * 5}`,
+        url: `https://www.ncbi.nlm.nih.gov/sra/SRP${300000 + baseId * 5}`,
+        description: "Raw sequencing reads",
+      });
+    }
+    
+    if (manuscriptData.title.includes('Metabolic') || manuscriptData.title.includes('cell')) {
+      linkedData.push({
+        type: "GEO", 
+        identifier: `GSE${124000 + baseId * 7}`,
+        url: `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE${124000 + baseId * 7}`,
+        description: "Single-cell RNA sequencing data",
+      });
+      linkedData.push({
+        type: "MetaboLights",
+        identifier: `MTBLS${1000 + baseId * 3}`,
+        url: `https://www.ebi.ac.uk/metabolights/MTBLS${1000 + baseId * 3}`,
+        description: "Metabolomics experimental data",
+      });
+    }
+    
+    if (manuscriptData.title.includes('Chromatin') || manuscriptData.title.includes('Epigenetic')) {
+      linkedData.push({
+        type: "GEO",
+        identifier: `GSE${125000 + baseId * 12}`,
+        url: `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE${125000 + baseId * 12}`,
+        description: "ChIP-seq and ATAC-seq data",
+      });
+      linkedData.push({
+        type: "ArrayExpress",
+        identifier: `E-MTAB-${8000 + baseId * 4}`,
+        url: `https://www.ebi.ac.uk/arrayexpress/experiments/E-MTAB-${8000 + baseId * 4}`,
+        description: "Chromatin accessibility profiling",
+      });
+    }
+    
+    // Add generic repositories for other research areas
+    if (linkedData.length === 0) {
+      linkedData.push({
+        type: "GEO",
+        identifier: `GSE${120000 + baseId * 15}`,
+        url: `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE${120000 + baseId * 15}`,
+        description: "Transcriptomic analysis data",
+      });
+      
+      if (baseId % 3 === 0) {
+        linkedData.push({
+          type: "ProteomeXchange", 
+          identifier: `PXD0${20000 + baseId * 2}`,
+          url: `http://proteomecentral.proteomexchange.org/cgi/GetDataset?ID=PXD0${20000 + baseId * 2}`,
+          description: "Mass spectrometry proteomics data",
+        });
+      }
+    }
+    
+    return linkedData;
+  })(),
+  linkedInfo: (() => {
+    // Generate varied linked info based on manuscript ID and research area
+    const baseId = parseInt(manuscriptData.id.split('-')[2]) || 1;
+    const linkedInfo = [];
+    
+    // Always include at least one protocol
+    const protocolTypes = [
+      "protein-purification", "cell-culture", "molecular-cloning", "immunofluorescence",
+      "western-blot", "qpcr-analysis", "flow-cytometry", "microscopy-imaging"
+    ];
+    const protocolType = protocolTypes[baseId % protocolTypes.length];
+    
+    linkedInfo.push({
       type: "Protocol",
-      url: "https://protocols.io/view/protein-purification-protocol-abc123",
-      description: "Protein purification protocol",
-    },
-    {
-      type: "Supplementary",
-      url: "https://example.com/supplementary-data",
-      description: "Supplementary materials and methods",
-    },
-  ],
+      url: `https://protocols.io/view/${protocolType}-protocol-${baseId}abc`,
+      description: `${protocolType.replace('-', ' ')} protocol`,
+    });
+    
+    // Add supplementary materials (varies by manuscript)
+    if (baseId % 2 === 0) {
+      linkedInfo.push({
+        type: "Supplementary",
+        url: `https://example.com/supplementary-data-${baseId}`,
+        description: "Supplementary materials and methods",
+      });
+    }
+    
+    // Add additional resources based on research area
+    if (manuscriptData.title.includes('CRISPR') || manuscriptData.title.includes('gene')) {
+      linkedInfo.push({
+        type: "Repository",
+        url: `https://github.com/lab-${baseId}/crispr-analysis`,
+        description: "Analysis code and scripts",
+      });
+    }
+    
+    if (manuscriptData.title.includes('structure') || manuscriptData.title.includes('protein')) {
+      linkedInfo.push({
+        type: "Model",
+        url: `https://alphafold.ebi.ac.uk/entry/AF-P0${8100 + baseId}`,
+        description: "AlphaFold structure prediction",
+      });
+    }
+    
+    return linkedInfo;
+  })(),
   qcChecks: (() => {
     // Generate varied QC checks based on manuscript ID
     const baseId = parseInt(manuscriptData.id.split('-')[2]) || 1;
@@ -610,36 +711,106 @@ const getManuscriptDetail = (msid: string) => {
     lastActivity: "2024-01-20T14:30:00Z",
   },
   legend: "This is a sample figure legend.",
-  sourceData: [
-    {
-      filename: "supplementary_data.xlsx",
-      url: "/files/supplementary_data.xlsx",
-      description: "Supplementary data file",
-      size: "1.2 MB",
-      type: "xlsx",
-    },
-    {
-      filename: "raw_data.csv",
-      url: "/files/raw_data.csv",
-      description: "Raw data file",
-      size: "800 KB",
-      type: "csv",
-    },
-  ],
-  linkedData: [
-    {
-      type: "PDB",
-      id: "7ABC",
-      url: "https://www.rcsb.org/structure/7ABC",
-      description: "Crystal structure of HSP70 complex",
-    },
-    {
-      type: "UniProt",
-      id: "P08107",
-      url: "https://www.uniprot.org/uniprot/P08107",
-      description: "Heat shock 70 kDa protein 1A",
-    },
-  ],
+  sourceData: (() => {
+    // Generate varied source data files based on manuscript ID and research area
+    const baseId = parseInt(manuscriptData.id.split('-')[2]) || 1;
+    const sourceData = [];
+    
+    // File types and sizes vary by research area
+    if (manuscriptData.title.includes('protein') || manuscriptData.title.includes('structure')) {
+      sourceData.push({
+        filename: `protein_analysis_${baseId}.xlsx`,
+        url: `/files/protein_analysis_${baseId}.xlsx`,
+        description: "Protein characterization data",
+        size: `${1.5 + (baseId % 3) * 0.5} MB`,
+        type: "xlsx",
+      });
+      sourceData.push({
+        filename: `structural_data_${baseId}.pdb`,
+        url: `/files/structural_data_${baseId}.pdb`,
+        description: "Structural coordinates",
+        size: `${200 + baseId * 50} KB`,
+        type: "pdb",
+      });
+    } else if (manuscriptData.title.includes('CRISPR') || manuscriptData.title.includes('gene')) {
+      sourceData.push({
+        filename: `sequencing_results_${baseId}.fastq.gz`,
+        url: `/files/sequencing_results_${baseId}.fastq.gz`,
+        description: "Raw sequencing data",
+        size: `${5 + baseId * 2} GB`,
+        type: "fastq",
+      });
+      sourceData.push({
+        filename: `gene_expression_${baseId}.csv`,
+        url: `/files/gene_expression_${baseId}.csv`,
+        description: "Gene expression matrix",
+        size: `${800 + baseId * 100} KB`,
+        type: "csv",
+      });
+    } else if (manuscriptData.title.includes('Metabolic') || manuscriptData.title.includes('cell')) {
+      sourceData.push({
+        filename: `metabolomics_data_${baseId}.xlsx`,
+        url: `/files/metabolomics_data_${baseId}.xlsx`,
+        description: "Metabolite measurements",
+        size: `${2.1 + (baseId % 4) * 0.3} MB`,
+        type: "xlsx",
+      });
+      sourceData.push({
+        filename: `flow_cytometry_${baseId}.fcs`,
+        url: `/files/flow_cytometry_${baseId}.fcs`,
+        description: "Flow cytometry data files",
+        size: `${15 + baseId * 5} MB`,
+        type: "fcs",
+      });
+    } else if (manuscriptData.title.includes('Chromatin') || manuscriptData.title.includes('Epigenetic')) {
+      sourceData.push({
+        filename: `chipseq_peaks_${baseId}.bed`,
+        url: `/files/chipseq_peaks_${baseId}.bed`,
+        description: "ChIP-seq peak coordinates",
+        size: `${500 + baseId * 75} KB`,
+        type: "bed",
+      });
+      sourceData.push({
+        filename: `accessibility_data_${baseId}.bw`,
+        url: `/files/accessibility_data_${baseId}.bw`,
+        description: "Chromatin accessibility tracks",
+        size: `${25 + baseId * 8} MB`,
+        type: "bigwig",
+      });
+    } else {
+      // Generic data files
+      sourceData.push({
+        filename: `experimental_data_${baseId}.xlsx`,
+        url: `/files/experimental_data_${baseId}.xlsx`,
+        description: "Primary experimental data",
+        size: `${1.0 + (baseId % 5) * 0.4} MB`,
+        type: "xlsx",
+      });
+      
+      if (baseId % 3 === 0) {
+        sourceData.push({
+          filename: `raw_measurements_${baseId}.csv`,
+          url: `/files/raw_measurements_${baseId}.csv`,
+          description: "Raw measurement data",
+          size: `${600 + baseId * 120} KB`,
+          type: "csv",
+        });
+      }
+      
+      if (baseId % 4 === 0) {
+        sourceData.push({
+          filename: `statistical_analysis_${baseId}.R`,
+          url: `/files/statistical_analysis_${baseId}.R`,
+          description: "Statistical analysis scripts",
+          size: `${45 + baseId * 8} KB`,
+          type: "R",
+        });
+      }
+    }
+    
+    return sourceData;
+  })(),
+  linkedData: [], // This will be populated by the dynamic linkedData above
   }
 }
 
