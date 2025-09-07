@@ -191,7 +191,7 @@ const initialMockManuscripts: Manuscript[] = [
     authors: ["Dr. Felix Schmidt", "Dr. Lena Hoffmann", "Dr. Markus Bauer"],
     doi: "10.15252/embj.008123456",
     accessionNumber: "EMBO-2024-008-ACC",
-    assignedTo: "Dr. Sarah Wilson",
+    assignedTo: "Dr.Sarah Wilson",
     status: "In progress",
     workflowState: "ready-for-curation",
     priority: "high",
@@ -283,7 +283,8 @@ const initialMockManuscripts: Manuscript[] = [
   {
     msid: "EMBO-2024-013",
     receivedDate: "2024-12-31",
-    title: "The role of the Hippo signaling pathway in organ size control and tumorigenesis",
+    title:
+      "Novel research in molecular biology and cellular mechanisms: Advanced approaches to understanding biological systems",
     authors: ["Dr. Johan Andersen", "Dr. Line Petersen", "Dr. Kirsten Christensen"],
     doi: "10.15252/embj.013123456",
     accessionNumber: "EMBO-2024-013-ACC",
@@ -293,7 +294,8 @@ const initialMockManuscripts: Manuscript[] = [
     priority: "normal",
     hasErrors: false,
     hasWarnings: false,
-    notes: "Hippo signaling pathway research in organ size control. Just received, awaiting assignment.",
+    notes:
+      "Novel research in molecular biology and cellular mechanisms. Comprehensive study of advanced biological systems. Just received, awaiting assignment.",
     lastModified: "2024-01-20T14:30:00Z",
     assignee: "",
     figureImage: "/plant-drought-stress.jpg",
@@ -399,7 +401,7 @@ const initialMockManuscripts: Manuscript[] = [
 type SortField = "msid" | "receivedDate" | "title" | "authors" | "status" | "priority" | "lastModified"
 type SortDirection = "asc" | "desc"
 
-export default function ManuscriptDashboard() {
+export function ManuscriptDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
@@ -1508,6 +1510,13 @@ export default function ManuscriptDashboard() {
                               )}
                             </TableRow>
                           ))}
+                          {filteredAndSortedManuscripts.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={visibleColumns.actions ? 10 : 9} className="text-center py-4">
+                                No manuscripts found.
+                              </TableCell>
+                            </TableRow>
+                          )}
                         </TableBody>
                       </Table>
                     </div>
@@ -1521,5 +1530,3 @@ export default function ManuscriptDashboard() {
     </TooltipProvider>
   )
 }
-
-export { ManuscriptDashboard }
