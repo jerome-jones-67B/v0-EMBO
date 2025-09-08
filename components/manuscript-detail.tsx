@@ -33,6 +33,7 @@ import {
   ChevronUp,
   ChevronDown,
   Download,
+  Cpu,
 } from "lucide-react"
 import { mockLinkedData, mockSourceData } from "@/lib/mock"
 import { dataService } from "@/lib/data-service"
@@ -52,6 +53,12 @@ import { Bot } from "lucide-react"
 
 // Function to assign diverse images with much more variety
 function getFigureImage(manuscriptTitle: string, figureId: string, figureTitle: string): string {
+  // Check if this is a newly created figure (starts with "figure-")
+  if (figureId.startsWith('figure-')) {
+    // Return a placeholder image for newly created figures
+    return '/placeholder-e9mgd.png'
+  }
+  
   // All available scientific images - use them all!
   const allImages = [
     '/protein-structures.png',
@@ -1154,7 +1161,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const handleEditFigure = (figureIndex: number) => {
     const figure = manuscript.figures[figureIndex]
     setFigureForm({
-      title: figure.title,
+      title: figure.label,
       caption: figure.caption,
       linkType: "none",
       sourceDataId: "",
@@ -1203,7 +1210,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
     // Update figure title and caption
     const updatedFigures = [...manuscript.figures]
-    updatedFigures[editingFigure.figureIndex].title = figureForm.title
+    updatedFigures[editingFigure.figureIndex].label = figureForm.title
     updatedFigures[editingFigure.figureIndex].caption = figureForm.caption
 
     setManuscript((prev) => ({ ...prev, figures: updatedFigures }))
@@ -1254,6 +1261,33 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setManuscript((prev) => ({ ...prev, figures: updatedFigures }))
     setIsEditingFigure(false)
     setEditingFigure(null)
+  }
+
+  const handleAddFigure = () => {
+    const newFigure = {
+      id: `figure-${Date.now()}`,
+      label: `Figure ${manuscript.figures.length + 1}`,
+      caption: "",
+      sort_order: manuscript.figures.length + 1,
+      panels: [],
+      links: [],
+      source_data: [],
+      check_results: []
+    }
+
+    setManuscript((prev) => ({
+      ...prev,
+      figures: [...prev.figures, newFigure],
+    }))
+  }
+
+  const handleDeleteFigure = (figureIndex: number) => {
+    if (window.confirm("Are you sure you want to delete this figure?")) {
+      setManuscript((prev) => ({
+        ...prev,
+        figures: prev.figures.filter((_, index) => index !== figureIndex),
+      }))
+    }
   }
 
   const handleSaveNotes = () => {
@@ -2012,7 +2046,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             {manuscript.qcChecks.filter((check) => check.aiGenerated).length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
-                  <Bot className="w-4 h-4" />
+                  <Cpu className="w-4 h-4" />
                   AI Checks
                 </Label>
                 {manuscript.qcChecks
@@ -2074,17 +2108,29 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       {/* Sequential Figure Review */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Sequential Figure Review
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Sequential Figure Review
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleAddFigure()}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Figure
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-8">
           {manuscript.figures.map((figure, figureIndex) => (
             <div key={figure.id} className="space-y-4 border-b pb-6 last:border-b-0">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">{figure.title}</h3>
+                  <h3 className="text-lg font-semibold">{figure.label}</h3>
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
@@ -2106,21 +2152,30 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       <ZoomIn className="w-4 h-4 mr-1" />
                       {showExpandedFigure === figure.id ? "Collapse" : "Expand"}
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteFigure(figureIndex)}
+                      className="text-red-600 hover:text-red-700"
+                      title="Delete figure"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
 
                 {/* Figure Image with Panel Overlays */}
                 <div className="relative">
                   <img
-                    src={getFigureImage(manuscript?.title || '', figure.id, figure.title)}
-                    alt={figure.title}
+                    src={getFigureImage(manuscript?.title || '', figure.id, figure.label)}
+                    alt={figure.label}
                     className={`w-full object-contain border rounded-lg ${
                       showExpandedFigure === figure.id ? "max-h-96" : "max-h-64"
                     }`}
                   />
 
                   {/* Panel Mapping Overlays */}
-                  {overlayVisibility[figure.id] &&
+                  {overlayVisibility[figure.id] && figure.panels.length > 0 ? (
                     figure.panels.map((panel, panelIndex) => (
                       <div
                         key={panel.id}
@@ -2135,10 +2190,17 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                         }}
                       >
                         <div className="absolute -top-6 left-0 bg-white border rounded px-2 py-1 text-xs font-bold shadow-sm">
-                          {panel.id}
+                          {panel.label}
                         </div>
                       </div>
-                    ))}
+                    ))
+                  ) : overlayVisibility[figure.id] && figure.panels.length === 0 ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-white/90 border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-600">
+                        No panels defined. Click "Add Panel" to start.
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -2178,7 +2240,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
                 <div className="space-y-2">
                   <div className="text-sm text-gray-900 bg-slate-50 p-4 rounded-lg border border-slate-200 leading-relaxed shadow-sm">
-                    {figure.legend || "No legend available for this figure."}
+                    {figure.caption || "No caption available for this figure."}
                   </div>
                 </div>
 
@@ -2285,7 +2347,10 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               {/* Figure QC Checks */}
               {figure.qcChecks && figure.qcChecks.length > 0 && (
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium">Figure Issues</Label>
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Cpu className="w-4 h-4" />
+                    AI/QC Checks
+                  </Label>
                   {filterFigureAIChecks(figure.qcChecks, figure.id).map((check, checkIndex) => (
                     <div key={checkIndex} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                       {getQCIcon(check.type)}
@@ -2343,7 +2408,10 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                 <div className="text-sm text-muted-foreground">Warnings</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-600">{aiChecks.length}</div>
+                <div className="text-2xl font-bold text-blue-600 flex items-center justify-center gap-2">
+                  <Cpu className="w-6 h-6" />
+                  {aiChecks.length}
+                </div>
                 <div className="text-sm text-muted-foreground">AI Checks</div>
               </div>
               <div>
@@ -2379,7 +2447,17 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       </div>
                       <p className="text-sm text-muted-foreground">{check.details}</p>
                     </div>
-                    {getQCActions(check, check.location, index)}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => console.log('View source for check:', check)}
+                        title="View source file"
+                      >
+                        <LucideEye className="w-4 h-4" />
+                      </Button>
+                      {getQCActions(check, check.location, index)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2392,7 +2470,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Bot className="w-5 h-5" />
+                <Cpu className="w-5 h-5" />
                 AI Checks
               </CardTitle>
             </CardHeader>
@@ -2410,7 +2488,17 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       </div>
                       <p className="text-sm text-muted-foreground">{check.details}</p>
                     </div>
-                    {getQCActions(check, check.location, index)}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => console.log('View source for AI check:', check)}
+                        title="View source file"
+                      >
+                        <LucideEye className="w-4 h-4" />
+                      </Button>
+                      {getQCActions(check, check.location, index)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2437,231 +2525,84 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {allSubmittedFiles.map((file) => (
-                <div key={file.id} className="border rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedSourceFiles.has(file.id)}
-                      onChange={(e) => {
-                        const newSelected = new Set(selectedSourceFiles)
-                        if (e.target.checked) {
-                          newSelected.add(file.id)
-                        } else {
-                          newSelected.delete(file.id)
-                        }
-                        setSelectedSourceFiles(newSelected)
-                      }}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2 font-medium">File Name</th>
+                    <th className="text-left p-2 font-medium">Type</th>
+                    <th className="text-left p-2 font-medium">Size</th>
+                    <th className="text-left p-2 font-medium">Linked To</th>
+                    <th className="text-left p-2 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allSubmittedFiles.map((file) => (
+                    <tr key={file.id} className="border-b hover:bg-muted/50">
+                      <td className="p-2">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-blue-500" />
                           <span className="font-medium">{file.filename}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {file.type}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">{file.size}</span>
                         </div>
-                      </div>
-
-                      <div className="mb-3">
-                        <p className="text-sm text-muted-foreground mb-2">{file.name}</p>
-                        <div className="text-xs text-muted-foreground">
-                          Uploaded: 2024-01-15 | Last modified: 2024-01-20
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="font-medium">Currently linked to:</span>
-                          {file.linkedTo.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {file.linkedTo.map((link, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs">
-                                  {link}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">Not linked</span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">Link to:</span>
-                          <Select
-                            value=""
-                            onValueChange={(value) => {
-                              if (value === "none") {
-                                console.log(`[v0] Unlinking ${file.filename} from all targets`)
-                              } else {
-                                console.log(`[v0] Linking ${file.filename} to ${value}`)
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-48">
-                              <SelectValue placeholder="Select target..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">None (Unlink all)</SelectItem>
-                              <SelectItem value="manuscript">Manuscript</SelectItem>
-                              {manuscript.figures.map((figure) => (
-                                <React.Fragment key={figure.id}>
-                                  <SelectItem value={`figure-${figure.id}`}>{figure.title}</SelectItem>
-                                  {figure.panels.map((panel) => (
-                                    <SelectItem key={panel.id} value={`panel-${panel.id}`}>
-                                      └ Panel {panel.id}
-                                    </SelectItem>
-                                  ))}
-                                </React.Fragment>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {file.linkedTo.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="text-sm font-medium">Remove specific links:</span>
-                            <div className="flex flex-wrap gap-1">
-                              {file.linkedTo.map((link, idx) => (
-                                <div key={idx} className="flex items-center gap-1">
-                                  <Badge variant="secondary" className="text-xs">
-                                    {link}
-                                  </Badge>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-5 w-5 p-0 hover:bg-red-100"
-                                    onClick={() => {
-                                      console.log(`[v0] Removing link ${link} from ${file.filename}`)
-                                    }}
-                                  >
-                                    <X className="w-3 h-3 text-red-500" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
+                      </td>
+                      <td className="p-2">
+                        <Badge variant="outline" className="text-xs">
+                          {file.type}
+                        </Badge>
+                      </td>
+                      <td className="p-2 text-sm text-muted-foreground">
+                        {file.size}
+                      </td>
+                      <td className="p-2">
+                        {file.linkedTo.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {file.linkedTo.map((link, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {link}
+                              </Badge>
+                            ))}
                           </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Not linked</span>
                         )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                      <td className="p-2">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => console.log('View file:', file.filename)}
+                            title="View file"
+                          >
+                            <LucideEye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditFile(file.id)}
+                            title="Edit file"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteFile(file.id)}
+                            className="text-red-600 hover:text-red-700"
+                            title="Delete file"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Figures & Panels</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {manuscript.figures.map((figure, figIndex) => (
-                <div key={figure.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold">{figure.title}</h4>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          figure.qcChecks && figure.qcChecks.some((c) => c.type === "error")
-                            ? "destructive"
-                            : figure.qcChecks && figure.qcChecks.some((c) => c.type === "warning")
-                              ? "secondary"
-                              : "default"
-                        }
-                      >
-                        {figure.panels.length} panels
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Panels Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left p-2">Panel</th>
-                          <th className="text-left p-2">Description</th>
-                          <th className="text-left p-2">Linked Data</th>
-                          <th className="text-left p-2">Issues</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {figure.panels.map((panel, panelIndex) => (
-                          <tr key={panel.id} className="border-b">
-                            <td className="p-2">
-                              <Badge variant="outline">{panel.id}</Badge>
-                            </td>
-                            <td className="p-2 max-w-md">
-                              <div className="truncate" title={panel.description}>
-                                {panel.description}
-                              </div>
-                            </td>
-                            <td className="p-2">
-                              {panel.linkedData && panel.linkedData.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {panel.linkedData.map((data, dataIndex) => (
-                                    <Badge key={dataIndex} variant="secondary" className="text-xs">
-                                      {data.type}: {data.identifier}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">None</span>
-                              )}
-                            </td>
-                            <td className="p-2">
-                              {panel.hasIssues ? (
-                                <Badge variant="destructive" className="text-xs">
-                                  <AlertTriangle className="w-3 h-3 mr-1" />
-                                  Issues
-                                </Badge>
-                              ) : (
-                                <Badge variant="default" className="text-xs">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  OK
-                                </Badge>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Linked Data Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              {linkedData.map((data, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Database className="w-4 h-4 text-blue-500" />
-                    <div>
-                      <div className="font-medium">{data.type}</div>
-                      <div className="text-sm text-muted-foreground">{data.description}</div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">{data.identifier}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     )
   }
