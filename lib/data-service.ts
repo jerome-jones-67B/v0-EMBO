@@ -2,6 +2,7 @@
 
 import { config } from './config';
 import { api } from './api-client';
+import { getStatusMapping, getUnmappedFields } from './status-mapping';
 import {
   mockManuscripts,
   mockFigures,
@@ -70,8 +71,16 @@ export class DataService {
     this.useMockData = useMock;
   }
 
+  // Get current mock data setting
+  getUseMockData(): boolean {
+    return this.useMockData;
+  }
+
   // Helper function to transform Data4Rev manuscript to our format
   private transformManuscript(manuscript: ManuscriptOverview): Manuscript {
+    const statusMapping = getStatusMapping(manuscript.status);
+    const unmappedFields = getUnmappedFields(manuscript);
+    
     return {
       // Data4Rev API fields (keep as-is)
       msid: manuscript.msid,
@@ -85,13 +94,20 @@ export class DataService {
       status: manuscript.status,
       note: manuscript.note,
       
-      // Backward compatibility fields (mapped)
+      // Backward compatibility fields (mapped with proper status mapping)
       received: manuscript.received_at,
       lastModified: manuscript.received_at,
       assignedTo: null, // Not available in Data4Rev API
-      priority: this.derivePriorityFromStatus(manuscript.status),
+      priority: statusMapping.priority,
       figureCount: 0, // Will be populated when we have figure data
-      qcStatus: this.deriveQCStatusFromStatus(manuscript.status),
+      qcStatus: statusMapping.qcStatus,
+      
+      // UI-specific fields for dashboard
+      displayStatus: statusMapping.displayStatus,
+      workflowState: statusMapping.workflowState,
+      badgeVariant: statusMapping.badgeVariant,
+      isMapped: statusMapping.isMapped,
+      unmappedFields: unmappedFields,
     };
   }
 

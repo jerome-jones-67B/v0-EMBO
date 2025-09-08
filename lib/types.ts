@@ -60,6 +60,13 @@ export interface Manuscript {
   submissionType?: string;
   wordCount?: number;
   collaborators?: string[];
+  
+  // UI-specific fields for proper status mapping
+  displayStatus?: string; // mapped display status
+  workflowState?: string; // mapped workflow state
+  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline'; // badge styling
+  isMapped?: boolean; // whether this field is properly mapped
+  unmappedFields?: string[]; // list of unmapped fields for highlighting
 }
 
 // Data4Rev API Figure types

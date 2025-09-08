@@ -14,6 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { Settings2, Database, Zap } from "lucide-react"
 import { ManuscriptDetail } from "./manuscript-detail" // Import the new manuscript detail component
+import { dataService } from "@/lib/data-service"
+import { getValidStatusesForTab as getValidStatuses, getStatusMapping } from "@/lib/status-mapping"
 import { Eye, Download, MoreHorizontal, UserPlus, UserMinus, Pause, Play } from "lucide-react"
 import {
   AlertTriangle,
@@ -337,7 +339,7 @@ export default function ManuscriptDashboard() {
   const [editedAccessionValue, setEditedAccessionValue] = useState("")
   const [mockManuscripts, setMockManuscripts] = useState(initialMockManuscripts)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
-  const [useApiData, setUseApiData] = useState(false)
+  const [useApiData, setUseApiData] = useState(!dataService.getUseMockData())
   const [apiManuscripts, setApiManuscripts] = useState<any[]>([])
   const [isLoadingApi, setIsLoadingApi] = useState(false)
 
@@ -362,16 +364,7 @@ export default function ManuscriptDashboard() {
   }
 
   const getValidStatusesForTab = (tab: string) => {
-    switch (tab) {
-      case "ready-for-curation":
-        return ["New submission", "In Progress", "On hold"]
-      case "deposited-to-biostudies":
-        return ["Deposited", "Failed to deposit"]
-      case "no-pipeline-results":
-        return ["Waiting for data"]
-      default:
-        return []
-    }
+    return getValidStatuses(tab);
   }
 
   const handleTabChange = (newTab: string) => {
@@ -422,9 +415,13 @@ export default function ManuscriptDashboard() {
   const filteredAndSortedManuscripts = useMemo(() => {
     const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
     const filtered = currentManuscripts.filter((manuscript) => {
-      if (manuscript.workflowState !== activeTab) return false
+      // Use workflowState for tab filtering (mapped from API status)
+      const workflowState = manuscript.workflowState || manuscript.workflowState || 'no-pipeline-results'
+      if (workflowState !== activeTab) return false
 
-      if (statusFilter !== "all" && manuscript.status !== statusFilter) return false
+      // Use displayStatus for status filtering
+      const displayStatus = manuscript.displayStatus || manuscript.status
+      if (statusFilter !== "all" && displayStatus !== statusFilter) return false
 
       if (priorityFilter !== "all") {
         if (priorityFilter === "urgent") {
@@ -498,41 +495,54 @@ export default function ManuscriptDashboard() {
     }
   }
 
-  const getStatusBadge = (status: string, hasErrors: boolean, hasWarnings: boolean, priority: string) => {
-    let variant: "default" | "secondary" | "destructive" | "outline" = "default"
+  const getStatusBadge = (manuscript: any) => {
+    const displayStatus = manuscript.displayStatus || manuscript.status
+    const hasErrors = manuscript.hasErrors || false
+    const hasWarnings = manuscript.hasWarnings || false
+    const priority = manuscript.priority || 'normal'
+    const isMapped = manuscript.isMapped !== false
+    const unmappedFields = manuscript.unmappedFields || []
+    
+    let variant: "default" | "secondary" | "destructive" | "outline" = manuscript.badgeVariant || "default"
     let className = ""
     let tooltipContent = ""
 
+    // Add highlighting for unmapped fields
+    if (!isMapped || unmappedFields.includes('status')) {
+      className += " border-2 border-yellow-400 bg-yellow-50 "
+      tooltipContent += "⚠️ Unmapped status field - may need attention. "
+    }
+
     // Ready for Curation statuses
-    if (status === "New submission") {
+    if (displayStatus === "New submission") {
       variant = "outline"
-      tooltipContent = "New submission - no work has been done yet"
-    } else if (status === "In Progress") {
+      tooltipContent += "New submission - no work has been done yet"
+    } else if (displayStatus === "In Progress") {
       variant = "secondary"
-      className = "bg-blue-50 text-blue-700 border-blue-200"
+      className += "bg-blue-50 text-blue-700 border-blue-200"
       if (hasErrors) {
-        tooltipContent = "In Progress - critical validation errors found, requires immediate attention"
+        tooltipContent += "In Progress - critical validation errors found, requires immediate attention"
       } else if (hasWarnings) {
-        tooltipContent = "In Progress - minor issues detected, review recommended"
+        tooltipContent += "In Progress - minor issues detected, review recommended"
       } else {
-        tooltipContent = "In Progress - work has been applied, progressing normally"
+        tooltipContent += "In Progress - work has been applied, progressing normally"
       }
-    } else if (status === "On hold") {
+    } else if (displayStatus === "On hold") {
       variant = "destructive"
       className = "bg-red-50 text-red-700 border-red-200"
       tooltipContent = "On hold - cannot be reviewed or processed, requires attention"
     }
     // Deposited to BioStudies statuses
-    else if (status === "Deposited") {
+    else if (displayStatus === "Approved" || displayStatus === "Published") {
       variant = "secondary"
-      className = "bg-green-50 text-green-700 border-green-200"
-      tooltipContent = "Successfully deposited to BioStudies"
-    } else if (status === "Failed to deposit") {
+      className += "bg-green-50 text-green-700 border-green-200"
+      tooltipContent += "Successfully processed and deposited"
+    } else if (displayStatus === "Rejected") {
       variant = "destructive"
-      tooltipContent = "Failed to deposit to BioStudies - requires attention"
+      tooltipContent += "Rejected - requires attention"
     }
     // No Pipeline Results statuses
-    else if (status === "Waiting for data") {
+    else if (displayStatus === "Waiting for data") {
       variant = "outline"
       className = "border-blue-200 text-blue-700"
       tooltipContent = "Waiting for backend pipeline processing"
@@ -542,7 +552,7 @@ export default function ManuscriptDashboard() {
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge variant={variant} className={`flex items-center ${className}`}>
-            {status}
+            {displayStatus}
           </Badge>
         </TooltipTrigger>
         <TooltipContent>
@@ -580,58 +590,70 @@ export default function ManuscriptDashboard() {
 
   // Function to fetch API data
   const fetchApiData = async () => {
+    console.log('🚀 Starting API data fetch...')
     setIsLoadingApi(true)
     try {
-      const response = await fetch(
-        'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api/api/v1/manuscripts',
-        {
-          headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_AUTH_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
+      const response = await fetch('/api/v1/manuscripts', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
       
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`)
       }
       
       const data = await response.json()
+      console.log('✅ API data received:', data)
       
-      // Transform API data to match our mock data structure
-      const transformedManuscripts = data.manuscripts.map((manuscript: any) => ({
-        msid: manuscript.msid,
-        receivedDate: manuscript.received_at?.split('T')[0] || '2024-01-01',
-        title: manuscript.title,
-        authors: manuscript.authors,
-        doi: manuscript.doi,
-        accessionNumber: manuscript.accession_number,
-        assignedTo: "Dr. Sarah Chen", // API doesn't have this field
-        status: manuscript.status === 'segmented' ? 'In Progress' : 
-                manuscript.status === 'received' ? 'New submission' : 
-                manuscript.status,
-        workflowState: "ready-for-curation",
-        priority: manuscript.note && manuscript.note.includes('missing') ? 'urgent' : 'normal',
-        hasErrors: manuscript.note && manuscript.note.includes('error'),
-        hasWarnings: manuscript.note && manuscript.note.includes('updating'),
-        notes: manuscript.note || "API manuscript - no additional notes",
-        lastModified: manuscript.received_at || new Date().toISOString(),
-      }))
+      // Transform API data to match our mock data structure using proper status mapping
+      const transformedManuscripts = data.manuscripts.map((manuscript: any) => {
+        const statusMapping = getStatusMapping(manuscript.status)
+        return {
+          msid: manuscript.msid,
+          receivedDate: manuscript.received_at?.split('T')[0] || '2024-01-01',
+          title: manuscript.title,
+          authors: manuscript.authors,
+          doi: manuscript.doi,
+          accessionNumber: manuscript.accession_number,
+          assignedTo: "Dr. Sarah Chen", // API doesn't have this field
+          status: statusMapping.displayStatus,
+          workflowState: statusMapping.workflowState,
+          priority: statusMapping.priority,
+          hasErrors: manuscript.note && manuscript.note.includes('error'),
+          hasWarnings: manuscript.note && manuscript.note.includes('updating'),
+          notes: manuscript.note || "API manuscript - no additional notes",
+          lastModified: manuscript.received_at || new Date().toISOString(),
+          // UI-specific fields
+          displayStatus: statusMapping.displayStatus,
+          badgeVariant: statusMapping.badgeVariant,
+          isMapped: statusMapping.isMapped,
+          unmappedFields: ['assignedTo'], // Fields not available in API
+        }
+      })
       
       setApiManuscripts(transformedManuscripts)
+      console.log('📋 API manuscripts set:', transformedManuscripts.length, 'manuscripts')
     } catch (error) {
-      console.error('Failed to fetch API data:', error)
+      console.error('❌ Failed to fetch API data:', error)
       // Keep using mock data on error
       setUseApiData(false)
     } finally {
       setIsLoadingApi(false)
+      console.log('🏁 API data fetch completed')
     }
   }
 
   // Switch between API and mock data
   const handleDataSourceSwitch = async (useApi: boolean) => {
+    console.log('🔄 Toggling data source:', useApi ? 'API' : 'Mock')
     setUseApiData(useApi)
+    // Update the data service to use the correct data source
+    dataService.setUseMockData(!useApi)
+    console.log('📊 Data service now using mock data:', dataService.getUseMockData())
+    
     if (useApi && apiManuscripts.length === 0) {
+      console.log('🌐 Fetching API data...')
       await fetchApiData()
     }
   }
@@ -800,7 +822,11 @@ export default function ManuscriptDashboard() {
     <TooltipProvider>
       <div className="container mx-auto p-6 space-y-6">
         {selectedManuscript ? (
-          <ManuscriptDetail msid={selectedManuscript} onBack={() => setSelectedManuscript(null)} />
+          <ManuscriptDetail 
+            msid={selectedManuscript} 
+            onBack={() => setSelectedManuscript(null)} 
+            useApiData={useApiData}
+          />
         ) : (
           <div className="flex flex-col space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1337,12 +1363,7 @@ export default function ManuscriptDashboard() {
                               {visibleColumns.status && (
                                 <TableCell>
                                   <div className="flex flex-col gap-1">
-                                    {getStatusBadge(
-                                      manuscript.status,
-                                      manuscript.hasErrors,
-                                      manuscript.hasWarnings,
-                                      manuscript.priority,
-                                    )}
+                                    {getStatusBadge(manuscript)}
                                     {getPriorityBadge(manuscript.priority)}
                                   </div>
                                 </TableCell>

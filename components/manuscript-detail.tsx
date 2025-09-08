@@ -35,6 +35,8 @@ import {
   Download,
 } from "lucide-react"
 import { mockLinkedData, mockSourceData } from "@/lib/mock"
+import { dataService } from "@/lib/data-service"
+import { getStatusMapping } from "@/lib/status-mapping"
 import {
   Dialog,
   DialogContent,
@@ -94,6 +96,7 @@ function hashCode(str: string): number {
 interface ManuscriptDetailProps {
   msid: string
   onBack: () => void
+  useApiData: boolean
 }
 
 // Mock manuscripts matching the dashboard data
@@ -814,7 +817,7 @@ const getManuscriptDetail = (msid: string) => {
   }
 }
 
-const ManuscriptDetail = ({ msid, onBack }: ManuscriptDetailProps) => {
+const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) => {
   const [selectedView, setSelectedView] = useState<"manuscript" | "list">("manuscript")
   const [linkedData, setLinkedData] = useState(mockLinkedData)
   const [sourceData, setSourceData] = useState(mockSourceData)
@@ -825,6 +828,7 @@ const ManuscriptDetail = ({ msid, onBack }: ManuscriptDetailProps) => {
   const [manuscript, setManuscript] = useState(getManuscriptDetail(msid))
   const [notes, setNotes] = useState(manuscript.notes)
   const [dataAvailability, setDataAvailability] = useState(manuscript.dataAvailability)
+  const [isLoadingApi, setIsLoadingApi] = useState(false)
   const [isEditingLinkedData, setIsEditingLinkedData] = useState(false)
   const [isEditingSourceData, setIsEditingSourceData] = useState(false)
   const [editingLinkedDataIndex, setEditingLinkedDataIndex] = useState<number | null>(null)
@@ -857,6 +861,86 @@ const ManuscriptDetail = ({ msid, onBack }: ManuscriptDetailProps) => {
   })
 
   const [showConflictDetails, setShowConflictDetails] = useState(false)
+
+  // Fetch API data for manuscript details
+  const fetchApiManuscriptDetail = async () => {
+    setIsLoadingApi(true)
+    try {
+      // Convert MSID to numeric ID for API call
+      // MSIDs like "EMBO-2024-001" should map to numeric IDs like "1"
+      let numericId = '1' // default fallback
+      if (msid.includes('EMBO-2024-')) {
+        const idPart = msid.replace('EMBO-2024-', '')
+        numericId = parseInt(idPart, 10).toString()
+      }
+      
+      console.log(`🔍 Fetching API data for MSID: ${msid} -> ID: ${numericId}`)
+      const response = await fetch(`/api/v1/manuscripts/${numericId}`)
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
+      }
+      const apiData = await response.json()
+      
+      // Transform API data to match our manuscript format
+      const statusMapping = getStatusMapping(apiData.status)
+      const transformedManuscript = {
+        id: apiData.id,
+        title: apiData.title,
+        authors: apiData.authors.split(',').map((author: string) => author.trim()),
+        received: apiData.received_at.split('T')[0],
+        doi: apiData.doi,
+        lastModified: apiData.received_at,
+        status: apiData.status,
+        assignedTo: "Dr. Sarah Wilson", // Not available in API
+        currentStatus: statusMapping.displayStatus,
+        modifiedBy: "Dr. Sarah Chen", // Not available in API
+        priority: statusMapping.priority,
+        abstract: apiData.note || "No abstract available",
+        notes: apiData.note || "No additional notes",
+        dataAvailability: "Available", // Not available in API
+        figures: apiData.figures || [],
+        files: apiData.files || [],
+        links: apiData.links || [],
+        checkResults: apiData.check_results || [],
+        sourceData: apiData.source_data || [],
+        depositionEvents: apiData.deposition_events || [],
+        // UI-specific fields
+        displayStatus: statusMapping.displayStatus,
+        workflowState: statusMapping.workflowState,
+        badgeVariant: statusMapping.badgeVariant,
+        isMapped: statusMapping.isMapped,
+        unmappedFields: ['assignedTo', 'modifiedBy', 'dataAvailability'], // Fields not available in API
+        // Ensure qcChecks is always an array to prevent spread operator errors
+        qcChecks: Array.isArray(apiData.qcChecks) ? apiData.qcChecks : [],
+      }
+      
+      setManuscript(transformedManuscript)
+      setNotes(transformedManuscript.notes)
+      setDataAvailability(transformedManuscript.dataAvailability)
+    } catch (error) {
+      console.error('Failed to fetch API manuscript details:', error)
+      // Keep using mock data on error - fallback to mock data
+      const mockManuscript = getManuscriptDetail(msid)
+      setManuscript(mockManuscript)
+      setNotes(mockManuscript.notes)
+      setDataAvailability(mockManuscript.dataAvailability)
+    } finally {
+      setIsLoadingApi(false)
+    }
+  }
+
+  // Update manuscript data when data source changes
+  useEffect(() => {
+    if (useApiData) {
+      fetchApiManuscriptDetail()
+    } else {
+      // Reset to mock data
+      const mockManuscript = getManuscriptDetail(msid)
+      setManuscript(mockManuscript)
+      setNotes(mockManuscript.notes)
+      setDataAvailability(mockManuscript.dataAvailability)
+    }
+  }, [useApiData, msid])
 
   const [editingConflicts, setEditingConflicts] = useState<{
     hasConflicts: boolean
@@ -1399,9 +1483,9 @@ const ManuscriptDetail = ({ msid, onBack }: ManuscriptDetailProps) => {
   }
 
   const allQCChecks = [
-    ...manuscript.qcChecks,
+    ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
     ...manuscript.figures.flatMap((fig) =>
-      fig.qcChecks.map((check) => ({ ...check, figureId: fig.id, figureTitle: fig.title })),
+      (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check) => ({ ...check, figureId: fig.id, figureTitle: fig.title })),
     ),
   ]
 
@@ -2225,9 +2309,9 @@ const ManuscriptDetail = ({ msid, onBack }: ManuscriptDetailProps) => {
 
   const ListReviewView = () => {
     const allQCChecks = [
-      ...manuscript.qcChecks.map((check) => ({ ...check, location: "General Manuscript" })),
+      ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []).map((check) => ({ ...check, location: "General Manuscript" })),
       ...manuscript.figures.flatMap((fig) =>
-        fig.qcChecks.map((check) => ({ ...check, location: `Figure ${fig.id}`, figureTitle: fig.title })),
+        (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check) => ({ ...check, location: `Figure ${fig.id}`, figureTitle: fig.title })),
       ),
     ]
 
@@ -2613,7 +2697,14 @@ const ManuscriptDetail = ({ msid, onBack }: ManuscriptDetailProps) => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl font-bold">{manuscript.title}</CardTitle>
-            {getStatusBadge(manuscript.status, manuscript.priority)}
+            <div className="flex items-center gap-2">
+              {getStatusBadge(manuscript.status, manuscript.priority)}
+              {manuscript.unmappedFields && manuscript.unmappedFields.length > 0 && (
+                <Badge variant="destructive" className="text-xs">
+                  ⚠️ {manuscript.unmappedFields.length} unmapped field{manuscript.unmappedFields.length > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
           </div>
           <CardDescription>
             {manuscript.abstract.substring(0, 150)}
