@@ -419,95 +419,39 @@ const getManuscriptDetail = (msid: string) => {
         });
       }
       
-      // Generate varied AI QC checks with realistic feedback
+      // Generate QC checks with variation
       const qcChecks = [];
-      const aiCheckCount = 2 + (baseId + i) % 4; // 2-5 AI checks per figure
+      const errorChance = ((baseId + i) % 8) === 0;
+      const warningChance = ((baseId + i) % 4) === 0;
+      const infoChance = ((baseId + i) % 3) === 0;
       
-      // AI-generated checks with varied types and realistic content
-      const aiCheckTypes = [
-        {
-          type: "error",
-          message: "Image Resolution Insufficient",
-          details: "AI detected image resolution below 300 DPI. Minimum required for publication is 300 DPI at final size.",
-          aiGenerated: true
-        },
-        {
-          type: "warning", 
-          message: "Color Accessibility Issue",
-          details: "AI identified potential color contrast issues that may not be accessible to colorblind readers.",
-          aiGenerated: true
-        },
-        {
-          type: "warning",
-          message: "Figure Legend Incomplete",
-          details: "AI analysis suggests figure legend may be missing statistical test details or sample sizes.",
-          aiGenerated: true
-        },
-        {
-          type: "error",
-          message: "Scale Bar Missing",
-          details: "AI detected missing scale bar in microscopy images. Scale information is required for reproducibility.",
-          aiGenerated: true
-        },
-        {
-          type: "info",
-          message: "Image Quality Excellent",
-          details: "AI analysis confirms high image quality with appropriate contrast and sharpness for publication.",
-          aiGenerated: true
-        },
-        {
-          type: "warning",
-          message: "Statistical Annotation Needed",
-          details: "AI suggests adding statistical significance indicators (p-values, confidence intervals) to the figure.",
-          aiGenerated: true
-        },
-        {
-          type: "error",
-          message: "Data Reproducibility Concern",
-          details: "AI flagged potential issues with data representation that may affect reproducibility.",
-          aiGenerated: true
-        },
-        {
-          type: "info",
-          message: "Figure Format Compliant",
-          details: "AI verification confirms figure meets journal formatting requirements and best practices.",
-          aiGenerated: true
-        },
-        {
-          type: "warning",
-          message: "Panel Labeling Inconsistent",
-          details: "AI detected inconsistent panel labeling style. Consider standardizing (A, B, C vs a, b, c).",
-          aiGenerated: true
-        },
-        {
-          type: "error",
-          message: "Copyright Compliance Issue",
-          details: "AI identified potential copyright concerns with image sources or data attribution.",
-          aiGenerated: true
-        }
-      ];
-      
-      // Select random AI checks for this figure
-      const selectedChecks = aiCheckTypes
-        .sort(() => 0.5 - Math.random())
-        .slice(0, aiCheckCount)
-        .map(check => ({
-          ...check,
-          dismissed: Math.random() < 0.1, // 10% chance of being dismissed
-          panelId: panels[Math.floor(Math.random() * panels.length)]?.id || `panel-${i}A`
-        }));
-      
-      qcChecks.push(...selectedChecks);
-      
-      // Add some non-AI validation checks
-      if ((baseId + i) % 5 === 0) {
+      if (errorChance) {
         qcChecks.push({
           type: "error",
-          message: "Manual Review Required",
-          details: "Editor flagged this figure for manual review due to complex data presentation.",
+          message: "Missing figure legend",
+          details: `Figure ${i} requires additional legend information`,
           aiGenerated: false,
-          dismissed: false,
-          panelId: `panel-${i}A`
+          dismissed: false
+        });
+      }
+      
+      if (warningChance && !errorChance) {
+        qcChecks.push({
+          type: "warning", 
+          message: "Image resolution check",
+          details: `Figure ${i} may need higher resolution for publication`,
+          aiGenerated: true,
+          dismissed: false
+        });
+      }
+      
+      if (infoChance && !errorChance && !warningChance) {
+        qcChecks.push({
+          type: "info",
+          message: "Figure quality check passed",
+          details: `Figure ${i} meets all journal standards`,
+          aiGenerated: true,
+          dismissed: false
         });
       }
       
@@ -1255,18 +1199,18 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       setLinkedData((prev) => [...prev, newEntry])
 
       // Link the new data to the figure
-      if (!(updatedFigures[editingFigure.figureIndex] as any).linkedData) {
-        (updatedFigures[editingFigure.figureIndex] as any).linkedData = []
+      if (!updatedFigures[editingFigure.figureIndex].linkedData) {
+        updatedFigures[editingFigure.figureIndex].linkedData = []
       }
-      (updatedFigures[editingFigure.figureIndex] as any).linkedData.push(newEntry)
+      updatedFigures[editingFigure.figureIndex].linkedData.push(newEntry)
     } else if (figureForm.linkType === "sourceData" && figureForm.sourceDataId) {
       // Link existing source data to figure
       const sourceFile = sourceData.find((file) => file.filename === figureForm.sourceDataId)
       if (sourceFile) {
-        if (!(updatedFigures[editingFigure.figureIndex] as any).linkedData) {
-          (updatedFigures[editingFigure.figureIndex] as any).linkedData = []
+        if (!updatedFigures[editingFigure.figureIndex].linkedData) {
+          updatedFigures[editingFigure.figureIndex].linkedData = []
         }
-        (updatedFigures[editingFigure.figureIndex] as any).linkedData.push({
+        updatedFigures[editingFigure.figureIndex].linkedData.push({
           type: "Source Data",
           identifier: sourceFile.filename,
           url: sourceFile.url,
@@ -1277,10 +1221,10 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       // Link existing linked data to figure
       const existingData = linkedData.find((data) => `${data.type}-${data.identifier}` === figureForm.linkedDataId)
       if (existingData) {
-        if (!(updatedFigures[editingFigure.figureIndex] as any).linkedData) {
-          (updatedFigures[editingFigure.figureIndex] as any).linkedData = []
+        if (!updatedFigures[editingFigure.figureIndex].linkedData) {
+          updatedFigures[editingFigure.figureIndex].linkedData = []
         }
-        (updatedFigures[editingFigure.figureIndex] as any).linkedData.push(existingData)
+        updatedFigures[editingFigure.figureIndex].linkedData.push(existingData)
       }
     }
 
@@ -1844,74 +1788,21 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             </div>
           </CardHeader>
           <CardContent>
-            {/* AI Checks Summary - Prominent Display */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-blue-900">AI Quality Checks</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const allChecks = manuscript.figures.flatMap(fig => fig.qcChecks || []);
-                      const aiChecks = allChecks.filter(check => check.aiGenerated);
-                      const errors = aiChecks.filter(check => check.type === 'error').length;
-                      const warnings = aiChecks.filter(check => check.type === 'warning').length;
-                      const info = aiChecks.filter(check => check.type === 'info').length;
-                      const dismissed = aiChecks.filter(check => check.dismissed).length;
-                      
-                      return (
-                        <>
-                          {errors > 0 && (
-                            <Badge variant="destructive" className="text-sm px-2 py-1">
-                              {errors} Errors
-                            </Badge>
-                          )}
-                          {warnings > 0 && (
-                            <Badge variant="secondary" className="text-sm px-2 py-1">
-                              {warnings} Warnings
-                            </Badge>
-                          )}
-                          {info > 0 && (
-                            <Badge variant="outline" className="text-sm px-2 py-1">
-                              {info} Info
-                            </Badge>
-                          )}
-                          <span className="text-sm text-blue-700 font-medium">
-                            {aiChecks.length} total AI checks
-                          </span>
-                          {dismissed > 0 && (
-                            <span className="text-xs text-gray-500">
-                              ({dismissed} dismissed)
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-                <div className="text-sm text-blue-700">
-                  AI-powered quality assessment for manuscript review
-                </div>
-              </div>
-            </div>
-
             {/* Tab-based Figure Navigation */}
             {manuscript.figures.length > 0 && (
               <div className="space-y-6">
-                <div className="flex space-x-1 border-b border-gray-200 bg-gray-50 rounded-t-lg p-1">
+                <div className="flex space-x-1 border-b">
                   {manuscript.figures.map((figure, index) => (
                     <button
                       key={figure.id}
                       onClick={() => setSelectedFigureIndex(index)}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                         selectedFigureIndex === index
-                          ? 'bg-white text-blue-600 shadow-sm border border-gray-200'
-                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }`}
                     >
-                      Figure {index + 1}: {figure.title}
+                      {figure.title}
                     </button>
                   ))}
                 </div>
@@ -1994,8 +1885,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                         {/* Panel Details with Thumbnails */}
                         {selectedFigure.panels.length > 0 && (
                           <div>
-                            <h4 className="font-semibold mb-3">Panel Details</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                            <h4 className="font-semibold mb-2">Panel Details</h4>
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
                               {selectedFigure.panels.map((panel, panelIndex) => {
                                 const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
                                   check.panelId === panel.id
@@ -2005,55 +1896,26 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                 ) || []
                                 
                                 return (
-                                  <div key={panel.id} className="border rounded-lg p-3 hover:shadow-sm transition-shadow">
-                                    {/* Panel Thumbnail */}
-                                    <div className="relative mb-2">
-                                      <div className="w-full h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded border flex items-center justify-center relative overflow-hidden">
-                                        <img
-                                          src={getFigureImage(manuscript.title, selectedFigure.id, selectedFigure.title)}
-                                          alt={`Panel ${panel.id}`}
-                                          className="w-full h-full object-cover opacity-60"
-                                        />
-                                        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
-                                          <span className="text-white text-xs font-bold bg-black bg-opacity-50 px-2 py-1 rounded">
-                                            {panel.id}
-                                          </span>
-                                        </div>
-                                        {/* AI Feedback Flag */}
-                                        {panelChecks.length > 0 && (
-                                          <div className="absolute top-1 right-1">
-                                            <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                                              <Cpu className="w-2 h-2 text-white" />
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
+                                  <div key={panel.id} className="flex items-start gap-3 p-2 border rounded">
+                                    <div className="w-12 h-12 bg-gray-100 rounded border flex items-center justify-center text-xs font-bold">
+                                      {panel.description}
                                     </div>
-                                    
-                                    {/* Panel Info */}
-                                    <div className="space-y-1">
-                                      <div className="text-sm font-medium text-gray-900">{panel.id}</div>
-                                      <div className="text-xs text-gray-600 line-clamp-2">{panel.description}</div>
-                                      
-                                      {/* Status Badges */}
-                                      <div className="flex items-center gap-1 flex-wrap">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-sm font-medium">{panel.description}</div>
+                                      <div className="text-xs text-gray-600 truncate">{panel.legend}</div>
+                                      <div className="flex items-center gap-2 mt-1">
                                         {linkedSourceData.length > 0 && (
-                                          <Badge variant="outline" className="text-xs px-1 py-0">
-                                            📁 {linkedSourceData.length}
+                                          <Badge variant="outline" className="text-xs">
+                                            {linkedSourceData.length} source file{linkedSourceData.length !== 1 ? 's' : ''}
                                           </Badge>
                                         )}
                                         {panelChecks.length > 0 && (
                                           <Badge 
-                                            variant={panelChecks.some((c: any) => c.status === 'failed') ? "destructive" : "secondary"}
-                                            className="text-xs px-1 py-0"
+                                            variant={panelChecks.some(c => c.status === 'failed') ? "destructive" : "secondary"}
+                                            className="text-xs"
                                           >
-                                            <Cpu className="w-2 h-2 mr-1" />
-                                            {panelChecks.length}
-                                          </Badge>
-                                        )}
-                                        {panel.hasIssues && (
-                                          <Badge variant="destructive" className="text-xs px-1 py-0">
-                                            ⚠️ Issues
+                                            <Cpu className="w-3 h-3 mr-1" />
+                                            {panelChecks.length} AI check{panelChecks.length !== 1 ? 's' : ''}
                                           </Badge>
                                         )}
                                       </div>
@@ -2528,7 +2390,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             <CardTitle className="text-2xl font-bold">{manuscript.title}</CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="outline">{manuscript.status}</Badge>
-              <Badge variant="secondary">{(manuscript as any).workflowState || 'In Review'}</Badge>
+              <Badge variant="secondary">{manuscript.workflowState}</Badge>
           </div>
           </div>
         </CardHeader>
@@ -2578,6 +2440,5 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   )
 }
 
-// Export the component
-export default ManuscriptDetail
 export { ManuscriptDetail }
+export default ManuscriptDetail

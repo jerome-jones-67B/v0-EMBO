@@ -48,6 +48,13 @@ const initialMockManuscripts = [
     hasWarnings: true,
     notes: "Waiting for additional experimental data from authors",
     lastModified: "2024-12-30T10:30:00Z",
+    aiChecks: {
+      total: 8,
+      errors: 2,
+      warnings: 4,
+      info: 2,
+      dismissed: 1
+    },
   },
   {
     msid: "EMBO-2024-002",
@@ -64,6 +71,13 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Initial review completed, awaiting final validation",
     lastModified: "2024-12-30T14:20:00Z",
+    aiChecks: {
+      total: 12,
+      errors: 1,
+      warnings: 6,
+      info: 5,
+      dismissed: 0
+    },
   },
   {
     msid: "EMBO-2024-003",
@@ -80,6 +94,13 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Missing required metadata files",
     lastModified: "2024-12-30T09:15:00Z",
+    aiChecks: {
+      total: 15,
+      errors: 5,
+      warnings: 7,
+      info: 3,
+      dismissed: 2
+    },
   },
   {
     msid: "EMBO-2024-004",
@@ -208,6 +229,13 @@ const initialMockManuscripts = [
     hasWarnings: true,
     notes: "Pending author response to reviewer comments",
     lastModified: "2024-12-29T10:45:00Z",
+    aiChecks: {
+      total: 6,
+      errors: 0,
+      warnings: 3,
+      info: 3,
+      dismissed: 1
+    },
   },
   {
     msid: "EMBO-2024-012",
@@ -224,6 +252,13 @@ const initialMockManuscripts = [
     hasWarnings: false,
     notes: "Technical issues during BioStudies submission",
     lastModified: "2024-12-28T14:15:00Z",
+    aiChecks: {
+      total: 20,
+      errors: 8,
+      warnings: 9,
+      info: 3,
+      dismissed: 4
+    },
   },
   {
     msid: "EMBO-2024-013",
@@ -353,6 +388,7 @@ export default function ManuscriptDashboard() {
     doi: true,
     accession: true,
     assignee: true,
+    aiChecks: true,
     notes: true,
   })
 
@@ -1149,6 +1185,7 @@ export default function ManuscriptDashboard() {
                                 { key: "doi", label: "DOI" },
                                 { key: "accession", label: "Accession" },
                                 { key: "assignee", label: "Assignee" },
+                                { key: "aiChecks", label: "AI Checks" },
                                 { key: "notes", label: "Notes" },
                               ].map((column) => (
                                 <div key={column.key} className="flex items-center space-x-2">
@@ -1183,6 +1220,14 @@ export default function ManuscriptDashboard() {
                                 >
                                   Status {getSortIcon("status")}
                                 </Button>
+                              </TableHead>
+                            )}
+                            {visibleColumns.aiChecks && (
+                              <TableHead>
+                                <div className="flex items-center gap-1">
+                                  <Zap className="w-4 h-4 text-blue-500" />
+                                  AI Checks
+                                </div>
                               </TableHead>
                             )}
                             {visibleColumns.received && (
@@ -1366,6 +1411,43 @@ export default function ManuscriptDashboard() {
                                     {getStatusBadge(manuscript)}
                                     {getPriorityBadge(manuscript.priority)}
                                   </div>
+                                </TableCell>
+                              )}
+                              {visibleColumns.aiChecks && (
+                                <TableCell className="text-sm">
+                                  {manuscript.aiChecks ? (
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-1">
+                                          {manuscript.aiChecks.errors > 0 && (
+                                            <Badge variant="destructive" className="text-xs px-1 py-0">
+                                              {manuscript.aiChecks.errors}E
+                                            </Badge>
+                                          )}
+                                          {manuscript.aiChecks.warnings > 0 && (
+                                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                                              {manuscript.aiChecks.warnings}W
+                                            </Badge>
+                                          )}
+                                          {manuscript.aiChecks.info > 0 && (
+                                            <Badge variant="outline" className="text-xs px-1 py-0">
+                                              {manuscript.aiChecks.info}I
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <span className="text-xs text-muted-foreground">
+                                          {manuscript.aiChecks.total} total
+                                        </span>
+                                      </div>
+                                      {manuscript.aiChecks.dismissed > 0 && (
+                                        <span className="text-xs text-gray-400">
+                                          ({manuscript.aiChecks.dismissed} dismissed)
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">No AI checks</span>
+                                  )}
                                 </TableCell>
                               )}
                               {visibleColumns.received && (
