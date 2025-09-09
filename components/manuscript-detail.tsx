@@ -55,7 +55,8 @@ import { Bot } from "lucide-react"
 // Function to assign diverse images with much more variety
 function getFigureImage(manuscriptTitle: string, figureId: string, figureTitle: string): string {
   // Check if this is a newly created figure (starts with "figure-")
-  if (figureId.startsWith('figure-')) {
+  // But don't override real figures that have specific IDs like "figure-1", "figure-2"
+  if (figureId.startsWith('figure-') && !figureId.match(/^figure-\d+$/)) {
     // Return a placeholder image for newly created figures
     return '/placeholder-e9mgd.png'
   }
@@ -345,8 +346,22 @@ const mockManuscriptDetails = {
   }
 }
 
-const getManuscriptDetail = (msid: string) => {
-  // Get specific manuscript details or fallback
+const getManuscriptDetail = async (msid: string) => {
+  // Use data service to get manuscript with real figures
+  try {
+    console.log('🔍 Calling data service for manuscript:', msid)
+    const response = await dataService.getManuscriptById(msid)
+    console.log('📊 Data service response:', response)
+    if (response.success && response.data) {
+      console.log('✅ Data service returned manuscript with figures:', response.data.figures?.length || 0)
+      return response.data
+    }
+  } catch (error) {
+    console.error('❌ Error fetching manuscript from data service:', error)
+  }
+  
+  // Fallback to mock data if data service fails
+  console.log('⚠️ Data service failed, using fallback data for:', msid)
   const manuscriptData = mockManuscriptDetails[msid as keyof typeof mockManuscriptDetails] || {
     id: msid,
     title: "Molecular mechanisms of heat shock protein 70 in cellular stress response and protein folding dynamics",
@@ -388,7 +403,8 @@ const getManuscriptDetail = (msid: string) => {
     return ["cell biology", "molecular medicine", "research", "biomedical science"]
   }
 
-  return {
+  // Return the complete manuscript data structure
+  const finalManuscript = {
     ...manuscriptData,
     abstract: generateAbstract(manuscriptData.title),
     keywords: generateKeywords(manuscriptData.title),
@@ -401,7 +417,7 @@ const getManuscriptDetail = (msid: string) => {
       "Requires additional validation for protein structure data. Missing figure legends for panels C-E. Author contacted for clarification on methodology section.",
   dataAvailability:
     "The datasets generated and analyzed during the current study are available in the Gene Expression Omnibus repository under accession number GSE123456. Protein structure data are deposited in the Protein Data Bank under accession code 7ABC. All other data supporting the conclusions of this article are included within the article and its additional files.",
-  figures: (() => {
+  figures: manuscriptData.figures || (() => {
     // Generate varied figure data based on manuscript ID
     const baseId = parseInt(manuscriptData.id.split('-')[2]) || 1;
     const figureCount = 1 + (baseId % 3); // 1-3 figures per manuscript
@@ -876,8 +892,13 @@ const getManuscriptDetail = (msid: string) => {
     }
     
     return sourceData;
-  })()
+  })(),
+  qcChecks: manuscriptData.qcChecks || []
   }
+  
+  console.log('📋 Final manuscript data:', finalManuscript)
+  console.log('📊 Final manuscript figures count:', finalManuscript.figures?.length || 0)
+  return finalManuscript
 }
 
 const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) => {
@@ -888,13 +909,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [editingSourceData, setEditingSourceData] = useState<string | null>(null)
   const [showExpandedFigure, setShowExpandedFigure] = useState<string | null>(null)
   const [overlayVisibility, setOverlayVisibility] = useState<Record<string, boolean>>({})
-  const [manuscript, setManuscript] = useState(getManuscriptDetail(msid))
-  const [notes, setNotes] = useState(manuscript.notes)
-  const [dataAvailability, setDataAvailability] = useState(manuscript.dataAvailability)
+  const [manuscript, setManuscript] = useState<any>(null)
+  const [notes, setNotes] = useState("")
+  const [dataAvailability, setDataAvailability] = useState("")
   const [isLoadingApi, setIsLoadingApi] = useState(false)
   const [isEditingLinkedData, setIsEditingLinkedData] = useState(false)
   const [isEditingSourceData, setIsEditingSourceData] = useState(false)
   const [editingLinkedDataIndex, setEditingLinkedDataIndex] = useState<number | null>(null)
+  const [editingSourceDataIndex, setEditingSourceDataIndex] = useState<number | null>(null)
   const [linkedDataForm, setLinkedDataForm] = useState({
     type: "",
     identifier: "",
@@ -903,7 +925,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     isCustom: false,
   })
   const [isEditingNotes, setIsEditingNotes] = useState(false)
-  const [notesValue, setNotesValue] = useState(manuscript.notes || "")
+  const [notesValue, setNotesValue] = useState("")
   const [isEditingDataAvailability, setIsEditingDataAvailability] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [showFullText, setShowFullText] = useState(false)
@@ -953,25 +975,50 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     } catch (error) {
       console.error('Failed to fetch API manuscript details:', error)
       // Keep using mock data on error - fallback to mock data
-      const mockManuscript = getManuscriptDetail(msid)
+      const mockManuscript = await getManuscriptDetail(msid)
       setManuscript(mockManuscript)
-      setNotes(mockManuscript.notes)
-      setDataAvailability(mockManuscript.dataAvailability)
+      setNotes((mockManuscript as any)?.notes || "")
+      setDataAvailability((mockManuscript as any)?.dataAvailability || "")
     } finally {
       setIsLoadingApi(false)
     }
   }
 
   // Update manuscript data when data source changes
+  // Load manuscript data on component mount
+  useEffect(() => {
+    const loadManuscript = async () => {
+      try {
+        const manuscriptData = await getManuscriptDetail(msid)
+        setManuscript(manuscriptData)
+        setNotes((manuscriptData as any)?.notes || "")
+        setDataAvailability((manuscriptData as any)?.dataAvailability || "")
+        setNotesValue((manuscriptData as any)?.notes || "")
+      } catch (error) {
+        console.error('Error loading manuscript:', error)
+      }
+    }
+    
+    loadManuscript()
+  }, [msid])
+
   useEffect(() => {
     if (useApiData) {
       fetchApiManuscriptDetail()
     } else {
       // Reset to mock data
-      const mockManuscript = getManuscriptDetail(msid)
-      setManuscript(mockManuscript)
-      setNotes(mockManuscript.notes)
-      setDataAvailability(mockManuscript.dataAvailability)
+      const loadMockManuscript = async () => {
+        try {
+          const mockManuscript = await getManuscriptDetail(msid)
+          setManuscript(mockManuscript)
+          setNotes((mockManuscript as any)?.notes || "")
+          setDataAvailability((mockManuscript as any)?.dataAvailability || "")
+          setNotesValue((mockManuscript as any)?.notes || "")
+        } catch (error) {
+          console.error('Error loading mock manuscript:', error)
+        }
+      }
+      loadMockManuscript()
     }
   }, [useApiData, msid])
 
@@ -1013,8 +1060,12 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     return { hasConflicts: false, conflicts: [] }
   })
 
-  const [editingSourceDataIndex, setEditingSourceDataIndex] = useState<number | null>(null)
   const [sourceDataForm, setSourceDataForm] = useState({
+    filename: "",
+    url: "",
+    description: "",
+    size: "",
+    type: "",
     file: null as File | null,
     selectedExistingFile: "",
   })
@@ -1129,12 +1180,31 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   }
 
   const handleEditSourceData = (index: number) => {
-    const data = sourceData[index]
+    const data = sourceDataFiles[index]
     setSourceDataForm({
+      filename: data.name,
+      url: `/files/${data.name}`,
+      description: `Source data file: ${data.name}`,
+      size: data.size,
+      type: data.type,
       file: null,
-      selectedExistingFile: data.filename,
+      selectedExistingFile: data.name,
     })
     setEditingSourceDataIndex(index)
+    setIsEditingSourceData(true)
+  }
+
+  const handleAddSourceData = () => {
+    setSourceDataForm({
+      filename: "",
+      url: "",
+      description: "",
+      size: "",
+      type: "",
+      file: null,
+      selectedExistingFile: "",
+    })
+    setEditingSourceDataIndex(null)
     setIsEditingSourceData(true)
   }
 
@@ -1143,26 +1213,37 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   }
 
   const handleSourceDataSubmit = () => {
-    const filename = sourceDataForm.file?.name || sourceDataForm.selectedExistingFile
+    const filename = sourceDataForm.file?.name || sourceDataForm.filename
     const url = sourceDataForm.file
       ? URL.createObjectURL(sourceDataForm.file)
-      : `/files/${sourceDataForm.selectedExistingFile}`
+      : sourceDataForm.url || `/files/${filename}`
 
     const newData = {
+      id: editingSourceDataIndex !== null ? sourceDataFiles[editingSourceDataIndex].id : Date.now(),
       name: filename || "",
-      filename: filename || "",
-      url: url,
+      type: sourceDataForm.type || filename?.split('.').pop() || "unknown",
+      size: sourceDataForm.size || (sourceDataForm.file ? `${(sourceDataForm.file.size / 1024 / 1024).toFixed(1)} MB` : "Unknown"),
     }
 
     if (editingSourceDataIndex !== null) {
-      setSourceData((prev) => prev.map((item, index) => (index === editingSourceDataIndex ? newData : item)))
+      const updatedSourceData = [...sourceDataFiles]
+      updatedSourceData[editingSourceDataIndex] = newData
+      setSourceDataFiles(updatedSourceData)
     } else {
-      setSourceData((prev) => [...prev, newData])
+      setSourceDataFiles([...sourceDataFiles, newData])
     }
 
-    setIsEditingSourceData(false)
+    setSourceDataForm({
+      filename: "",
+      url: "",
+      description: "",
+      size: "",
+      type: "",
+      file: null,
+      selectedExistingFile: "",
+    })
     setEditingSourceDataIndex(null)
-    setSourceDataForm({ file: null, selectedExistingFile: "" })
+    setIsEditingSourceData(false)
   }
 
   const handleEditPanel = (figureIndex: number, panelIndex: number) => {
@@ -1319,19 +1400,23 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   }
 
   const handleSaveNotes = () => {
-    console.log("[v0] Saving notes for manuscript:", manuscript.id, "Notes:", notesValue)
+    console.log("[v0] Saving notes for manuscript:", manuscript?.id, "Notes:", notesValue)
     setIsEditingNotes(false)
     // Update the manuscript object and local state
-    manuscript.notes = notesValue
+    if (manuscript) {
+      manuscript.notes = notesValue
+    }
     setNotes(notesValue) // Also update the notes state to trigger the useEffect
   }
 
   useEffect(() => {
+    if (!manuscript) return
+    
     const timer = setTimeout(() => {
       if (
-        notes !== manuscript.notes ||
-        dataAvailability !== manuscript.dataAvailability ||
-        linkedData !== manuscript.linkedData
+        notes !== manuscript?.notes ||
+        dataAvailability !== manuscript?.dataAvailability ||
+        linkedData !== manuscript?.linkedData
       ) {
         setManuscript((prev) => ({
           ...prev,
@@ -1345,7 +1430,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     }, 2000)
 
     return () => clearTimeout(timer)
-  }, [notes, dataAvailability, linkedData, manuscript.notes, manuscript.dataAvailability])
+  }, [notes, dataAvailability, linkedData, manuscript?.notes, manuscript?.dataAvailability])
 
   const getStatusBadge = (status: string, priority: string) => {
     let variant: "default" | "secondary" | "destructive" | "outline" = "default"
@@ -1403,15 +1488,53 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const renderCheckActions = (check: any, location: string, index: number) => {
     if (check.aiGenerated) {
       // AI checks can be approved or ignored
+      const checkId = getCheckId(check, location, index)
+      const isApproved = approvedChecks.has(checkId)
+      const isIgnored = ignoredChecks.has(checkId)
+      
       return (
         <div className="flex gap-1">
-          <Button size="sm" variant="outline" className="text-green-600 hover:text-green-700 bg-transparent">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className={`${isApproved ? 'bg-green-100 text-green-700 border-green-300' : 'text-green-600 hover:text-green-700 bg-transparent'}`}
+            onClick={() => {
+              const newApprovedChecks = new Set(approvedChecks)
+              if (isApproved) {
+                newApprovedChecks.delete(checkId)
+              } else {
+                newApprovedChecks.add(checkId)
+                // Remove from ignored if it was ignored
+                const newIgnoredChecks = new Set(ignoredChecks)
+                newIgnoredChecks.delete(checkId)
+                setIgnoredChecks(newIgnoredChecks)
+              }
+              setApprovedChecks(newApprovedChecks)
+            }}
+          >
             <Check className="w-3 h-3" />
-            <span className="sr-only">Approve</span>
+            <span className="sr-only">{isApproved ? 'Unapprove' : 'Approve'}</span>
           </Button>
-          <Button size="sm" variant="outline" className="text-gray-600 hover:text-gray-700 bg-transparent">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className={`${isIgnored ? 'bg-gray-100 text-gray-700 border-gray-300' : 'text-gray-600 hover:text-gray-700 bg-transparent'}`}
+            onClick={() => {
+              const newIgnoredChecks = new Set(ignoredChecks)
+              if (isIgnored) {
+                newIgnoredChecks.delete(checkId)
+              } else {
+                newIgnoredChecks.add(checkId)
+                // Remove from approved if it was approved
+                const newApprovedChecks = new Set(approvedChecks)
+                newApprovedChecks.delete(checkId)
+                setApprovedChecks(newApprovedChecks)
+              }
+              setIgnoredChecks(newIgnoredChecks)
+            }}
+          >
             <X className="w-3 h-3" />
-            <span className="sr-only">Ignore</span>
+            <span className="sr-only">{isIgnored ? 'Unignore' : 'Ignore'}</span>
           </Button>
         </div>
       )
@@ -1544,12 +1667,12 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     })
   }
 
-  const allQCChecks = [
+  const allQCChecks = manuscript ? [
     ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
-    ...manuscript.figures.flatMap((fig) =>
+    ...(Array.isArray(manuscript?.figures) ? manuscript.figures.flatMap((fig) =>
       (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check) => ({ ...check, figureId: fig.id, figureTitle: fig.title })),
-    ),
-  ]
+    ) : []),
+  ] : []
 
   const validationIssues = allQCChecks.filter((check) => !check.aiGenerated)
   const aiChecks = allQCChecks.filter((check) => check.aiGenerated)
@@ -1816,7 +1939,27 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const ManuscriptReviewView = () => {
     const [selectedFigureIndex, setSelectedFigureIndex] = useState(0)
-    const selectedFigure = manuscript.figures[selectedFigureIndex]
+    const selectedFigure = manuscript?.figures?.[selectedFigureIndex]
+
+    if (!manuscript?.figures || manuscript.figures.length === 0) {
+      return (
+        <div className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                <FileText className="w-6 h-6" />
+                Figures Review
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No figures available for this manuscript.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
 
     return (
     <div className="space-y-8">
@@ -1830,7 +1973,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               </CardTitle>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
-                  {manuscript.figures.length} figure{manuscript.figures.length !== 1 ? 's' : ''}
+                  {manuscript?.figures?.length || 0} figure{(manuscript?.figures?.length || 0) !== 1 ? 's' : ''}
                 </span>
                 <Button
                   variant="outline"
@@ -1854,7 +1997,10 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                   </div>
                   <div className="flex items-center gap-2">
                     {(() => {
-                      const allChecks = manuscript.figures.flatMap(fig => fig.qcChecks || []);
+                      const allChecks = [
+                        ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
+                        ...(manuscript?.figures || []).flatMap(fig => fig.qcChecks || [])
+                      ];
                       const aiChecks = allChecks.filter(check => check.aiGenerated);
                       const errors = aiChecks.filter(check => check.type === 'error').length;
                       const warnings = aiChecks.filter(check => check.type === 'warning').length;
@@ -1897,11 +2043,80 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               </div>
             </div>
 
+            {/* AI Checks List */}
+            {(() => {
+              const allChecks = [
+                ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
+                ...(manuscript?.figures || []).flatMap(fig => fig.qcChecks || [])
+              ];
+              const aiChecks = allChecks.filter(check => check.aiGenerated);
+              
+              if (aiChecks.length === 0) return null;
+              
+              return (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900">All AI Checks</h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {aiChecks.map((check, index) => {
+                      const checkId = getCheckId(check, "ai-quality", index);
+                      const isIgnored = ignoredChecks.has(checkId);
+                      const isApproved = approvedChecks.has(checkId);
+                      
+                      if (isIgnored && !showIgnoredChecks) return null;
+                      
+                      return (
+                        <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${
+                          isApproved ? 'bg-green-50 border-green-200' :
+                          isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
+                          check.type === 'error' ? 'bg-red-50 border-red-200' :
+                          check.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                          'bg-blue-50 border-blue-200'
+                        }`}>
+                          {getQCIcon(check.type)}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{check.message}</span>
+                                {isApproved && (
+                                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                                    <Check className="w-3 h-3 mr-1" />
+                                    Approved
+                                  </Badge>
+                                )}
+                                {isIgnored && (
+                                  <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                                    <X className="w-3 h-3 mr-1" />
+                                    Ignored
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                  {(check as any).figureTitle ? `Figure ${(check as any).figureTitle}` : 'General'}
+                                </span>
+                                {renderCheckActions(check, "ai-quality", index)}
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
+                            {(check as any).panelId && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                Panel: {(check as any).panelId}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Tab-based Figure Navigation */}
-            {manuscript.figures.length > 0 && (
+            {(manuscript?.figures?.length || 0) > 0 && (
               <div className="space-y-6">
                 <div className="flex space-x-1 border-b border-gray-200 bg-gray-50 rounded-t-lg p-1">
-                  {manuscript.figures.map((figure, index) => (
+                  {(manuscript?.figures || []).map((figure, index) => (
                     <button
                       key={figure.id}
                       onClick={() => setSelectedFigureIndex(index)}
@@ -1947,7 +2162,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       {/* Figure Image */}
                       <div className="relative">
                         <img
-                          src={getFigureImage(manuscript?.title || '', selectedFigure.id, selectedFigure.title)}
+                          src={(selectedFigure as any).fullImagePath || getFigureImage(manuscript?.title || '', selectedFigure.id, selectedFigure.title)}
                           alt={selectedFigure.title}
                           className={`w-full object-contain border rounded-lg ${
                             showExpandedFigure === selectedFigure.id ? "max-h-96" : "max-h-64"
@@ -2010,12 +2225,12 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                     <div className="relative mb-2">
                                       <div className="w-full h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded border flex items-center justify-center relative overflow-hidden">
                                         <img
-                                          src={getFigureImage(manuscript.title, selectedFigure.id, selectedFigure.title)}
+                                          src={(panel as any).thumbnailPath || (panel as any).imagePath || getFigureImage(manuscript.title, selectedFigure.id, selectedFigure.title)}
                                           alt={`Panel ${panel.id}`}
                                           className="w-full h-full object-cover opacity-60"
                                         />
-                                        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
-                                          <span className="text-white text-xs font-bold bg-black bg-opacity-50 px-2 py-1 rounded">
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                          <span className="text-white text-xs font-bold bg-black bg-opacity-70 px-2 py-1 rounded">
                                             {panel.id}
                                           </span>
                                         </div>
@@ -2034,6 +2249,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                     <div className="space-y-1">
                                       <div className="text-sm font-medium text-gray-900">{panel.id}</div>
                                       <div className="text-xs text-gray-600 line-clamp-2">{panel.description}</div>
+                                      
+                                      {/* Panel Caption/Legend */}
+                                      {(panel as any).legend && (
+                                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700 max-h-20 overflow-y-auto">
+                                          <div className="font-medium text-gray-800 mb-1">Caption:</div>
+                                          <div className="line-clamp-3">{(panel as any).legend}</div>
+                                        </div>
+                                      )}
                                       
                                       {/* Status Badges */}
                                       <div className="flex items-center gap-1 flex-wrap">
@@ -2276,7 +2499,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                   <Upload className="w-5 h-5" />
                   Source Data
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleAddSourceData}>
                   <Plus className="w-4 h-4 mr-1" />
                   Add File
                 </Button>
@@ -2297,7 +2520,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       <Button variant="ghost" size="sm" onClick={() => handleDownloadFile(file.name)}>
                         <Download className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleEditFile(file.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => handleEditSourceData(sourceDataFiles.indexOf(file))}>
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button
@@ -2315,6 +2538,86 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             </CardContent>
           </Card>
 
+          {isEditingSourceData && (
+            <Card className="border-2 border-blue-200 bg-blue-50/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">
+                  {editingSourceDataIndex !== null ? "Edit" : "Add"} Source Data
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">File Name</Label>
+                  <Input
+                    value={sourceDataForm.filename}
+                    onChange={(e) => setSourceDataForm(prev => ({ ...prev, filename: e.target.value }))}
+                    placeholder="Enter filename"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">File Type</Label>
+                  <Select
+                    value={sourceDataForm.type}
+                    onValueChange={(value) => setSourceDataForm(prev => ({ ...prev, type: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select file type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="xlsx">Excel (.xlsx)</SelectItem>
+                      <SelectItem value="csv">CSV (.csv)</SelectItem>
+                      <SelectItem value="txt">Text (.txt)</SelectItem>
+                      <SelectItem value="pdf">PDF (.pdf)</SelectItem>
+                      <SelectItem value="zip">ZIP (.zip)</SelectItem>
+                      <SelectItem value="pdb">PDB (.pdb)</SelectItem>
+                      <SelectItem value="fastq">FASTQ (.fastq)</SelectItem>
+                      <SelectItem value="fcs">FCS (.fcs)</SelectItem>
+                      <SelectItem value="bed">BED (.bed)</SelectItem>
+                      <SelectItem value="bw">BigWig (.bw)</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">File Size</Label>
+                  <Input
+                    value={sourceDataForm.size}
+                    onChange={(e) => setSourceDataForm(prev => ({ ...prev, size: e.target.value }))}
+                    placeholder="e.g., 2.3 MB"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Upload File (Optional)</Label>
+                  <Input
+                    type="file"
+                    onChange={(e) => setSourceDataForm(prev => ({ ...prev, file: e.target.files?.[0] || null }))}
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSourceDataSubmit}
+                    disabled={!sourceDataForm.filename}
+                  >
+                    {editingSourceDataIndex !== null ? "Update" : "Add"} File
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditingSourceData(false)
+                      setEditingSourceDataIndex(null)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -2329,7 +2632,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       </Card>
 
       {/* General Manuscript Issues */}
-      {manuscript.qcChecks.length > 0 && (
+      {(manuscript?.qcChecks?.length || 0) > 0 && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -2352,13 +2655,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </CardHeader>
           <CardContent className="space-y-4">
             {/* AI Checks Section */}
-            {manuscript.qcChecks.filter((check) => check.aiGenerated).length > 0 && (
+            {(manuscript?.qcChecks || []).filter((check) => check.aiGenerated).length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Cpu className="w-4 h-4" />
                   AI Checks
                 </Label>
-                {manuscript.qcChecks
+                {(manuscript?.qcChecks || [])
                   .filter((check) => check.aiGenerated)
                   .map((check, checkIndex) => {
                     const checkId = getCheckId(check, "general", checkIndex)
@@ -2388,13 +2691,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             )}
 
             {/* QC Checks Section */}
-            {manuscript.qcChecks.filter((check) => !check.aiGenerated).length > 0 && (
+            {(manuscript?.qcChecks || []).filter((check) => !check.aiGenerated).length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" />
                   QC Checks
                 </Label>
-                {manuscript.qcChecks
+                {(manuscript?.qcChecks || [])
                   .filter((check) => !check.aiGenerated)
                   .map((check, checkIndex) => (
                     <div key={checkIndex} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
@@ -2413,14 +2716,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </CardContent>
         </Card>
       )}
-    </div>
+            </div>
   )
   }
 
   const ListReviewView = () => {
     const allQCChecks = [
       ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []).map((check) => ({ ...check, location: "General Manuscript" })),
-      ...manuscript.figures.flatMap((fig) =>
+      ...(manuscript?.figures || []).flatMap((fig) =>
         (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check) => ({ ...check, location: `Figure ${fig.id}`, figureTitle: fig.title })),
       ),
     ]
@@ -2461,7 +2764,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-600">
-                  {manuscript.figures.reduce((acc, fig) => acc + fig.panels.length, 0)}
+                  {(manuscript?.figures || []).reduce((acc, fig) => acc + (fig.panels?.length || 0), 0)}
                 </div>
                 <div className="text-sm text-muted-foreground">Total Panels</div>
               </div>
@@ -2473,7 +2776,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-              <Cpu className="w-5 h-5" />
+                <Cpu className="w-5 h-5" />
                 AI Checks
               </CardTitle>
             </CardHeader>
@@ -2486,15 +2789,26 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                         <span className="font-medium">{check.message}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{check.location}</span>
-                    {getQCActions(check, check.location, index)}
+                      {getQCActions(check, check.location, index)}
+                    </div>
                   </div>
-              </div>
                   <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
               </div>
               </div>
             ))}
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  if (!manuscript) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading manuscript details...</p>
+        </div>
       </div>
     )
   }
@@ -2529,7 +2843,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             <div className="flex items-center gap-2">
               <Badge variant="outline">{manuscript.status}</Badge>
               <Badge variant="secondary">{(manuscript as any).workflowState || 'In Review'}</Badge>
-          </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

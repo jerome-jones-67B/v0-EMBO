@@ -869,21 +869,22 @@ export default function ManuscriptDashboard() {
               <div>
                 <div className="flex items-center gap-4 mb-2">
                   <h1 className="text-3xl font-bold text-foreground">EMBO Dashboard</h1>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2">
-                          <Database className={`w-4 h-4 ${!useApiData ? 'text-blue-600' : 'text-gray-400'}`} />
-                          <span className="text-sm font-medium">Mock</span>
-                          <Switch
-                            checked={useApiData}
-                            onCheckedChange={handleDataSourceSwitch}
-                            disabled={isLoadingApi}
-                            className="data-[state=checked]:bg-green-600"
-                          />
-                          <span className="text-sm font-medium">API</span>
-                          <Zap className={`w-4 h-4 ${useApiData ? 'text-green-600' : 'text-gray-400'}`} />
-                          {isLoadingApi && (
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2">
+                            <Database className={`w-4 h-4 ${!useApiData ? 'text-blue-600' : 'text-gray-400'}`} />
+                            <span className="text-sm font-medium">Mock</span>
+                            <Switch
+                              checked={useApiData}
+                              onCheckedChange={handleDataSourceSwitch}
+                              disabled={isLoadingApi}
+                              className="data-[state=checked]:bg-green-600"
+                            />
+                            <span className="text-sm font-medium">API</span>
+                            <Zap className={`w-4 h-4 ${useApiData ? 'text-green-600' : 'text-gray-400'}`} />
+                            {isLoadingApi && (
                             <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
                           )}
                         </div>
@@ -897,6 +898,8 @@ export default function ManuscriptDashboard() {
                         </p>
                       </TooltipContent>
                     </Tooltip>
+                    </div>
+                    
                   </div>
                 </div>
                 <p className="text-muted-foreground">Manuscript validation and curation workflow management</p>
