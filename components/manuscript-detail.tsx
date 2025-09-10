@@ -909,6 +909,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [editingSourceData, setEditingSourceData] = useState<string | null>(null)
   const [showExpandedFigure, setShowExpandedFigure] = useState<string | null>(null)
   const [overlayVisibility, setOverlayVisibility] = useState<Record<string, boolean>>({})
+  const [showPanelPopup, setShowPanelPopup] = useState<{figureId: string, panelId: string} | null>(null)
+  const [hoveredPanel, setHoveredPanel] = useState<string | null>(null)
   const [manuscript, setManuscript] = useState<any>(null)
   const [notes, setNotes] = useState("")
   const [dataAvailability, setDataAvailability] = useState("")
@@ -1987,61 +1989,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             </div>
           </CardHeader>
           <CardContent>
-            {/* AI Checks Summary - Prominent Display */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-blue-900">AI Quality Checks</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const allChecks = [
-                        ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
-                        ...(manuscript?.figures || []).flatMap(fig => fig.qcChecks || [])
-                      ];
-                      const aiChecks = allChecks.filter(check => check.aiGenerated);
-                      const errors = aiChecks.filter(check => check.type === 'error').length;
-                      const warnings = aiChecks.filter(check => check.type === 'warning').length;
-                      const info = aiChecks.filter(check => check.type === 'info').length;
-                      const dismissed = aiChecks.filter(check => check.dismissed).length;
-                      
-                      return (
-                        <>
-                          {errors > 0 && (
-                            <Badge variant="destructive" className="text-sm px-2 py-1">
-                              {errors} Errors
-                            </Badge>
-                          )}
-                          {warnings > 0 && (
-                            <Badge variant="secondary" className="text-sm px-2 py-1">
-                              {warnings} Warnings
-                            </Badge>
-                          )}
-                          {info > 0 && (
-                            <Badge variant="outline" className="text-sm px-2 py-1">
-                              {info} Info
-                            </Badge>
-                          )}
-                          <span className="text-sm text-blue-700 font-medium">
-                            {aiChecks.length} total AI checks
-                          </span>
-                          {dismissed > 0 && (
-                            <span className="text-xs text-gray-500">
-                              ({dismissed} dismissed)
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-                <div className="text-sm text-blue-700">
-                  AI-powered quality assessment for manuscript review
-                </div>
-              </div>
-            </div>
 
             {/* AI Checks List */}
             {(() => {
@@ -2055,7 +2002,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               
               return (
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-900">All AI Checks</h4>
+                  <h4 className="font-semibold text-gray-900">
+                    All AI Checks ({aiChecks.length})
+                  </h4>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {aiChecks.map((check, index) => {
                       const checkId = getCheckId(check, "ai-quality", index);
@@ -2169,6 +2118,34 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           }`}
                         />
                         
+                        {/* Hover Bounding Box Overlay */}
+                        {hoveredPanel && (() => {
+                          // Define panel positions on the main figure
+                          const panelPositions: Record<string, {left: string, top: string, width: string, height: string}> = {
+                            'A': { left: '5%', top: '5%', width: '40%', height: '40%' },
+                            'B': { left: '55%', top: '5%', width: '40%', height: '40%' },
+                            'C': { left: '5%', top: '50%', width: '40%', height: '40%' },
+                            'D': { left: '55%', top: '50%', width: '40%', height: '40%' },
+                            'E': { left: '5%', top: '5%', width: '30%', height: '30%' },
+                            'F': { left: '35%', top: '5%', width: '30%', height: '30%' },
+                            'G': { left: '65%', top: '5%', width: '30%', height: '30%' },
+                            'H': { left: '5%', top: '35%', width: '30%', height: '30%' },
+                            'I': { left: '35%', top: '35%', width: '30%', height: '30%' },
+                            'J': { left: '65%', top: '35%', width: '30%', height: '30%' }
+                          };
+                          
+                          const position = panelPositions[hoveredPanel] || { left: '15%', top: '25%', width: '35%', height: '45%' };
+                          
+                          return (
+                            <div className="absolute border-2 border-blue-500 rounded pointer-events-none animate-pulse"
+                                 style={position}>
+                              <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                                Panel {hoveredPanel}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        
                         {/* AI Feedback Flags on Panels */}
                         {selectedFigure.panels.map((panel, panelIndex) => {
                           const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
@@ -2223,7 +2200,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                   <div key={panel.id} className="border rounded-lg p-3 hover:shadow-sm transition-shadow">
                                     {/* Panel Thumbnail */}
                                     <div className="relative mb-2">
-                                      <div className="w-full h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded border flex items-center justify-center relative overflow-hidden">
+                                      <div 
+                                        className={`w-full h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded border flex items-center justify-center relative overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 ${
+                                          hoveredPanel === panel.id ? 'ring-2 ring-blue-500 shadow-lg scale-105' : ''
+                                        }`}
+                                        onClick={() => setShowPanelPopup({figureId: selectedFigure.id, panelId: panel.id})}
+                                        onMouseEnter={() => setHoveredPanel(panel.id)}
+                                        onMouseLeave={() => setHoveredPanel(null)}
+                                      >
                                         <img
                                           src={(panel as any).thumbnailPath || (panel as any).imagePath || getFigureImage(manuscript.title, selectedFigure.id, selectedFigure.title)}
                                           alt={`Panel ${panel.id}`}
@@ -2888,6 +2872,192 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Panel Popup Modal */}
+      {showPanelPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[95vh] overflow-hidden">
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b">
+                <h2 className="text-xl font-semibold">Panel {showPanelPopup.panelId} Analysis</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPanelPopup(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* Main content */}
+              <div className="flex-1 overflow-hidden p-6">
+                {/* Top section - Image and Caption side by side */}
+                <div className="flex gap-6 mb-6">
+                  {/* Left side - Main image with bounding box */}
+                  <div className="flex-1">
+                    <div className="relative">
+                      {(() => {
+                        // Use the same main figure image that's displayed in the main view
+                        const selectedFigure = manuscript?.figures?.[0]; // Use the currently selected figure
+                        const mainImageSrc = (selectedFigure as any)?.fullImagePath || getFigureImage(manuscript?.title || '', selectedFigure?.id || '', selectedFigure?.title || '');
+                        
+                        return (
+                          <>
+                            <img
+                              src={mainImageSrc}
+                              alt="Figure with highlighted panel"
+                              className="w-full h-auto max-h-[400px] object-contain border rounded"
+                            />
+                            {/* Bounding box overlay - outline only */}
+                            <div className="absolute border-2 border-red-500 rounded pointer-events-none"
+                                 style={{
+                                   left: '15%',
+                                   top: '25%',
+                                   width: '35%',
+                                   height: '45%'
+                                 }}>
+                              <div className="absolute -top-6 left-0 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                                Panel {showPanelPopup.panelId}
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                  
+                  {/* Right side - Panel Caption */}
+                  <div className="w-96">
+                    <div className="bg-gray-50 p-4 rounded-lg h-full">
+                      <h3 className="font-medium text-gray-900 mb-3">Panel {showPanelPopup.panelId} Caption</h3>
+                      <div className="text-sm text-gray-700 max-h-[350px] overflow-y-auto">
+                        {(() => {
+                          // Find the specific panel that was clicked
+                          const selectedFigure = manuscript?.figures?.[0];
+                          const panel = selectedFigure?.panels?.find(p => p.id === showPanelPopup.panelId);
+                          
+                          // Debug logging
+                          console.log('Panel data:', panel);
+                          console.log('Panel ID:', showPanelPopup.panelId);
+                          console.log('Available panels:', selectedFigure?.panels?.map(p => ({ id: p.id, caption: p.caption, legend: p.legend, description: p.description })));
+                          
+                          // Check for caption in multiple possible properties
+                          // Note: Real data from local files stores captions in 'legend' property
+                          if (panel?.legend) {
+                            return panel.legend;
+                          }
+                          if (panel?.caption) {
+                            return panel.caption;
+                          }
+                          if (panel?.description) {
+                            return panel.description;
+                          }
+                          
+                          // Fallback to main figure caption if panel caption not found
+                          return selectedFigure?.caption || "No caption available for this panel.";
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Bottom section - AI and QC checks */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-medium text-gray-900 mb-4">AI and QC Checks</h3>
+                  <div className="max-h-64 overflow-y-auto">
+                
+                {/* Use the same AI/QC checks that are displayed in the main view above panels */}
+                {(() => {
+                  // Use the same logic as the main view for AI checks
+                  const allChecks = [
+                    ...(Array.isArray(manuscript?.qcChecks) ? manuscript.qcChecks : []),
+                    ...(manuscript?.figures || []).flatMap(fig => fig.qcChecks || [])
+                  ];
+                  const aiChecks = allChecks.filter(check => check.aiGenerated);
+                  const qcChecks = allChecks.filter(check => !check.aiGenerated);
+                  
+                  return (
+                    <div className="space-y-4">
+                      {/* AI Checks - Same as main view */}
+                      {aiChecks.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-blue-600 mb-2 flex items-center gap-2">
+                            <Cpu className="w-4 h-4" />
+                            AI Checks ({aiChecks.length})
+                          </h4>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {aiChecks.map((check, index) => {
+                              const checkId = getCheckId(check, "ai-quality", index);
+                              const isIgnored = ignoredChecks.has(checkId);
+                              const isApproved = approvedChecks.has(checkId);
+                              
+                              if (isIgnored && !showIgnoredChecks) return null;
+                              
+                              return (
+                                <div key={index} className={`p-3 rounded-lg border ${
+                                  isApproved ? 'bg-green-50 border-green-200' :
+                                  isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
+                                  'bg-blue-50 border-blue-200'
+                                }`}>
+                                  <div className="flex items-start gap-2">
+                                    {getQCIcon(check.type)}
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium">{check.message}</p>
+                                      <p className="text-xs text-gray-600 mt-1">{check.details}</p>
+                                      {check.confidence && (
+                                        <p className="text-xs text-blue-600 mt-1">
+                                          Confidence: {Math.round(check.confidence * 100)}%
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* QC Checks - Same as main view */}
+                      {qcChecks.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-orange-600 mb-2 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4" />
+                            QC Checks ({qcChecks.length})
+                          </h4>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {qcChecks.map((check, index) => (
+                              <div key={index} className="p-3 bg-orange-50 border border-orange-200 rounded">
+                                <div className="flex items-start gap-2">
+                                  {getQCIcon(check.type)}
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium">{check.message}</p>
+                                    <p className="text-xs text-gray-600 mt-1">{check.details}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {aiChecks.length === 0 && qcChecks.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">
+                          <Cpu className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p>No checks available</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
