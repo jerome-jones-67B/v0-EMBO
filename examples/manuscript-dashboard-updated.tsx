@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Settings2, Loader2 } from "lucide-react"
-import { ManuscriptDetail } from "./manuscript-detail"
+import { ManuscriptDetail } from "@/components/manuscript-detail"
 import { Eye, Download, MoreHorizontal, UserPlus, UserMinus, Pause, Play } from "lucide-react"
 import {
   AlertTriangle,
@@ -72,8 +72,8 @@ export function ManuscriptDashboard() {
     return manuscripts.filter(manuscript => {
       const matchesSearch = searchTerm === "" || 
         manuscript.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        manuscript.authors.some(author => author.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        manuscript.id.toLowerCase().includes(searchTerm.toLowerCase())
+        manuscript.authors.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        manuscript.id.toString().toLowerCase().includes(searchTerm.toLowerCase())
       
       return matchesSearch
     })
@@ -82,8 +82,19 @@ export function ManuscriptDashboard() {
   // Sort manuscripts
   const sortedManuscripts = useMemo(() => {
     return [...filteredManuscripts].sort((a, b) => {
-      const aValue = a[sortField]
-      const bValue = b[sortField]
+      let aValue: any = a[sortField]
+      let bValue: any = b[sortField]
+      
+      // Handle dates
+      if (sortField === 'received' || sortField === 'received_at') {
+        aValue = new Date(aValue).getTime()
+        bValue = new Date(bValue).getTime()
+      }
+      // Handle strings
+      else if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase()
+        bValue = bValue.toLowerCase()
+      }
       
       if (aValue < bValue) return sortDirection === "asc" ? -1 : 1
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1
@@ -133,7 +144,7 @@ export function ManuscriptDashboard() {
 
   const uniqueAssignees = useMemo(() => {
     if (!manuscripts) return []
-    return [...new Set(manuscripts.map(m => m.assignedTo).filter(Boolean))]
+    return [...new Set(manuscripts.map(m => m.assignedTo).filter((assignee): assignee is string => Boolean(assignee)))]
   }, [manuscripts])
 
   // 🔥 NEW: Handle loading and error states
@@ -161,8 +172,9 @@ export function ManuscriptDashboard() {
   if (selectedManuscript) {
     return (
       <ManuscriptDetail
-        manuscriptId={selectedManuscript}
+        msid={selectedManuscript}
         onBack={() => setSelectedManuscript(null)}
+        useApiData={true}
       />
     )
   }
@@ -311,9 +323,9 @@ export function ManuscriptDashboard() {
             </TableHeader>
             <TableBody>
               {sortedManuscripts.map((manuscript) => (
-                <TableRow key={manuscript.id}>
+                <TableRow key={manuscript.msid || manuscript.id}>
                   <TableCell className="font-mono text-sm">
-                    {manuscript.id}
+                    {manuscript.msid || manuscript.id}
                   </TableCell>
                   <TableCell className="max-w-xs">
                     <div className="truncate" title={manuscript.title}>
@@ -321,15 +333,14 @@ export function ManuscriptDashboard() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="truncate max-w-xs" title={manuscript.authors.join(', ')}>
-                      {manuscript.authors.slice(0, 2).join(', ')}
-                      {manuscript.authors.length > 2 && ` +${manuscript.authors.length - 2}`}
+                    <div className="truncate max-w-xs" title={manuscript.authors}>
+                      {manuscript.authors}
                     </div>
                   </TableCell>
                   <TableCell>
                     <Select
                       value={manuscript.status}
-                      onValueChange={(value) => handleStatusChange(manuscript.id, value)}
+                      onValueChange={(value) => handleStatusChange(manuscript.msid || manuscript.id.toString(), value)}
                       disabled={updating}
                     >
                       <SelectTrigger className="w-32">
@@ -347,7 +358,7 @@ export function ManuscriptDashboard() {
                   <TableCell>
                     <Select
                       value={manuscript.priority}
-                      onValueChange={(value) => handlePriorityChange(manuscript.id, value)}
+                      onValueChange={(value) => handlePriorityChange(manuscript.msid || manuscript.id.toString(), value)}
                       disabled={updating}
                     >
                       <SelectTrigger className="w-24">
@@ -364,7 +375,7 @@ export function ManuscriptDashboard() {
                   <TableCell>
                     <Select
                       value={manuscript.assignedTo || ""}
-                      onValueChange={(value) => handleAssignmentChange(manuscript.id, value)}
+                      onValueChange={(value) => handleAssignmentChange(manuscript.msid || manuscript.id.toString(), value)}
                       disabled={updating}
                     >
                       <SelectTrigger className="w-32">
@@ -388,7 +399,7 @@ export function ManuscriptDashboard() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedManuscript(manuscript.id)}
+                        onClick={() => setSelectedManuscript(manuscript.msid || manuscript.id.toString())}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>

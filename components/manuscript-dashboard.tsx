@@ -359,7 +359,7 @@ export default function ManuscriptDashboard() {
   const toggleColumn = (columnKey: string) => {
     setVisibleColumns((prev) => ({
       ...prev,
-      [columnKey]: !prev[columnKey],
+      [columnKey]: !prev[columnKey as keyof typeof prev],
     }))
   }
 
@@ -414,9 +414,10 @@ export default function ManuscriptDashboard() {
 
   const filteredAndSortedManuscripts = useMemo(() => {
     const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    
     const filtered = currentManuscripts.filter((manuscript) => {
       // Use workflowState for tab filtering (mapped from API status)
-      const workflowState = manuscript.workflowState || manuscript.workflowState || 'no-pipeline-results'
+      const workflowState = manuscript.workflowState || 'no-pipeline-results'
       if (workflowState !== activeTab) return false
 
       // Use displayStatus for status filtering
@@ -424,15 +425,8 @@ export default function ManuscriptDashboard() {
       if (statusFilter !== "all" && displayStatus !== statusFilter) return false
 
       if (priorityFilter !== "all") {
-        if (priorityFilter === "urgent") {
-          // Urgent includes both overdue and nearly due manuscripts
-          const isUrgent = manuscript.msid === "EMBO-2024-001" || manuscript.msid === "EMBO-2024-011"
-          if (!isUrgent) return false
-        } else if (priorityFilter === "normal") {
-          // Normal includes all other manuscripts
-          const isUrgent = manuscript.msid === "EMBO-2024-001" || manuscript.msid === "EMBO-2024-011"
-          if (isUrgent) return false
-        }
+        if (priorityFilter === "urgent" && manuscript.priority !== "urgent") return false
+        if (priorityFilter === "normal" && manuscript.priority === "urgent") return false
       }
 
       if (assigneeFilter !== "all" && manuscript.assignedTo !== assigneeFilter) return false
@@ -596,6 +590,7 @@ export default function ManuscriptDashboard() {
       const response = await fetch('/api/v1/manuscripts', {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_AUTH_TOKEN || ''}`
         },
       })
       
@@ -634,6 +629,7 @@ export default function ManuscriptDashboard() {
       
       setApiManuscripts(transformedManuscripts)
       console.log('📋 API manuscripts set:', transformedManuscripts.length, 'manuscripts')
+      console.log('🔍 Workflow states found:', [...new Set(transformedManuscripts.map((m: any) => m.workflowState))])
     } catch (error) {
       console.error('❌ Failed to fetch API data:', error)
       // Keep using mock data on error
@@ -659,7 +655,8 @@ export default function ManuscriptDashboard() {
   }
 
   const getUniqueAssignees = () => {
-    const assignees = [...new Set(mockManuscripts.map((m) => m.assignedTo))]
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    const assignees = [...new Set(currentManuscripts.map((m) => m.assignedTo))]
     const sortedAssignees = assignees.sort()
 
     // If current user has assigned manuscripts, put them first
@@ -672,19 +669,20 @@ export default function ManuscriptDashboard() {
   }
 
   const getTabCounts = () => {
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
     const counts = {
       "ready-for-curation": { total: 0, new: 0, inProgress: 0, onHold: 0, needsValidation: 0, urgent: 0 },
       "deposited-to-biostudies": { total: 0, needsValidation: 0, urgent: 0, onHold: 0, new: 0, inProgress: 0 },
       "no-pipeline-results": { total: 0, needsValidation: 0, urgent: 0, onHold: 0, new: 0, inProgress: 0 },
     }
 
-    mockManuscripts.forEach((manuscript) => {
+    currentManuscripts.forEach((manuscript) => {
       if (manuscript.workflowState === "ready-for-curation") {
         counts["ready-for-curation"].total++
         if (manuscript.status === "New submission") counts["ready-for-curation"].new++
         if (manuscript.status === "In Progress") counts["ready-for-curation"].inProgress++
         if (manuscript.status === "On hold") counts["ready-for-curation"].onHold++
-        if (manuscript.msid === "EMBO-2024-001" || manuscript.msid === "EMBO-2024-011")
+        if (manuscript.hasErrors || manuscript.hasWarnings)
           counts["ready-for-curation"].needsValidation++
         if (manuscript.priority === "urgent") counts["ready-for-curation"].urgent++
       } else if (manuscript.workflowState === "deposited-to-biostudies") {
@@ -701,12 +699,13 @@ export default function ManuscriptDashboard() {
   }
 
   const getGlobalCounts = () => {
-    const totalManuscripts = mockManuscripts.length
-    const urgentCount = mockManuscripts.filter((m) => m.msid === "EMBO-2024-001" || m.msid === "EMBO-2024-011").length
-    const onHoldCount = mockManuscripts.filter((m) => m.status === "On hold").length
-    const newCount = mockManuscripts.filter((m) => m.status === "New submission").length
-    const inProgressCount = mockManuscripts.filter((m) => m.status === "In Progress").length
-    const totalOnHoldCount = mockManuscripts.filter((m) => m.status === "On hold").length
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    const totalManuscripts = currentManuscripts.length
+    const urgentCount = currentManuscripts.filter((m) => m.priority === "urgent").length
+    const onHoldCount = currentManuscripts.filter((m) => m.status === "On hold").length
+    const newCount = currentManuscripts.filter((m) => m.status === "New submission").length
+    const inProgressCount = currentManuscripts.filter((m) => m.status === "In Progress").length
+    const totalOnHoldCount = currentManuscripts.filter((m) => m.status === "On hold").length
 
     return {
       total: totalManuscripts,
@@ -719,6 +718,7 @@ export default function ManuscriptDashboard() {
   }
 
   const getStatusCounts = () => {
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
     const counts = {
       "New submission": 0,
       "In Progress": 0,
@@ -728,8 +728,9 @@ export default function ManuscriptDashboard() {
       "Waiting for data": 0,
     }
 
-    mockManuscripts.forEach((manuscript) => {
-      counts[manuscript.status] = (counts[manuscript.status] || 0) + 1
+    currentManuscripts.forEach((manuscript) => {
+      const status = manuscript.status as keyof typeof counts
+      counts[status] = (counts[status] || 0) + 1
     })
 
     return counts
@@ -976,7 +977,7 @@ export default function ManuscriptDashboard() {
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="ready-for-curation" className="flex items-center gap-2">
-                  <Tooltip delayDuration={800} skipDelayDuration={300}>
+                  <Tooltip delayDuration={800}>
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-2">
                         <span className="cursor-help">Ready for Curation</span>
@@ -1154,7 +1155,7 @@ export default function ManuscriptDashboard() {
                                 <div key={column.key} className="flex items-center space-x-2">
                                   <Checkbox
                                     id={column.key}
-                                    checked={visibleColumns[column.key]}
+                                    checked={visibleColumns[column.key as keyof typeof visibleColumns]}
                                     onCheckedChange={() => toggleColumn(column.key)}
                                   />
                                   <label htmlFor={column.key} className="text-sm font-normal cursor-pointer">
@@ -1262,7 +1263,7 @@ export default function ManuscriptDashboard() {
                                         <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 transform -translate-x-full translate-x-8">
                                           <div className="py-1">
                                             <button
-                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                               onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
@@ -1275,7 +1276,7 @@ export default function ManuscriptDashboard() {
                                             </button>
 
                                             <button
-                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                               onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
@@ -1289,7 +1290,7 @@ export default function ManuscriptDashboard() {
                                             <div className="border-t border-gray-200 my-1" />
 
                                             <button
-                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                               onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
@@ -1315,7 +1316,7 @@ export default function ManuscriptDashboard() {
                                             {manuscript.assignee ? (
                                               <>
                                                 <button
-                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                                   onClick={(e) => {
                                                     e.preventDefault()
                                                     e.stopPropagation()
@@ -1327,7 +1328,7 @@ export default function ManuscriptDashboard() {
                                                   Assign to me
                                                 </button>
                                                 <button
-                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                                   onClick={(e) => {
                                                     e.preventDefault()
                                                     e.stopPropagation()
@@ -1341,7 +1342,7 @@ export default function ManuscriptDashboard() {
                                               </>
                                             ) : (
                                               <button
-                                                className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                                 onClick={(e) => {
                                                   e.preventDefault()
                                                   e.stopPropagation()

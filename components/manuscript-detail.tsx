@@ -54,7 +54,7 @@ import { Bot } from "lucide-react"
 // Function to assign diverse images with much more variety
 function getFigureImage(manuscriptTitle: string, figureId: string, figureTitle: string): string {
   // Check if this is a newly created figure (starts with "figure-")
-  if (figureId.startsWith('figure-')) {
+  if (String(figureId).startsWith('figure-')) {
     // Return a placeholder image for newly created figures
     return '/placeholder-e9mgd.png'
   }
@@ -77,11 +77,12 @@ function getFigureImage(manuscriptTitle: string, figureId: string, figureTitle: 
   ]
   
   // Create maximum diversity by combining multiple factors
-  const seed = manuscriptTitle + figureId + figureTitle
+  const figureIdStr = String(figureId)
+  const seed = manuscriptTitle + figureIdStr + figureTitle
   const hash1 = Math.abs(hashCode(seed))
   const hash2 = Math.abs(hashCode(seed.split('').reverse().join('')))
-  const hash3 = Math.abs(hashCode(figureId + manuscriptTitle.length))
-  const hash4 = Math.abs(hashCode(figureTitle + figureId.length))
+  const hash3 = Math.abs(hashCode(figureIdStr + manuscriptTitle.length))
+  const hash4 = Math.abs(hashCode(figureTitle + figureIdStr.length))
   
   // Use multiple hash combinations with different multipliers for maximum distribution
   const imageIndex = (hash1 + hash2 * 7 + hash3 * 13 + hash4 * 23) % allImages.length
@@ -820,7 +821,7 @@ const getManuscriptDetail = (msid: string) => {
     
     return sourceData;
   })(),
-  linkedData: [], // This will be populated by the dynamic linkedData above
+  // linkedData is already defined above in the dynamic section
   }
 }
 
@@ -832,7 +833,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [editingSourceData, setEditingSourceData] = useState<string | null>(null)
   const [showExpandedFigure, setShowExpandedFigure] = useState<string | null>(null)
   const [overlayVisibility, setOverlayVisibility] = useState<Record<string, boolean>>({})
-  const [manuscript, setManuscript] = useState(getManuscriptDetail(msid))
+  const [manuscript, setManuscript] = useState<any>(getManuscriptDetail(msid))
   const [notes, setNotes] = useState(manuscript.notes)
   const [dataAvailability, setDataAvailability] = useState(manuscript.dataAvailability)
   const [isLoadingApi, setIsLoadingApi] = useState(false)
@@ -886,14 +887,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`)
       }
-      const apiData = await response.json()
+      const apiData: any = await response.json()
       
       // Transform API data to match our manuscript format
       const statusMapping = getStatusMapping(apiData.status)
       const transformedManuscript = {
         id: apiData.id,
         title: apiData.title,
-        authors: apiData.authors.split(',').map((author: string) => author.trim()),
+        authors: typeof apiData.authors === 'string' ? apiData.authors.split(',').map((author: any) => author.trim()) : apiData.authors,
         received: apiData.received_at.split('T')[0],
         doi: apiData.doi,
         lastModified: apiData.received_at,
@@ -1161,8 +1162,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const handleEditFigure = (figureIndex: number) => {
     const figure = manuscript.figures[figureIndex]
     setFigureForm({
-      title: figure.label,
-      caption: figure.caption,
+      title: (figure as any).label || figure.title || '',
+      caption: (figure as any).caption || figure.legend || '',
       linkType: "none",
       sourceDataId: "",
       linkedDataId: "",
@@ -1185,7 +1186,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     const updatedFigures = [...manuscript.figures]
     updatedFigures[editingPanel.figureIndex].panels[editingPanel.panelIndex].description = panelForm.description
 
-    setManuscript((prev) => ({ ...prev, figures: updatedFigures }))
+    setManuscript((prev: any) => ({ ...prev, figures: updatedFigures }))
 
     // Handle linking logic here (would update panel's linked data reference)
     if (panelForm.linkType === "newLinkedData" && panelForm.newLinkedData.type) {
@@ -1213,7 +1214,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     updatedFigures[editingFigure.figureIndex].label = figureForm.title
     updatedFigures[editingFigure.figureIndex].caption = figureForm.caption
 
-    setManuscript((prev) => ({ ...prev, figures: updatedFigures }))
+    setManuscript((prev: any) => ({ ...prev, figures: updatedFigures }))
 
     // Handle linking logic for figure-level data
     if (figureForm.linkType === "newLinkedData" && figureForm.newLinkedData.type) {
@@ -1258,7 +1259,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       }
     }
 
-    setManuscript((prev) => ({ ...prev, figures: updatedFigures }))
+    setManuscript((prev: any) => ({ ...prev, figures: updatedFigures }))
     setIsEditingFigure(false)
     setEditingFigure(null)
   }
@@ -1275,7 +1276,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       check_results: []
     }
 
-    setManuscript((prev) => ({
+    setManuscript((prev: any) => ({
       ...prev,
       figures: [...prev.figures, newFigure],
     }))
@@ -1283,9 +1284,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const handleDeleteFigure = (figureIndex: number) => {
     if (window.confirm("Are you sure you want to delete this figure?")) {
-      setManuscript((prev) => ({
+      setManuscript((prev: any) => ({
         ...prev,
-        figures: prev.figures.filter((_, index) => index !== figureIndex),
+        figures: prev.figures.filter((_: any, index: number) => index !== figureIndex),
       }))
     }
   }
@@ -1305,7 +1306,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         dataAvailability !== manuscript.dataAvailability ||
         linkedData !== manuscript.linkedData
       ) {
-        setManuscript((prev) => ({
+        setManuscript((prev: any) => ({
           ...prev,
           notes,
           dataAvailability,
@@ -1403,8 +1404,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     return `${location}-${index}-${check.message.substring(0, 20)}`
   }
 
-  const [approvedChecks, setApprovedChecks] = useState(new Set())
-  const [ignoredChecks, setIgnoredChecks] = useState(new Set())
+  const [approvedChecks, setApprovedChecks] = useState(new Set<string>())
+  const [ignoredChecks, setIgnoredChecks] = useState(new Set<string>())
   const [showIgnoredChecks, setShowIgnoredChecks] = useState(false)
 
   const getQCActions = (check: any, location = "general", index = 0) => {
@@ -1501,7 +1502,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   }
 
   const filterAIChecks = (checks: any[]) => {
-    return checks.filter((check, index) => {
+    return checks.filter((check: any, index: any) => {
       if (!check.aiGenerated) return true
       const checkId = getCheckId(check, "general", index)
       return showIgnoredChecks || !ignoredChecks.has(checkId)
@@ -1509,7 +1510,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   }
 
   const filterFigureAIChecks = (checks: any[], figureId: string) => {
-    return checks.filter((check, index) => {
+    return checks.filter((check: any, index: any) => {
       if (!check.aiGenerated) return true
       const checkId = getCheckId(check, `figure-${figureId}`, index)
       return showIgnoredChecks || !ignoredChecks.has(checkId)
@@ -1518,8 +1519,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const allQCChecks = [
     ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
-    ...manuscript.figures.flatMap((fig) =>
-      (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check) => ({ ...check, figureId: fig.id, figureTitle: fig.title })),
+    ...manuscript.figures.flatMap((fig: any) =>
+      (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check: any) => ({ ...check, figureId: fig.id, figureTitle: fig.title })),
     ),
   ]
 
@@ -1543,7 +1544,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     newFigures.splice(fromIndex, 1)
     newFigures.splice(toIndex, 0, element)
 
-    setManuscript((prev) => ({ ...prev, figures: newFigures }))
+    setManuscript((prev: any) => ({ ...prev, figures: newFigures }))
   }
 
   const movePanel = (figureIndex: number, panelIndex: number, toIndex: number) => {
@@ -1557,7 +1558,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     const newFigures = [...manuscript.figures]
     newFigures[figureIndex].panels = newPanels
 
-    setManuscript((prev) => ({ ...prev, figures: newFigures }))
+    setManuscript((prev: any) => ({ ...prev, figures: newFigures }))
   }
 
   const [selectedSourceFiles, setSelectedSourceFiles] = useState<Set<string>>(new Set())
@@ -1713,9 +1714,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const getLinkingOptions = () => {
     const options = ["Manuscript"]
-    manuscript.figures.forEach((fig) => {
+    manuscript.figures.forEach((fig: any) => {
       options.push(`Figure ${fig.id}`)
-      fig.panels.forEach((panel) => {
+      fig.panels.forEach((panel: any) => {
         options.push(`Figure ${panel.id}`)
       })
     })
@@ -2043,15 +2044,15 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </CardHeader>
           <CardContent className="space-y-4">
             {/* AI Checks Section */}
-            {manuscript.qcChecks.filter((check) => check.aiGenerated).length > 0 && (
+            {manuscript.qcChecks.filter((check: { aiGenerated: any }) => check.aiGenerated).length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Cpu className="w-4 h-4" />
                   AI Checks
                 </Label>
                 {manuscript.qcChecks
-                  .filter((check) => check.aiGenerated)
-                  .map((check, checkIndex) => {
+                  .filter((check: any) => check.aiGenerated)
+                  .map((check: any, checkIndex: number) => {
                     const checkId = getCheckId(check, "general", checkIndex)
                     const isIgnored = ignoredChecks.has(checkId)
 
@@ -2079,15 +2080,15 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             )}
 
             {/* QC Checks Section */}
-            {manuscript.qcChecks.filter((check) => !check.aiGenerated).length > 0 && (
+            {manuscript.qcChecks.filter((check: { aiGenerated: any }) => !check.aiGenerated).length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" />
                   QC Checks
                 </Label>
                 {manuscript.qcChecks
-                  .filter((check) => !check.aiGenerated)
-                  .map((check, checkIndex) => (
+                  .filter((check: { aiGenerated: any }) => !check.aiGenerated)
+                  .map((check: any, checkIndex: number) => (
                     <div key={checkIndex} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                       {getQCIcon(check.type)}
                       <div className="flex-1">
@@ -2126,7 +2127,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
-          {manuscript.figures.map((figure, figureIndex) => (
+          {manuscript.figures.map((figure: any, figureIndex: number) => (
             <div key={figure.id} className="space-y-4 border-b pb-6 last:border-b-0">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -2176,7 +2177,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
                   {/* Panel Mapping Overlays */}
                   {overlayVisibility[figure.id] && figure.panels.length > 0 ? (
-                    figure.panels.map((panel, panelIndex) => (
+                    figure.panels.map((panel: any, panelIndex: number) => (
                       <div
                         key={panel.id}
                         className={`absolute border-2 transition-all ${
@@ -2248,7 +2249,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Linked Data</Label>
                     <div className="space-y-1">
-                      {figure.linkedData.map((data, index) => (
+                      {figure.linkedData.map((data: any, index: number) => (
                         <div key={index} className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
                           {data.type}: {data.identifier}
                         </div>
@@ -2262,7 +2263,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Panel Details & Order</h3>
                 <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {figure.panels.map((panel, panelIndex) => (
+                  {figure.panels.map((panel: any, panelIndex: number) => (
                     <div
                       key={panel.id}
                       className="flex items-center justify-between gap-3 p-3 border rounded-lg bg-white"
@@ -2374,14 +2375,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const ListReviewView = () => {
     const allQCChecks = [
-      ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []).map((check) => ({ ...check, location: "General Manuscript" })),
-      ...manuscript.figures.flatMap((fig) =>
-        (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check) => ({ ...check, location: `Figure ${fig.id}`, figureTitle: fig.title })),
+      ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []).map((check: any) => ({ ...check, location: "General Manuscript" })),
+      ...manuscript.figures.flatMap((fig: any) =>
+        (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check: any) => ({ ...check, location: `Figure ${fig.id}`, figureTitle: fig.title })),
       ),
     ]
 
-    const validationIssues = allQCChecks.filter((check) => !check.aiGenerated)
-    const aiChecks = allQCChecks.filter((check) => check.aiGenerated)
+    const validationIssues = allQCChecks.filter((check: any) => !check.aiGenerated)
+    const aiChecks = allQCChecks.filter((check: any) => check.aiGenerated)
 
     return (
       <div className="space-y-6">
@@ -2416,7 +2417,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-600">
-                  {manuscript.figures.reduce((acc, fig) => acc + fig.panels.length, 0)}
+                  {manuscript.figures.reduce((acc: any, fig: any) => acc + fig.panels.length, 0)}
                 </div>
                 <div className="text-sm text-muted-foreground">Total Panels</div>
               </div>
@@ -2579,7 +2580,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEditFile(file.id)}
+                            onClick={() => handleEditFile(Number(file.id))}
                             title="Edit file"
                           >
                             <Edit className="w-4 h-4" />
@@ -2587,7 +2588,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteFile(file.id)}
+                            onClick={() => handleDeleteFile(Number(file.id))}
                             className="text-red-600 hover:text-red-700"
                             title="Delete file"
                           >

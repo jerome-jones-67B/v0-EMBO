@@ -210,15 +210,15 @@ export class DataService {
     const response = await api.manuscripts.getAll(data4revParams);
     
     // Transform the response to match our format
-    const transformedManuscripts = response.manuscripts.map(m => this.transformManuscript(m));
+    const transformedManuscripts = response.data.manuscripts.map((m: any) => this.transformManuscript(m));
     
     return {
       data: transformedManuscripts,
       pagination: {
         page: params?.page || 1,
         limit: params?.limit || 20,
-        total: response.total,
-        pages: Math.ceil(response.total / (params?.limit || 20)),
+        total: response.data.total,
+        pages: Math.ceil(response.data.total / (params?.limit || 20)),
       },
       success: true,
       message: 'Success',
@@ -239,10 +239,10 @@ export class DataService {
     
     // Transform the detailed manuscript data
     const transformedManuscript: Manuscript = {
-      ...this.transformManuscript(response),
-      figureCount: response.figures.length,
+      ...this.transformManuscript(response.data),
+      figureCount: response.data.figures.length,
       // Additional fields from detailed response
-      abstract: response.note || undefined,
+      abstract: response.data.note || undefined,
       keywords: [], // Not available in Data4Rev API
       submissionType: 'Research Article', // Default value
       wordCount: undefined, // Not available in Data4Rev API
@@ -325,7 +325,7 @@ export class DataService {
     // For Data4Rev API, figures are part of manuscript details
     if (params?.manuscriptId) {
       const manuscript = await api.manuscripts.getById(params.manuscriptId);
-      const transformedFigures = manuscript.figures.map(f => this.transformFigure(f));
+      const transformedFigures = manuscript.data.figures.map((f: any) => this.transformFigure(f));
       return createMockPaginatedResponse(
         transformedFigures,
         params?.page || 1,
@@ -477,9 +477,9 @@ export class DataService {
     // Data4Rev API doesn't have search functionality
     // We'll get all manuscripts and filter client-side for now
     const response = await api.manuscripts.getAll();
-    const filteredData = response.manuscripts
-      .map(m => this.transformManuscript(m))
-      .filter(m =>
+    const filteredData = response.data.manuscripts
+      .map((m: any) => this.transformManuscript(m))
+      .filter((m: any) =>
         m.title.toLowerCase().includes(query.toLowerCase()) ||
         m.authors.toLowerCase().includes(query.toLowerCase()) ||
         m.msid.toLowerCase().includes(query.toLowerCase())
@@ -511,19 +511,19 @@ export class DataService {
 
     // Get statistics from Data4Rev API
     const response = await api.manuscripts.getAll();
-    const manuscripts = response.manuscripts.map(m => this.transformManuscript(m));
+    const manuscripts = response.data.manuscripts.map((m: any) => this.transformManuscript(m));
     
     const stats = {
-      totalManuscripts: response.total,
-      manuscriptsByStatus: manuscripts.reduce((acc, m) => {
+      totalManuscripts: response.data.total,
+      manuscriptsByStatus: manuscripts.reduce((acc: any, m: any) => {
         acc[m.status] = (acc[m.status] || 0) + 1;
         return acc;
       }, {} as Record<string, number>),
-      manuscriptsByPriority: manuscripts.reduce((acc, m) => {
+      manuscriptsByPriority: manuscripts.reduce((acc: any, m: any) => {
         acc[m.priority] = (acc[m.priority] || 0) + 1;
         return acc;
       }, {} as Record<string, number>),
-      totalFigures: manuscripts.reduce((acc, m) => acc + m.figureCount, 0),
+      totalFigures: manuscripts.reduce((acc: any, m: any) => acc + (m.figureCount || 0), 0),
       totalAuthors: 0, // Not available in Data4Rev API
       pendingTasks: 0, // Not available in Data4Rev API
       unreadNotifications: 0, // Not available in Data4Rev API
