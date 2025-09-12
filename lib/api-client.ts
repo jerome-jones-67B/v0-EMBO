@@ -170,106 +170,68 @@ export const api = {
       if (params?.states) params.states.forEach(state => searchParams.append('states', state));
       if (params?.sort !== undefined) searchParams.append('sort', params.sort);
       if (params?.ascending !== undefined) searchParams.append('ascending', params.ascending.toString());
-      
       const url = searchParams.toString() ? `${endpoints.manuscripts}?${searchParams}` : endpoints.manuscripts;
-      return apiClient.makeRequest<ManuscriptsOverviewPage>(url, { method: 'GET' });
+      return apiClient.get<ManuscriptsOverviewPage>(url);
     },
     getById: (id: string) =>
-      apiClient.makeRequest<ManuscriptDetails>(endpoints.manuscriptDetails(id)),
+      apiClient.get<ManuscriptDetails>(endpoints.manuscriptDetails(id)),
     getContent: (id: string) =>
-      apiClient.makeRequest<any>(endpoints.manuscriptContent(id)),
+      apiClient.get<any>(endpoints.manuscriptContent(id)),
     deposit: (id: string) =>
-      apiClient.makeRequest<DepositionEventDetails[]>(endpoints.manuscriptDeposit(id), {
-        method: 'POST',
-      }),
+      apiClient.post<DepositionEventDetails[]>(endpoints.manuscriptDeposit(id), {}),  
   },
 
   // Figures
   figures: {
     create: (manuscriptId: string, data: FigureCreate) =>
-      apiClient.makeRequest<FigureDetails>(endpoints.figures(manuscriptId), {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
+      apiClient.post<FigureDetails>(endpoints.figures(manuscriptId), data),
     update: (manuscriptId: string, figureId: string, data: Partial<FigureDetails>) =>
-      apiClient.makeRequest<FigureDetails>(endpoints.figure(manuscriptId, figureId), {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }),
+      apiClient.put<FigureDetails>(endpoints.figure(manuscriptId, figureId), data),
     delete: (manuscriptId: string, figureId: string) =>
-      apiClient.makeRequest<void>(endpoints.figure(manuscriptId, figureId), {
-        method: 'DELETE',
-      }),
+      apiClient.delete<void>(endpoints.figure(manuscriptId, figureId)),
   },
 
   // Panels
   panels: {
     create: (manuscriptId: string, figureId: string, data: PanelCreate) =>
-      apiClient.makeRequest<PanelDetails>(endpoints.panels(manuscriptId, figureId), {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
+      apiClient.post<PanelDetails>(endpoints.panels(manuscriptId, figureId), data),
     update: (manuscriptId: string, figureId: string, panelId: string, data: Partial<PanelDetails>) =>
-      apiClient.makeRequest<PanelDetails>(endpoints.panel(manuscriptId, figureId, panelId), {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }),
+      apiClient.put<PanelDetails>(endpoints.panel(manuscriptId, figureId, panelId), data),
     delete: (manuscriptId: string, figureId: string, panelId: string) =>
-      apiClient.makeRequest<void>(endpoints.panel(manuscriptId, figureId, panelId), {
-        method: 'DELETE',
-      }),
+      apiClient.delete<void>(endpoints.panel(manuscriptId, figureId, panelId)),
   },
 
   // Links
   links: {
     create: (manuscriptId: string, data: LinkCreate) =>
-      apiClient.makeRequest<LinkDetails>(endpoints.links(manuscriptId), {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
+      apiClient.post<LinkDetails>(endpoints.links(manuscriptId), data),
     update: (manuscriptId: string, linkId: string, data: Partial<LinkDetails>) =>
-      apiClient.makeRequest<LinkDetails>(endpoints.link(manuscriptId, linkId), {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }),
+      apiClient.put<LinkDetails>(endpoints.link(manuscriptId, linkId), data),
     delete: (manuscriptId: string, linkId: string) =>
-      apiClient.makeRequest<void>(endpoints.link(manuscriptId, linkId), {
-        method: 'DELETE',
-      }),
+      apiClient.delete<void>(endpoints.link(manuscriptId, linkId)),
   },
 
   // Source Data
   sourceData: {
     create: (manuscriptId: string, data: SourceDataCreate) =>
-      apiClient.makeRequest<SourceDataDetails>(endpoints.sourceData(manuscriptId), {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
+      apiClient.post<SourceDataDetails>(endpoints.sourceData(manuscriptId), data),
     delete: (manuscriptId: string, sourceDataId: string) =>
-      apiClient.makeRequest<void>(endpoints.sourceDataItem(manuscriptId, sourceDataId), {
-        method: 'DELETE',
-      }),
+      apiClient.delete<void>(endpoints.sourceDataItem(manuscriptId, sourceDataId)),
   },
 
   // Files
   files: {
     upload: (formData: FormData) =>
-      apiClient.makeRequest<FileDetails>(endpoints.files, {
-        method: 'POST',
-        body: formData,
-        headers: {}, // Don't set Content-Type for FormData
-      }),
+      apiClient.upload<FileDetails>(endpoints.files, formData),
     getById: (fileId: string) =>
-      apiClient.makeRequest<FileDetails>(endpoints.file(fileId)),
+      apiClient.get<FileDetails>(endpoints.file(fileId)),
     delete: (fileId: string) =>
-      apiClient.makeRequest<void>(endpoints.file(fileId), {
-        method: 'DELETE',
-      }),
+      apiClient.delete<void>(endpoints.file(fileId)),
   },
 
   // Check Results
   checkResults: {
     getByManuscriptId: (manuscriptId: string) =>
-      apiClient.makeRequest<CheckResultDetails[]>(endpoints.checkResults(manuscriptId)),
+      apiClient.get<CheckResultDetails[]>(endpoints.checkResults(manuscriptId)),
   },
 };

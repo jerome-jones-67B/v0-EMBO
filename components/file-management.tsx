@@ -264,8 +264,8 @@ export function FileManagement({ msid }: FileManagementProps) {
 
   // Sort files
   filteredAndSortedFiles.sort((a, b) => {
-    let aValue = a[sortField]
-    let bValue = b[sortField]
+    let aValue: any = a[sortField]
+    let bValue: any = b[sortField]
 
     if (sortField === "uploadedDate") {
       aValue = new Date(aValue).getTime()
@@ -345,8 +345,8 @@ export function FileManagement({ msid }: FileManagementProps) {
         file.id === fileId
           ? {
               ...file,
-              assignments: [...file.assignments, { type: "figure", target: newAssignment, panel: null }],
-              validationStatus: "validated",
+              assignments: [...file.assignments, { type: "figure", target: newAssignment, panel: null }] as any,
+              validationStatus: "validated" as any,
             }
           : file,
       ),

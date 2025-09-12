@@ -189,19 +189,19 @@ export function DepositionWorkflow({ msid }: DepositionWorkflowProps) {
     const newDeposition = {
       id: `dep${Date.now()}`,
       attemptNumber: depositionData.depositionHistory.length + 1,
-      status: "completed" as const,
+      status: "completed",
       startedAt: new Date().toISOString(),
       completedAt: new Date().toISOString(),
       initiatedBy: "Current User",
       repository: "BioStudies",
-      accessionNumber: `S-BSST${Math.floor(Math.random() * 1000000)}`,
-      errorMessage: null,
+      accessionNumber: `S-BSST${Math.floor(Math.random() * 1000000)}` as string | null,
+      errorMessage: null as string | null,
       logs: [{ timestamp: new Date().toISOString(), level: "info", message: "Deposition completed successfully" }],
     }
 
     setDepositionData((prev) => ({
       ...prev,
-      depositionHistory: [newDeposition, ...prev.depositionHistory],
+      depositionHistory: [newDeposition as any, ...prev.depositionHistory],
     }))
 
     setIsDepositing(false)

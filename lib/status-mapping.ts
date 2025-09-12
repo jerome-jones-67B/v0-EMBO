@@ -12,6 +12,24 @@ export interface StatusMapping {
 
 // API status to UI mapping
 export const STATUS_MAPPINGS: Record<string, StatusMapping> = {
+  'received': {
+    apiStatus: 'received',
+    displayStatus: 'New submission',
+    workflowState: 'ready-for-curation',
+    priority: 'normal',
+    qcStatus: 'needs-validation',
+    badgeVariant: 'outline',
+    isMapped: true
+  },
+  'segmented': {
+    apiStatus: 'segmented',
+    displayStatus: 'In Progress',
+    workflowState: 'ready-for-curation',
+    priority: 'normal',
+    qcStatus: 'needs-validation',
+    badgeVariant: 'secondary',
+    isMapped: true
+  },
   'submitted': {
     apiStatus: 'submitted',
     displayStatus: 'New submission',
