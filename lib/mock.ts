@@ -272,7 +272,7 @@ export const mockSourceData = [
 export const mockManuscripts = [
   {
     id: "EMBO-2024-001",
-    title: "Molecular mechanisms of autophagy in neurodegeneration",
+    title: "Molecular mechanisms of DNA repair in cancer cells",
     authors: ["Dr. Sarah Chen", "Dr. Michael Rodriguez"],
     received: "2024-01-15",
     lastModified: "2024-01-20",
