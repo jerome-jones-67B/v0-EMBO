@@ -902,7 +902,7 @@ const getManuscriptDetail = async (msid: string) => {
 }
 
 const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) => {
-  const [selectedView, setSelectedView] = useState<"manuscript" | "list">("manuscript")
+  const [selectedView, setSelectedView] = useState<"manuscript" | "list" | "fulltext">("manuscript")
   const [linkedData, setLinkedData] = useState(mockLinkedData)
   const [sourceData, setSourceData] = useState(mockSourceData)
   const [editingLinkedData, setEditingLinkedData] = useState<string | null>(null)
@@ -930,6 +930,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [isEditingDataAvailability, setIsEditingDataAvailability] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [showFullText, setShowFullText] = useState(false)
+  const [fullTextContent, setFullTextContent] = useState<string>("")
+  const [isLoadingFullText, setIsLoadingFullText] = useState(false)
+  const [fullTextError, setFullTextError] = useState<string | null>(null)
   const [currentEditor, setCurrentEditor] = useState<{
     name: string
     email: string
@@ -1050,6 +1053,44 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     } finally {
       setIsLoadingApi(false)
       setIsDetailLoadComplete(true)
+    }
+  }
+
+  // Fetch full text content from API
+  const fetchFullTextContent = async () => {
+    if (!useApiData) {
+      setFullTextError("Full text viewing is only available when using API data")
+      return
+    }
+
+    setIsLoadingFullText(true)
+    setFullTextError(null)
+    
+    try {
+      console.log(`📄 Fetching full text content for manuscript ID: ${msid}`)
+      const response = await fetch(`/api/v1/manuscripts/${msid}/content`)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch content: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.fallback) {
+        setFullTextError(data.content)
+        setFullTextContent("")
+      } else {
+        setFullTextContent(typeof data.content === 'string' ? data.content : JSON.stringify(data.content, null, 2))
+        setFullTextError(null)
+      }
+      
+      console.log('✅ Successfully fetched full text content')
+    } catch (error) {
+      console.error('❌ Error fetching full text content:', error)
+      setFullTextError("Failed to load full text content. Please try again.")
+      setFullTextContent("")
+    } finally {
+      setIsLoadingFullText(false)
     }
   }
 
@@ -1468,7 +1509,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setIsEditingNotes(false)
     // Update the manuscript object and local state
     if (manuscript) {
-      manuscript.notes = notesValue
+    manuscript.notes = notesValue
     }
     setNotes(notesValue) // Also update the notes state to trigger the useEffect
   }
@@ -2027,9 +2068,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     }
 
     return (
-    <div className="space-y-8">
-        {/* Figures Section - Now First and Primary Focus */}
-        <Card>
+      <div className="space-y-8">
+          {/* Figures Section - Now First and Primary Focus */}
+          <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-xl font-bold">
@@ -2763,8 +2804,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </CardContent>
         </Card>
       )}
-            </div>
-          </div>
+
+          {/* Figures Section - Now First and Primary Focus */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl font-bold">
+            <FileText className="w-6 h-6" />
+            Figures Review
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-8">
           {manuscript.figures.map((figure: any, figureIndex: number) => (
@@ -3010,8 +3057,120 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           ))}
         </CardContent>
       </Card>
-    </div>
-  )
+      </div>
+    )
+  }
+
+  // Full Text View Component
+  const FullTextView = () => {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Full Text Content</h3>
+            <p className="text-sm text-muted-foreground">
+              Complete manuscript text from the Data4Rev API
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {useApiData && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchFullTextContent}
+                disabled={isLoadingFullText}
+              >
+                {isLoadingFullText ? (
+                  <>
+                    <Clock className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Refresh Content
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="p-6">
+            {!useApiData ? (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h4 className="text-lg font-medium mb-2">API Data Required</h4>
+                <p className="text-muted-foreground">
+                  Full text viewing is only available when using live API data. 
+                  Please switch to API mode to view manuscript content.
+                </p>
+              </div>
+            ) : isLoadingFullText ? (
+              <div className="text-center py-12">
+                <div className="inline-flex items-center gap-2 text-muted-foreground">
+                  <Clock className="w-5 h-5 animate-spin" />
+                  <span>Loading full text content...</span>
+                </div>
+              </div>
+            ) : fullTextError ? (
+              <div className="text-center py-12">
+                <AlertCircle className="w-12 h-12 mx-auto text-orange-500 mb-4" />
+                <h4 className="text-lg font-medium mb-2">Content Unavailable</h4>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  {fullTextError}
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={fetchFullTextContent}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Try Again
+                </Button>
+              </div>
+            ) : fullTextContent ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Content length: {fullTextContent.length.toLocaleString()} characters
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigator.clipboard.writeText(fullTextContent)}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Copy to Clipboard
+                  </Button>
+                </div>
+                <div className="relative">
+                  <div 
+                    className="max-h-[600px] overflow-y-auto p-4 bg-gray-50 rounded-lg border font-mono text-sm whitespace-pre-wrap"
+                    style={{ lineHeight: '1.6' }}
+                  >
+                    {fullTextContent}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h4 className="text-lg font-medium mb-2">No Content Loaded</h4>
+                <p className="text-muted-foreground mb-4">
+                  Click the button below to load the full text content for this manuscript.
+                </p>
+                <Button onClick={fetchFullTextContent}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Load Full Text
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   const ListReviewView = () => {
@@ -3027,7 +3186,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
     return (
       <div className="space-y-6">
-        {/* QC Summary */}
+          {/* QC Summary */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -3075,29 +3234,30 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               </CardTitle>
             </CardHeader>
           <CardContent className="space-y-4">
-                {aiChecks.map((check, index) => (
+            {aiChecks.map((check, index) => (
               <div key={index} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                    {getQCIcon(check.type)}
+                {getQCIcon(check.type)}
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                        <span className="font-medium">{check.message}</span>
+                    <span className="font-medium">{check.message}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{check.location}</span>
                       {getQCActions(check, check.location, index)}
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
+                </div>
               </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {selectedSourceFiles.size > 0 && (
-                  <Button variant="destructive" size="sm" onClick={handleDeleteSelectedFiles}>
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Delete Selected ({selectedSourceFiles.size})
-                  </Button>
-                )}
-                <Badge variant="outline">{allSubmittedFiles.length} files</Badge>
-              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Source Files Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="w-5 h-5" />
+              Source Files
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -3299,12 +3459,29 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               <TabsTrigger value="list" onClick={() => setSelectedView("list")}>
                 List Review
               </TabsTrigger>
+              <TabsTrigger 
+                value="fulltext" 
+                onClick={() => {
+                  setSelectedView("fulltext")
+                  if (useApiData && !fullTextContent && !fullTextError) {
+                    fetchFullTextContent()
+                  }
+                }}
+                disabled={!useApiData}
+                title={!useApiData ? "Full text viewing is only available when using API data" : "View the complete manuscript text"}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Full Text
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="manuscript">
               <ManuscriptReviewView />
             </TabsContent>
             <TabsContent value="list">
               <ListReviewView />
+            </TabsContent>
+            <TabsContent value="fulltext">
+              <FullTextView />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -3324,8 +3501,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                   onClick={() => setShowPanelPopup(null)}
                 >
                   <X className="w-4 h-4" />
-                </Button>
-              </div>
+                  </Button>
+                </div>
               
               {/* Main content */}
               <div className="flex-1 overflow-hidden p-6">
@@ -3356,13 +3533,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                  }}>
                               <div className="absolute -top-6 left-0 bg-red-500 text-white text-xs px-2 py-1 rounded">
                                 Panel {showPanelPopup.panelId}
-                              </div>
-                            </div>
+          </div>
+            </div>
                           </>
                         );
                       })()}
-                    </div>
-                  </div>
+            </div>
+          </div>
                   
                   {/* Right side - Panel Caption */}
                   <div className="w-96">
@@ -3394,9 +3571,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           // Fallback to main figure caption if panel caption not found
                           return selectedFigure?.caption || "No caption available for this panel.";
                         })()}
-                      </div>
-                    </div>
-                  </div>
+              </div>
+                </div>
+                </div>
                 </div>
                 
                 {/* Bottom section - AI and QC checks */}
@@ -3446,16 +3623,16 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                         <p className="text-xs text-blue-600 mt-1">
                                           Confidence: {Math.round(check.confidence * 100)}%
                                         </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
+            )}
+          </div>
+            </div>
+            </div>
                               );
                             })}
-                          </div>
-                        </div>
-                      )}
-                      
+            </div>
+              </div>
+            )}
+
                       {/* QC Checks - Same as main view */}
                       {qcChecks.length > 0 && (
                         <div>
@@ -3471,24 +3648,24 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                   <div className="flex-1">
                                     <p className="text-sm font-medium">{check.message}</p>
                                     <p className="text-xs text-gray-600 mt-1">{check.details}</p>
-                                  </div>
+              </div>
                                 </div>
                               </div>
                             ))}
-                          </div>
-                        </div>
+                </div>
+                </div>
                       )}
                       
                       {aiChecks.length === 0 && qcChecks.length === 0 && (
                         <div className="text-center text-gray-500 py-8">
                           <Cpu className="w-8 h-8 mx-auto mb-2 opacity-50" />
                           <p>No checks available</p>
-                        </div>
-                      )}
-                    </div>
+                </div>
+            )}
+          </div>
                   );
                 })()}
-                  </div>
+          </div>
                 </div>
               </div>
             </div>
