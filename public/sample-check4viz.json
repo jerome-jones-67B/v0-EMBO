@@ -1,0 +1,44 @@
+[
+  {
+    "type": "issue",
+    "message": "Molecular weight markers not clearly labeled",
+    "details": "The molecular weight markers should be clearly labeled with their sizes in kDa",
+    "prompt": "Check if molecular weight markers are clearly labeled with their sizes in kDa. This is important for readers to understand the scale of the proteins being analyzed.",
+    "panelId": "1A"
+  },
+  {
+    "type": "suggestion",
+    "message": "Consider adding loading control",
+    "details": "A loading control (e.g., actin or GAPDH) would help verify equal protein loading across lanes",
+    "prompt": "Suggest adding a loading control to verify equal protein loading across all lanes. This is a standard practice in western blot analysis.",
+    "panelId": "1A"
+  },
+  {
+    "type": "issue",
+    "message": "Scale bar positioning could be improved",
+    "details": "The scale bar should be positioned in a corner and not overlap with important cellular structures",
+    "prompt": "Check the positioning of the scale bar. It should be clearly visible and not overlap with important cellular structures or data.",
+    "panelId": "1B"
+  },
+  {
+    "type": "suggestion",
+    "message": "Consider adding magnification information",
+    "details": "Including the magnification (e.g., 40x, 63x) would provide additional context for readers",
+    "prompt": "Suggest adding magnification information to help readers understand the scale and resolution of the microscopy image.",
+    "panelId": "1B"
+  },
+  {
+    "type": "suggestion",
+    "message": "Statistical analysis appears appropriate",
+    "details": "Error bars represent SEM from n=3 independent experiments, which is good practice",
+    "prompt": "Verify that the statistical analysis is appropriate. SEM from n=3 experiments is a reasonable approach for this type of data.",
+    "panelId": "1C"
+  },
+  {
+    "type": "suggestion",
+    "message": "Consider showing individual data points",
+    "details": "Showing individual data points along with the mean and error bars would provide more transparency",
+    "prompt": "Suggest showing individual data points along with the mean and error bars to provide more transparency about the data distribution.",
+    "panelId": "1C"
+  }
+]

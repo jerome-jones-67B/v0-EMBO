@@ -1,47 +1,60 @@
-// Data transformation utilities to convert API data to UI format
+// Data transformation utilities for converting API data to UI data structures
 
-// Transform API manuscript to UI manuscript structure
-export function transformApiManuscriptToUI(apiManuscript: any): any {
+import { 
+  ManuscriptDetails, 
+  FigureDetails, 
+  PanelDetails, 
+  CheckResultDetails, 
+  LinkDetails,
+  SourceDataDetails,
+  Manuscript,
+  Figure,
+  Panel,
+  QCCheck,
+  LinkedDataEntry
+} from './types';
+
+// Transform API manuscript details to UI manuscript structure
+export function transformApiManuscriptToUI(apiManuscript: ManuscriptDetails): any {
   return {
     // UI structure (matching mock data)
     id: apiManuscript.id, // Keep as integer for API calls
     msid: apiManuscript.msid,
     title: apiManuscript.title,
-    authors: apiManuscript.authors,
+    authors: apiManuscript.authors.split(',').map((author: string) => author.trim()),
+    received: apiManuscript.received_at.split('T')[0],
     doi: apiManuscript.doi,
-    abstract: apiManuscript.abstract || apiManuscript.note,
-    notes: apiManuscript.notes || apiManuscript.note,
+    lastModified: apiManuscript.received_at,
     status: apiManuscript.status,
-    displayStatus: getStatusMapping(apiManuscript.status).displayStatus,
-    workflowState: getStatusMapping(apiManuscript.status).workflowState,
-    receivedDate: apiManuscript.received_at,
-    lastModified: apiManuscript.modified_at || apiManuscript.received_at,
-    assignedTo: apiManuscript.assigned_to || 'Unassigned',
-    modifiedBy: apiManuscript.modified_by || 'System',
-    priority: apiManuscript.priority || 'normal',
-    dataAvailability: apiManuscript.data_availability || 'Not specified',
-    keywords: apiManuscript.keywords || [],
+    assignedTo: "Dr. Sarah Wilson", // Not available in API
+    currentStatus: mapStatusToDisplay(apiManuscript.status),
+    modifiedBy: "Dr. Sarah Chen", // Not available in API
+    priority: derivePriorityFromStatus(apiManuscript.status).toLowerCase(),
+    
+    // Content fields
+    abstract: apiManuscript.note || "No abstract available",
+    keywords: [], // Not in API, will be empty
+    notes: apiManuscript.note || "No additional notes",
+    dataAvailability: "Available", // Not in API
+    
+    // Transform figures to match expected structure
     figures: apiManuscript.figures?.map(transformApiFigureToUI) || [],
+    
+    // Transform other data
     linkedData: transformLinksToLinkedData(apiManuscript.links || []),
-    qcChecks: transformCheckResultsToQCChecks(apiManuscript.check_results || []),
+    linkedInfo: transformLinksToLinkedData(apiManuscript.links || []),
     
-    // API fields for compatibility
-    received_at: apiManuscript.received_at,
-    modified_at: apiManuscript.modified_at,
-    assigned_to: apiManuscript.assigned_to,
-    modified_by: apiManuscript.modified_by,
-    data_availability: apiManuscript.data_availability,
-    check_results: apiManuscript.check_results || [],
-    links: apiManuscript.links || [],
-    
-    // Mapping status
+    // Status mapping
+    displayStatus: mapStatusToDisplay(apiManuscript.status),
+    workflowState: mapStatusToWorkflow(apiManuscript.status),
+    badgeVariant: mapStatusToBadgeVariant(apiManuscript.status),
     isMapped: true,
     unmappedFields: ['assignedTo', 'modifiedBy', 'dataAvailability']
   };
 }
 
 // Transform API figure to UI figure structure
-export function transformApiFigureToUI(apiFigure: any): any {
+export function transformApiFigureToUI(apiFigure: FigureDetails): any {
   return {
     // UI structure (matching mock data)
     id: apiFigure.id.toString(),
@@ -62,7 +75,7 @@ export function transformApiFigureToUI(apiFigure: any): any {
 }
 
 // Transform API panel to UI panel structure
-export function transformApiPanelToUI(apiPanel: any): any {
+export function transformApiPanelToUI(apiPanel: PanelDetails): any {
   return {
     // UI structure (matching mock data)
     id: apiPanel.id.toString(),
@@ -73,94 +86,107 @@ export function transformApiPanelToUI(apiPanel: any): any {
     // API fields for compatibility
     label: apiPanel.label,
     caption: apiPanel.caption,
-    coordinates: apiPanel.coordinates,
+    x1: apiPanel.x1,
+    y1: apiPanel.y1,
+    x2: apiPanel.x2,
+    y2: apiPanel.y2,
+    confidence: apiPanel.confidence,
+    sort_order: apiPanel.sort_order,
+    links: apiPanel.links || [],
+    source_data: apiPanel.source_data || [],
     check_results: apiPanel.check_results || []
   };
 }
 
-// Transform check results to QC checks format
-export function transformCheckResultsToQCChecks(checkResults: any[]): any[] {
+// Transform API check results to UI QC checks
+export function transformCheckResultsToQCChecks(checkResults: CheckResultDetails[]): QCCheck[] {
   return checkResults.map(check => ({
-    id: check.id?.toString() || Math.random().toString(),
     type: mapCheckStatusToType(check.status),
-    message: check.message || check.description,
-    details: check.details || check.message,
-    aiGenerated: check.ai_generated || false,
-    dismissed: check.dismissed || false,
-    panelId: check.panel_id?.toString(),
-    timestamp: check.timestamp || new Date().toISOString()
+    message: check.message || check.check_name,
+    details: check.details || '',
+    aiGenerated: true, // Assume all API checks are AI generated
+    dismissed: false
   }));
 }
 
-// Transform links to linked data format
-export function transformLinksToLinkedData(links: any[]): any[] {
+// Transform API links to UI linked data
+export function transformLinksToLinkedData(links: LinkDetails[]): LinkedDataEntry[] {
   return links.map(link => ({
-    id: link.id?.toString() || Math.random().toString(),
-    type: link.type || 'Repository',
-    identifier: link.identifier || link.url,
-    url: link.url,
-    description: link.description || `${link.type || 'Repository'} link`,
-    panelId: link.panel_id?.toString()
+    type: link.database || 'Unknown',
+    identifier: link.identifier || link.id.toString(),
+    url: link.uri,
+    description: link.name
   }));
 }
 
-// Status mapping utility
-export function getStatusMapping(status: string) {
-  const statusMap: Record<string, any> = {
-    'submitted': {
-      displayStatus: 'Submitted',
-      workflowState: 'Under Review',
-      badgeVariant: 'secondary',
-      priority: 'normal'
-    },
-    'under_review': {
-      displayStatus: 'Under Review',
-      workflowState: 'In Progress',
-      badgeVariant: 'default',
-      priority: 'normal'
-    },
-    'revision_requested': {
-      displayStatus: 'Revision Requested',
-      workflowState: 'Awaiting Author',
-      badgeVariant: 'destructive',
-      priority: 'high'
-    },
-    'accepted': {
-      displayStatus: 'Accepted',
-      workflowState: 'Complete',
-      badgeVariant: 'default',
-      priority: 'normal'
-    },
-    'rejected': {
-      displayStatus: 'Rejected',
-      workflowState: 'Complete',
-      badgeVariant: 'destructive',
-      priority: 'normal'
-    }
+// Helper functions for status mapping
+function derivePriorityFromStatus(status: string): string {
+  const priorityMap: { [key: string]: string } = {
+    'submitted': 'High',
+    'under_review': 'High',
+    'revision_requested': 'Medium',
+    'accepted': 'Low',
+    'rejected': 'Low'
   };
-  
-  return statusMap[status] || {
-    displayStatus: status,
-    workflowState: 'Unknown',
-    badgeVariant: 'outline',
-    priority: 'normal'
-  };
+  return priorityMap[status] || 'Medium';
 }
 
-// Helper functions
-function mapCheckStatusToType(status: string): string {
-  const typeMap: Record<string, string> = {
-    'error': 'error',
+function deriveQCStatusFromCheckResults(checkResults: CheckResultDetails[]): string {
+  if (!checkResults || checkResults.length === 0) return 'Pending';
+  
+  const hasErrors = checkResults.some(check => check.status === 'error');
+  const hasWarnings = checkResults.some(check => check.status === 'warning');
+  
+  if (hasErrors) return 'Issues Found';
+  if (hasWarnings) return 'Warnings';
+  return 'Passed';
+}
+
+function mapStatusToDisplay(status: string): string {
+  const statusMap: { [key: string]: string } = {
+    'submitted': 'Submitted',
+    'under_review': 'Under Review',
+    'revision_requested': 'Revision Requested',
+    'accepted': 'Accepted',
+    'rejected': 'Rejected'
+  };
+  return statusMap[status] || status;
+}
+
+function mapStatusToWorkflow(status: string): string {
+  const workflowMap: { [key: string]: string } = {
+    'submitted': 'Initial Review',
+    'under_review': 'Peer Review',
+    'revision_requested': 'Author Revision',
+    'accepted': 'Production',
+    'rejected': 'Archived'
+  };
+  return workflowMap[status] || 'Unknown';
+}
+
+function mapStatusToBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  const variantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
+    'submitted': 'secondary',
+    'under_review': 'default',
+    'revision_requested': 'outline',
+    'accepted': 'default',
+    'rejected': 'destructive'
+  };
+  return variantMap[status] || 'default';
+}
+
+function mapCheckStatusToType(status: string): 'info' | 'warning' | 'error' {
+  const typeMap: { [key: string]: 'info' | 'warning' | 'error' } = {
+    'pass': 'info',
     'warning': 'warning',
-    'info': 'info',
-    'success': 'info'
+    'error': 'error',
+    'fail': 'error'
   };
   return typeMap[status] || 'info';
 }
 
-function hasPanelIssues(checkResults: any[]): boolean {
+function hasPanelIssues(checkResults: CheckResultDetails[]): boolean {
   return checkResults.some(check => 
-    check.status === 'error' || check.status === 'warning'
+    check.status === 'error' || check.status === 'warning' || check.status === 'fail'
   );
 }
-

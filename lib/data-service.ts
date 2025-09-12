@@ -9,6 +9,7 @@ import {
   mockLinkedData,
   mockSourceData,
 } from './mock';
+import { realFigures } from './real-figures-data';
 import type {
   Manuscript,
   ManuscriptOverview,
@@ -74,6 +75,46 @@ export class DataService {
   // Get current mock data setting
   getUseMockData(): boolean {
     return this.useMockData;
+  }
+
+  // Add real figures to specific manuscripts
+  private async addRealFiguresToManuscript(manuscript: any): Promise<any> {
+    try {
+      console.log('🔧 Adding real figures to manuscript:', manuscript.id)
+      console.log('📊 Real figures available:', realFigures.length)
+      
+      // Add real figures to specific manuscripts
+      if (manuscript.id === 'EMBO-2024-001') {
+        // Add your real figures to this manuscript
+        console.log('✅ Adding real figures to EMBO-2024-001')
+        console.log('📋 Real figures data:', realFigures)
+        
+        const result = {
+          ...manuscript,
+          figures: realFigures,
+          figureCount: realFigures.length
+        };
+        
+        console.log('🎯 Final manuscript with figures:', result)
+        console.log('📊 Final figures count:', result.figures?.length || 0)
+        
+        return result;
+      }
+      
+      // For other manuscripts, add some mock figures
+      console.log('⚠️ Not EMBO-2024-001, using mock figures for:', manuscript.id)
+      const mockFiguresForManuscript = mockFigures.slice(0, manuscript.figureCount || 2);
+      const result = {
+        ...manuscript,
+        figures: mockFiguresForManuscript,
+        figureCount: mockFiguresForManuscript.length
+      };
+      console.log('📊 Mock figures count:', result.figures?.length || 0)
+      return result;
+    } catch (error) {
+      console.error('Error adding real figures to manuscript:', error);
+      return manuscript;
+    }
   }
 
   // Helper function to transform Data4Rev manuscript to our format
@@ -166,6 +207,7 @@ export class DataService {
       submissionType: mockManuscript.submissionType || 'Research Article',
       wordCount: mockManuscript.wordCount,
       collaborators: mockManuscript.collaborators || [],
+      figures: mockManuscript.figures || [],
     };
   }
 
@@ -231,7 +273,10 @@ export class DataService {
       if (!manuscript) {
         throw new Error(`Manuscript ${id} not found`);
       }
-      return createMockResponse(this.transformMockManuscript(manuscript));
+      
+      // Add real figures to specific manuscripts
+      const manuscriptWithFigures = await this.addRealFiguresToManuscript(manuscript);
+      return createMockResponse(this.transformMockManuscript(manuscriptWithFigures));
     }
 
     // Call Data4Rev API
@@ -307,12 +352,14 @@ export class DataService {
     limit?: number;
   }): Promise<PaginatedResponse<Figure>> {
     if (this.useMockData) {
-      let filteredData = mockFigures.map(f => this.transformMockFigure(f));
+      // Combine mock figures with real figures
+      const allFigures = [...mockFigures, ...realFigures];
+      let filteredData = allFigures.map(f => this.transformMockFigure(f));
 
       if (params?.manuscriptId) {
         // In a real scenario, figures would be linked to manuscripts
         // For mock data, we'll return all figures
-        filteredData = mockFigures.map(f => this.transformMockFigure(f));
+        filteredData = allFigures.map(f => this.transformMockFigure(f));
       }
 
       return createMockPaginatedResponse(
