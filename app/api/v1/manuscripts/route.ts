@@ -41,7 +41,7 @@ const mockManuscripts = [
 ];
 
 // Data4Rev API endpoint
-const DATA4REV_API_BASE = 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api/v1';
+const DATA4REV_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api/v1';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

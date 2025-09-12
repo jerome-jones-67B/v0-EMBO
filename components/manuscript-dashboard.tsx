@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -342,6 +342,7 @@ export default function ManuscriptDashboard() {
   const [useApiData, setUseApiData] = useState(!dataService.getUseMockData())
   const [apiManuscripts, setApiManuscripts] = useState<any[]>([])
   const [isLoadingApi, setIsLoadingApi] = useState(false)
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false)
 
   const [visibleColumns, setVisibleColumns] = useState({
     actions: true,
@@ -605,6 +606,7 @@ export default function ManuscriptDashboard() {
       const transformedManuscripts = data.manuscripts.map((manuscript: any) => {
         const statusMapping = getStatusMapping(manuscript.status)
         return {
+          id: manuscript.id, // ✅ Include the integer ID for API calls
           msid: manuscript.msid,
           receivedDate: manuscript.received_at?.split('T')[0] || '2024-01-01',
           title: manuscript.title,
@@ -636,14 +638,32 @@ export default function ManuscriptDashboard() {
       setUseApiData(false)
     } finally {
       setIsLoadingApi(false)
+      setIsInitialLoadComplete(true)
       console.log('🏁 API data fetch completed')
     }
   }
+
+  // Initial data loading effect
+  useEffect(() => {
+    const initializeData = async () => {
+      if (useApiData) {
+        console.log('🔄 Initializing with API data...')
+        await fetchApiData()
+      } else {
+        console.log('🔄 Initializing with mock data...')
+        setIsInitialLoadComplete(true)
+      }
+    }
+
+    initializeData()
+  }, []) // Only run on mount
 
   // Switch between API and mock data
   const handleDataSourceSwitch = async (useApi: boolean) => {
     console.log('🔄 Toggling data source:', useApi ? 'API' : 'Mock')
     setUseApiData(useApi)
+    setIsInitialLoadComplete(false) // Reset load state when switching
+    
     // Update the data service to use the correct data source
     dataService.setUseMockData(!useApi)
     console.log('📊 Data service now using mock data:', dataService.getUseMockData())
@@ -651,6 +671,9 @@ export default function ManuscriptDashboard() {
     if (useApi && apiManuscripts.length === 0) {
       console.log('🌐 Fetching API data...')
       await fetchApiData()
+    } else {
+      // For mock data, mark as loaded immediately
+      setIsInitialLoadComplete(true)
     }
   }
 
@@ -818,6 +841,42 @@ export default function ManuscriptDashboard() {
   }
 
   const statusCounts = getStatusCounts()
+
+  // Loading screen component
+  const LoadingScreen = () => (
+    <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+      <div className="text-center space-y-6">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Database className="w-6 h-6 text-blue-600" />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-gray-900">Loading EMBO Dashboard</h2>
+          <p className="text-gray-600">
+            {useApiData 
+              ? "Fetching manuscript data from Data4Rev API..."
+              : "Preparing dashboard interface..."
+            }
+          </p>
+        </div>
+        
+        {useApiData && (
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <Zap className="w-4 h-4 text-green-600" />
+            <span>Connected to live API</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // Show loading screen if initial data hasn't loaded yet
+  if (!isInitialLoadComplete || (useApiData && isLoadingApi && apiManuscripts.length === 0)) {
+    return <LoadingScreen />
+  }
 
   return (
     <TooltipProvider>
@@ -1267,7 +1326,7 @@ export default function ManuscriptDashboard() {
                                               onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
-                                                setSelectedManuscript(manuscript.msid)
+                                                setSelectedManuscript(useApiData ? manuscript.id?.toString() || manuscript.msid : manuscript.msid)
                                                 setOpenDropdown(null)
                                               }}
                                             >
@@ -1377,7 +1436,7 @@ export default function ManuscriptDashboard() {
                               {visibleColumns.msid && (
                                 <TableCell className="text-sm font-medium">
                                   <button
-                                    onClick={() => setSelectedManuscript(manuscript.msid)}
+                                    onClick={() => setSelectedManuscript(useApiData ? manuscript.id?.toString() || manuscript.msid : manuscript.msid)}
                                     className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                                   >
                                     {highlightSearchTerm(manuscript.msid, searchTerm)}
@@ -1389,7 +1448,7 @@ export default function ManuscriptDashboard() {
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <button
-                                        onClick={() => setSelectedManuscript(manuscript.msid)}
+                                        onClick={() => setSelectedManuscript(useApiData ? manuscript.id?.toString() || manuscript.msid : manuscript.msid)}
                                         className="truncate cursor-pointer text-blue-600 hover:text-blue-800 hover:underline text-left w-full"
                                         title={manuscript.title}
                                       >

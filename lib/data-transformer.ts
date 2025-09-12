@@ -4,7 +4,7 @@
 export function transformApiManuscriptToUI(apiManuscript: any): any {
   return {
     // UI structure (matching mock data)
-    id: apiManuscript.id.toString(),
+    id: apiManuscript.id, // Keep as integer for API calls
     msid: apiManuscript.msid,
     title: apiManuscript.title,
     authors: apiManuscript.authors,

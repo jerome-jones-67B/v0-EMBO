@@ -837,6 +837,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [notes, setNotes] = useState(manuscript.notes)
   const [dataAvailability, setDataAvailability] = useState(manuscript.dataAvailability)
   const [isLoadingApi, setIsLoadingApi] = useState(false)
+  const [isDetailLoadComplete, setIsDetailLoadComplete] = useState(false)
   const [isEditingLinkedData, setIsEditingLinkedData] = useState(false)
   const [isEditingSourceData, setIsEditingSourceData] = useState(false)
   const [editingLinkedDataIndex, setEditingLinkedDataIndex] = useState<number | null>(null)
@@ -874,16 +875,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const fetchApiManuscriptDetail = async () => {
     setIsLoadingApi(true)
     try {
-      // Convert MSID to numeric ID for API call
-      // MSIDs like "EMBO-2024-001" should map to numeric IDs like "1"
-      let numericId = '1' // default fallback
-      if (msid.includes('EMBO-2024-')) {
-        const idPart = msid.replace('EMBO-2024-', '')
-        numericId = parseInt(idPart, 10).toString()
-      }
-      
-      console.log(`🔍 Fetching API data for MSID: ${msid} -> ID: ${numericId}`)
-      const response = await fetch(`/api/v1/manuscripts/${numericId}`)
+      // The msid parameter should now be the integer ID when using API data
+      console.log(`🔍 Fetching API data for ID: ${msid}`)
+      const response = await fetch(`/api/v1/manuscripts/${msid}`)
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`)
       }
@@ -891,6 +885,48 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       
       // Transform API data to match our manuscript format
       const statusMapping = getStatusMapping(apiData.status)
+      
+      // Transform API data structure to UI structure
+      const transformedFigures = (apiData.figures || []).map((figure: any) => ({
+        ...figure,
+        // Ensure panels have linkedData arrays for source data links
+        panels: (figure.panels || []).map((panel: any) => ({
+          ...panel,
+          linkedData: panel.source_data || [],
+          qcChecks: (panel.check_results || []).map((check: any) => ({
+            type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+            message: check.message || check.check_name || 'No message',
+            details: check.details || check.message || check.check_name || 'No details available',
+            aiGenerated: check.ai_generated || true,
+            dismissed: false
+          }))
+        })),
+        // Transform check_results to qcChecks format
+        qcChecks: (figure.check_results || []).map((check: any) => ({
+          type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+          message: check.message || check.check_name || 'No message',
+          details: check.details || check.message || check.check_name || 'No details available',
+          aiGenerated: check.ai_generated || true,
+          dismissed: false
+        })),
+        // Transform links to linkedData format
+        linkedData: (figure.links || []).map((link: any) => ({
+          type: link.database || 'Repository',
+          identifier: link.identifier,
+          url: link.uri,
+          description: link.name
+        }))
+      }))
+      
+      // Transform manuscript-level check_results to qcChecks
+      const transformedQcChecks = (apiData.check_results || []).map((check: any) => ({
+        type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+        message: check.message || check.check_name || 'No message',
+        details: check.details || check.message || check.check_name || 'No details available',
+        aiGenerated: check.ai_generated || true,
+        dismissed: false
+      }))
+
       const transformedManuscript = {
         id: apiData.id,
         title: apiData.title,
@@ -906,7 +942,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         abstract: apiData.note || "No abstract available",
         notes: apiData.note || "No additional notes",
         dataAvailability: "Available", // Not available in API
-        figures: apiData.figures || [],
+        figures: transformedFigures,
         files: apiData.files || [],
         links: apiData.links || [],
         checkResults: apiData.check_results || [],
@@ -918,8 +954,10 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         badgeVariant: statusMapping.badgeVariant,
         isMapped: statusMapping.isMapped,
         unmappedFields: ['assignedTo', 'modifiedBy', 'dataAvailability'], // Fields not available in API
-        // Ensure qcChecks is always an array to prevent spread operator errors
-        qcChecks: Array.isArray(apiData.qcChecks) ? apiData.qcChecks : [],
+        // Transform check_results to qcChecks format
+        qcChecks: transformedQcChecks,
+        // Add fallback indicator if present
+        fallback: apiData.fallback || false
       }
       
       setManuscript(transformedManuscript)
@@ -934,11 +972,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       setDataAvailability(mockManuscript.dataAvailability)
     } finally {
       setIsLoadingApi(false)
+      setIsDetailLoadComplete(true)
     }
   }
 
   // Update manuscript data when data source changes
   useEffect(() => {
+    setIsDetailLoadComplete(false) // Reset load state when switching
+    
     if (useApiData) {
       fetchApiManuscriptDetail()
     } else {
@@ -947,6 +988,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       setManuscript(mockManuscript)
       setNotes(mockManuscript.notes)
       setDataAvailability(mockManuscript.dataAvailability)
+      setIsDetailLoadComplete(true) // Mark as loaded for mock data
     }
   }, [useApiData, msid])
 
@@ -1401,7 +1443,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   }
 
   const getCheckId = (check: any, location: string, index: number) => {
-    return `${location}-${index}-${check.message.substring(0, 20)}`
+    const message = check.message || check.check_name || 'unknown'
+    return `${location}-${index}-${message.substring(0, 20)}`
   }
 
   const [approvedChecks, setApprovedChecks] = useState(new Set<string>())
@@ -2606,6 +2649,47 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
       </div>
     )
+  }
+
+  // Loading screen component for manuscript detail
+  const ManuscriptLoadingScreen = () => (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="text-center space-y-6">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <FileText className="w-6 h-6 text-blue-600" />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-gray-900">Loading Manuscript Details</h2>
+          <p className="text-gray-600">
+            {useApiData 
+              ? "Fetching detailed manuscript data from Data4Rev API..."
+              : "Preparing manuscript review interface..."
+            }
+          </p>
+        </div>
+        
+        {useApiData && (
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <Database className="w-4 h-4 text-green-600" />
+            <span>Connected to live API</span>
+          </div>
+        )}
+
+        <Button variant="ghost" onClick={onBack} className="mt-4">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to List
+        </Button>
+      </div>
+    </div>
+  )
+
+  // Show loading screen if detail data hasn't loaded yet
+  if (!isDetailLoadComplete || (useApiData && isLoadingApi && !manuscript.fallback)) {
+    return <ManuscriptLoadingScreen />
   }
 
   return (
