@@ -16,29 +16,31 @@ import {
   Upload,
   X,
   Users,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
   FileText,
   ExternalLink,
-  AlertCircle,
-  Info,
   Link,
-  Database,
   LucideEye,
-  Edit2,
-  Check,
-  RotateCcw,
   ZoomIn,
   ChevronUp,
   ChevronDown,
   Download,
   Cpu,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Check,
+  RotateCcw,
+  Database,
 } from "lucide-react"
 import { mockLinkedData, mockSourceData } from "@/lib/mock"
 import { dataService } from "@/lib/data-service"
 import { getStatusMapping } from "@/lib/status-mapping"
-import { transformApiManuscriptToUI } from "@/lib/data-transformer"
+import { 
+  getQCIcon, 
+  getCheckId,
+} from "./manuscript-detail-utils"
+import { FullTextView } from "./manuscript-full-text-view"
+import { ManuscriptLoadingScreen } from "./manuscript-loading-screen"
 import {
   Dialog,
   DialogContent,
@@ -912,6 +914,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [manuscript, setManuscript] = useState<any>(getManuscriptDetail(msid))
   const [notes, setNotes] = useState(manuscript.notes)
   const [dataAvailability, setDataAvailability] = useState(manuscript.dataAvailability)
+  const [hoveredPanel, setHoveredPanel] = useState<string | null>(null)
+  const [showPanelPopup, setShowPanelPopup] = useState<{ panelId: string; position: { x: number; y: number } } | null>(null)
   const [isLoadingApi, setIsLoadingApi] = useState(false)
   const [isDetailLoadComplete, setIsDetailLoadComplete] = useState(false)
   const [isEditingLinkedData, setIsEditingLinkedData] = useState(false)
@@ -1478,9 +1482,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const handleAddFigure = () => {
     const newFigure = {
       id: `figure-${Date.now()}`,
-      title: `Figure ${manuscript.figures.length + 1}`,
+      title: `Figure ${(manuscript.figures?.length || 0) + 1}`,
       legend: "",
-      sort_order: manuscript.figures.length + 1,
+      sort_order: (manuscript.figures?.length || 0) + 1,
       panels: [],
       links: [],
       source_data: [],
@@ -1577,19 +1581,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     )
   }
 
-  const getQCIcon = (type: string) => {
-    switch (type) {
-      case "error":
-        return <AlertTriangle className="w-4 h-4 text-red-500" />
-      case "warning":
-        return <AlertCircle className="w-4 h-4 text-amber-500" />
-      case "info":
-        return <Info className="w-4 h-4 text-blue-500" />
-      default:
-        return <CheckCircle className="w-4 h-4 text-emerald-500" />
-    }
-  }
-
   const renderCheckActions = (check: any, location: string, index: number) => {
     if (check.aiGenerated) {
       // AI checks can be approved or ignored
@@ -1653,11 +1644,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         </div>
       )
     }
-  }
-
-  const getCheckId = (check: any, location: string, index: number) => {
-    const message = check.message || check.check_name || 'unknown'
-    return `${location}-${index}-${message.substring(0, 20)}`
   }
 
   const [approvedChecks, setApprovedChecks] = useState(new Set<string>())
@@ -1775,9 +1761,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const allQCChecks = manuscript ? [
     ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
-    ...manuscript.figures.flatMap((fig: any) =>
+    ...(Array.isArray(manuscript.figures) ? manuscript.figures.flatMap((fig: any) =>
       (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check: any) => ({ ...check, figureId: fig.id, figureTitle: fig.title })),
-    ),
+    ) : []),
   ] : []
 
   const validationIssues = allQCChecks.filter((check) => !check.aiGenerated)
@@ -1793,7 +1779,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   }
 
   const moveFigure = (fromIndex: number, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= manuscript.figures.length) return
+    if (!manuscript.figures || toIndex < 0 || toIndex >= manuscript.figures.length) return
 
     const newFigures = [...manuscript.figures]
     const element = newFigures[fromIndex]
@@ -1970,12 +1956,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const getLinkingOptions = () => {
     const options = ["Manuscript"]
-    manuscript.figures.forEach((fig: any) => {
-      options.push(`Figure ${fig.id}`)
-      fig.panels.forEach((panel: any) => {
-        options.push(`Figure ${panel.id}`)
+    if (manuscript.figures) {
+      manuscript.figures.forEach((fig: any) => {
+        options.push(`Figure ${fig.id}`)
+        fig.panels.forEach((panel: any) => {
+          options.push(`Figure ${panel.id}`)
+        })
       })
-    })
+    }
     return options
   }
 
@@ -2743,13 +2731,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </CardHeader>
           <CardContent className="space-y-4">
             {/* AI Checks Section */}
-            {manuscript.qcChecks.filter((check: { aiGenerated: any }) => check.aiGenerated).length > 0 && (
+            {(manuscript.qcChecks || []).filter((check: { aiGenerated: any }) => check.aiGenerated).length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Cpu className="w-4 h-4" />
                   AI Checks
                 </Label>
-                {manuscript.qcChecks
+                {(manuscript.qcChecks || [])
                   .filter((check: any) => check.aiGenerated)
                   .map((check: any, checkIndex: number) => {
                     const checkId = getCheckId(check, "general", checkIndex)
@@ -2779,13 +2767,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             )}
 
             {/* QC Checks Section */}
-            {manuscript.qcChecks.filter((check: { aiGenerated: any }) => !check.aiGenerated).length > 0 && (
+            {(manuscript.qcChecks || []).filter((check: { aiGenerated: any }) => !check.aiGenerated).length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" />
                   QC Checks
                 </Label>
-                {manuscript.qcChecks
+                {(manuscript.qcChecks || [])
                   .filter((check: { aiGenerated: any }) => !check.aiGenerated)
                   .map((check: any, checkIndex: number) => (
                     <div key={checkIndex} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
@@ -2814,7 +2802,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-8">
-          {manuscript.figures.map((figure: any, figureIndex: number) => (
+          {(manuscript.figures || []).map((figure: any, figureIndex: number) => (
             <div key={figure.id} className="space-y-4 border-b pb-6 last:border-b-0">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -2919,7 +2907,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       variant="ghost"
                       title="Move figure down"
                       onClick={() => moveFigure(figureIndex, figureIndex + 1)}
-                      disabled={figureIndex === manuscript.figures.length - 1}
+                      disabled={figureIndex === (manuscript.figures?.length || 1) - 1}
                     >
                       <ChevronDown className="w-3 h-3" />
                     </Button>
@@ -3061,124 +3049,12 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     )
   }
 
-  // Full Text View Component
-  const FullTextView = () => {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">Full Text Content</h3>
-            <p className="text-sm text-muted-foreground">
-              Complete manuscript text from the Data4Rev API
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {useApiData && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchFullTextContent}
-                disabled={isLoadingFullText}
-              >
-                {isLoadingFullText ? (
-                  <>
-                    <Clock className="w-4 h-4 mr-2 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4 mr-2" />
-                    Refresh Content
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <Card>
-          <CardContent className="p-6">
-            {!useApiData ? (
-              <div className="text-center py-12">
-                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h4 className="text-lg font-medium mb-2">API Data Required</h4>
-                <p className="text-muted-foreground">
-                  Full text viewing is only available when using live API data. 
-                  Please switch to API mode to view manuscript content.
-                </p>
-              </div>
-            ) : isLoadingFullText ? (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Clock className="w-5 h-5 animate-spin" />
-                  <span>Loading full text content...</span>
-                </div>
-              </div>
-            ) : fullTextError ? (
-              <div className="text-center py-12">
-                <AlertCircle className="w-12 h-12 mx-auto text-orange-500 mb-4" />
-                <h4 className="text-lg font-medium mb-2">Content Unavailable</h4>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  {fullTextError}
-                </p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={fetchFullTextContent}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Try Again
-                </Button>
-              </div>
-            ) : fullTextContent ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Content length: {fullTextContent.length.toLocaleString()} characters
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigator.clipboard.writeText(fullTextContent)}
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Copy to Clipboard
-                  </Button>
-                </div>
-                <div className="relative">
-                  <div 
-                    className="max-h-[600px] overflow-y-auto p-4 bg-gray-50 rounded-lg border font-mono text-sm whitespace-pre-wrap"
-                    style={{ lineHeight: '1.6' }}
-                  >
-                    {fullTextContent}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h4 className="text-lg font-medium mb-2">No Content Loaded</h4>
-                <p className="text-muted-foreground mb-4">
-                  Click the button below to load the full text content for this manuscript.
-                </p>
-                <Button onClick={fetchFullTextContent}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Load Full Text
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   const ListReviewView = () => {
     const allQCChecks = [
       ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []).map((check: any) => ({ ...check, location: "General Manuscript" })),
-      ...manuscript.figures.flatMap((fig: any) =>
+      ...(Array.isArray(manuscript.figures) ? manuscript.figures.flatMap((fig: any) =>
         (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check: any) => ({ ...check, location: `Figure ${fig.id}`, figureTitle: fig.title })),
-      ),
+      ) : []),
     ]
 
     const validationIssues = allQCChecks.filter((check: any) => !check.aiGenerated)
@@ -3217,7 +3093,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-600">
-                  {manuscript.figures.reduce((acc: any, fig: any) => acc + fig.panels.length, 0)}
+                  {(manuscript.figures || []).reduce((acc: any, fig: any) => acc + (fig.panels?.length || 0), 0)}
                 </div>
                 <div className="text-sm text-muted-foreground">Total Panels</div>
               </div>
@@ -3353,45 +3229,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     )
   }
 
-  // Loading screen component for manuscript detail
-  const ManuscriptLoadingScreen = () => (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="text-center space-y-6">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <FileText className="w-6 h-6 text-blue-600" />
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-gray-900">Loading Manuscript Details</h2>
-          <p className="text-gray-600">
-            {useApiData 
-              ? "Fetching detailed manuscript data from Data4Rev API..."
-              : "Preparing manuscript review interface..."
-            }
-          </p>
-        </div>
-        
-        {useApiData && (
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-            <Database className="w-4 h-4 text-green-600" />
-            <span>Connected to live API</span>
-          </div>
-        )}
-
-        <Button variant="ghost" onClick={onBack} className="mt-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to List
-        </Button>
-      </div>
-    </div>
-  )
-
   // Show loading screen if detail data hasn't loaded yet
   if (!isDetailLoadComplete || (useApiData && isLoadingApi && !manuscript.fallback)) {
-    return <ManuscriptLoadingScreen />
+    return <ManuscriptLoadingScreen useApiData={useApiData} onBack={onBack} />
   }
 
   return (
@@ -3481,7 +3321,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               <ListReviewView />
             </TabsContent>
             <TabsContent value="fulltext">
-              <FullTextView />
+              <FullTextView
+                useApiData={useApiData}
+                isLoadingFullText={isLoadingFullText}
+                fullTextError={fullTextError}
+                fullTextContent={fullTextContent}
+                fetchFullTextContent={fetchFullTextContent}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
