@@ -17,8 +17,9 @@ import {
 // Transform API manuscript details to UI manuscript structure
 export function transformApiManuscriptToUI(apiManuscript: ManuscriptDetails): any {
   return {
-    // Basic manuscript info
-    id: apiManuscript.msid,
+    // UI structure (matching mock data)
+    id: apiManuscript.id, // Keep as integer for API calls
+    msid: apiManuscript.msid,
     title: apiManuscript.title,
     authors: apiManuscript.authors.split(',').map((author: string) => author.trim()),
     received: apiManuscript.received_at.split('T')[0],
