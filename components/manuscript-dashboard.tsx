@@ -366,7 +366,9 @@ type SortDirection = "asc" | "desc"
 
 // Helper function to build full API URLs
 const buildApiUrl = (endpoint: string): string => {
-  return `${config.api.baseUrl}${endpoint}`
+  // Always use relative paths to avoid CORS issues between different Vercel deployments
+  const baseUrl = config.api.baseUrl.startsWith('http') ? '/api' : config.api.baseUrl
+  return `${baseUrl}${endpoint}`
 }
 
 export default function ManuscriptDashboard() {

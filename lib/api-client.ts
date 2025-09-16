@@ -36,7 +36,8 @@ class ApiClient {
   private retries: number;
 
   constructor() {
-    this.baseUrl = config.api.baseUrl;
+    // Always use relative paths to avoid CORS issues between different Vercel deployments
+    this.baseUrl = config.api.baseUrl.startsWith('http') ? '/api' : config.api.baseUrl;
     this.timeout = config.api.timeout;
     this.retries = config.api.retries;
   }

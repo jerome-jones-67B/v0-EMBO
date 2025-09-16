@@ -7,7 +7,9 @@
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate-env": "node scripts/generate-vercel-env.js",
+    "expand-env": "node scripts/expand-vercel-env.js"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",

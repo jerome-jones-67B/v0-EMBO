@@ -125,5 +125,9 @@ export const authOptions: NextAuthOptions = {
   
   secret: process.env.NEXTAUTH_SECRET,
   
+  // Dynamic URL handling for Vercel deployments
+  // Vercel automatically sets NEXTAUTH_URL from VERCEL_URL
+  // This works for production, preview, and branch deployments
+  
   debug: process.env.NODE_ENV === "development",
 }
