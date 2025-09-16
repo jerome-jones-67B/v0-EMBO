@@ -10,7 +10,7 @@ export const config = {
   
   // Feature flags
   features: {
-    useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' || true, // Default to mock data, toggle can switch
+    useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true', // Toggle based on environment variable
     enableRealTimeUpdates: process.env.NEXT_PUBLIC_ENABLE_REALTIME === 'true',
     enableAnalytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
   },
