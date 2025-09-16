@@ -3,12 +3,12 @@
 import { signIn, getSession } from "next-auth/react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "../../../components/ui/button"
+import { Input } from "../../../components/ui/input"
+import { Label } from "../../../components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
+import { Separator } from "../../../components/ui/separator"
+import { Alert, AlertDescription } from "../../../components/ui/alert"
 import { Chrome, Mail, Lock, AlertCircle } from "lucide-react"
 
 export default function SignIn() {
@@ -113,7 +113,7 @@ export default function SignIn() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your.email@embo.org"
+                  placeholder="your.email../../..embo.org"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
@@ -147,7 +147,7 @@ export default function SignIn() {
 
           <div className="text-sm text-muted-foreground text-center">
             <p>Demo credentials:</p>
-            <p><strong>Email:</strong> editorial.assistant@embo.org</p>
+            <p><strong>Email:</strong> editorial.assistant../../..embo.org</p>
             <p><strong>Password:</strong> embo2025</p>
           </div>
         </CardContent>
