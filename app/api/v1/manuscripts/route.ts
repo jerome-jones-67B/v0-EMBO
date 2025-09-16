@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateApiAuth, createUnauthorizedResponse } from '@/lib/api-auth';
-import { shouldBypassAuth, getDevUser } from '@/lib/dev-bypass-auth';
+import { validateApiAuth, createUnauthorizedResponse } from '../../../../lib/api-auth';
+import { shouldBypassAuth, getDevUser } from '../../../../lib/dev-bypass-auth';
 
 // Mark this route as dynamic to avoid static rendering issues
 export const dynamic = 'force-dynamic'
