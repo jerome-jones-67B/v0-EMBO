@@ -1,6 +1,8 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import { useSession } from "next-auth/react"
+import { endpoints, config } from "@/lib/config"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -351,11 +353,8 @@ const mockManuscriptDetails = {
 const getManuscriptDetail = async (msid: string) => {
   // Use data service to get manuscript with real figures
   try {
-    console.log('🔍 Calling data service for manuscript:', msid)
     const response = await dataService.getManuscriptById(msid)
-    console.log('📊 Data service response:', response)
     if (response.success && response.data) {
-      console.log('✅ Data service returned manuscript with figures:', response.data.figures?.length || 0)
       return response.data
     }
   } catch (error) {
@@ -363,7 +362,6 @@ const getManuscriptDetail = async (msid: string) => {
   }
   
   // Fallback to mock data if data service fails
-  console.log('⚠️ Data service failed, using fallback data for:', msid)
   const manuscriptData = mockManuscriptDetails[msid as keyof typeof mockManuscriptDetails] || {
     id: msid,
     title: "Molecular mechanisms of heat shock protein 70 in cellular stress response and protein folding dynamics",
@@ -419,15 +417,15 @@ const getManuscriptDetail = async (msid: string) => {
       "Requires additional validation for protein structure data. Missing figure legends for panels C-E. Author contacted for clarification on methodology section.",
   dataAvailability:
     "The datasets generated and analyzed during the current study are available in the Gene Expression Omnibus repository under accession number GSE123456. Protein structure data are deposited in the Protein Data Bank under accession code 7ABC. All other data supporting the conclusions of this article are included within the article and its additional files.",
-  figures: manuscriptData.figures || (() => {
+  figures: (manuscriptData as any).figures || (() => {
     // Generate varied figure data based on manuscript ID
     const baseId = parseInt(manuscriptData.id.split('-')[2]) || 1;
     const figureCount = 1 + (baseId % 3); // 1-3 figures per manuscript
-    const figures = [];
+    const figures: any[] = [];
     
     for (let i = 1; i <= figureCount; i++) {
       const panelCount = 2 + ((baseId + i) % 4); // 2-5 panels per figure
-      const panels = [];
+      const panels: any[] = [];
       
       for (let j = 1; j <= panelCount; j++) {
         panels.push({
@@ -898,12 +896,16 @@ const getManuscriptDetail = async (msid: string) => {
   // linkedData is already defined above in the dynamic section
   }
   
-  console.log('📋 Final manuscript data:', finalManuscript)
-  console.log('📊 Final manuscript figures count:', finalManuscript.figures?.length || 0)
   return finalManuscript
 }
 
+// Helper function to build full API URLs
+const buildApiUrl = (endpoint: string): string => {
+  return `${config.api.baseUrl}${endpoint}`
+}
+
 const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) => {
+  const { data: session } = useSession()
   const [selectedView, setSelectedView] = useState<"manuscript" | "list" | "fulltext">("manuscript")
   const [linkedData, setLinkedData] = useState(mockLinkedData)
   const [sourceData, setSourceData] = useState(mockSourceData)
@@ -911,9 +913,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [editingSourceData, setEditingSourceData] = useState<string | null>(null)
   const [showExpandedFigure, setShowExpandedFigure] = useState<string | null>(null)
   const [overlayVisibility, setOverlayVisibility] = useState<Record<string, boolean>>({})
-  const [manuscript, setManuscript] = useState<any>(getManuscriptDetail(msid))
-  const [notes, setNotes] = useState(manuscript.notes)
-  const [dataAvailability, setDataAvailability] = useState(manuscript.dataAvailability)
+  const [manuscript, setManuscript] = useState<any>(undefined)
+  const [notes, setNotes] = useState("")
+  const [dataAvailability, setDataAvailability] = useState("")
   const [hoveredPanel, setHoveredPanel] = useState<string | null>(null)
   const [showPanelPopup, setShowPanelPopup] = useState<{ panelId: string; position: { x: number; y: number } } | null>(null)
   const [isLoadingApi, setIsLoadingApi] = useState(false)
@@ -955,13 +957,34 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const [showConflictDetails, setShowConflictDetails] = useState(false)
 
-  // Fetch API data for manuscript details
-  const fetchApiManuscriptDetail = async () => {
+  // Add ref to prevent multiple simultaneous API calls
+  const [isFetching, setIsFetching] = useState(false)
+  
+  // Fetch API data for manuscript details (memoized to prevent recreation)
+  const fetchApiManuscriptDetail = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (isFetching) {
+      return
+    }
+    
+    setIsFetching(true)
     setIsLoadingApi(true)
+    
+    if (!session) {
+      console.error('❌ No session available for API call')
+      setIsLoadingApi(false)
+      setIsFetching(false)
+      return
+    }
+    
     try {
-      // The msid parameter should now be the integer ID when using API data
-      console.log(`🔍 Fetching API data for ID: ${msid}`)
-      const response = await fetch(`/api/v1/manuscripts/${msid}`)
+      const response = await fetch(buildApiUrl(endpoints.manuscriptDetails(msid)), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': document.cookie,
+        },
+        credentials: 'include',
+      })
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`)
       }
@@ -1056,9 +1079,10 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       setDataAvailability((mockManuscript as any)?.dataAvailability || "")
     } finally {
       setIsLoadingApi(false)
+      setIsFetching(false) // Reset fetching state
       setIsDetailLoadComplete(true)
     }
-  }
+  }, [msid, session]) // Dependencies for useCallback - don't include isFetching as it changes within the function
 
   // Fetch full text content from API
   const fetchFullTextContent = async () => {
@@ -1067,12 +1091,22 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       return
     }
 
+    if (!session) {
+      setFullTextError("Authentication required to fetch full text content")
+      return
+    }
+
     setIsLoadingFullText(true)
     setFullTextError(null)
     
     try {
-      console.log(`📄 Fetching full text content for manuscript ID: ${msid}`)
-      const response = await fetch(`/api/v1/manuscripts/${msid}/content`)
+      const response = await fetch(buildApiUrl(endpoints.manuscriptContent(msid)), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': document.cookie,
+        },
+        credentials: 'include',
+      })
       
       if (!response.ok) {
         throw new Error(`Failed to fetch content: ${response.status}`)
@@ -1088,7 +1122,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         setFullTextError(null)
       }
       
-      console.log('✅ Successfully fetched full text content')
     } catch (error) {
       console.error('❌ Error fetching full text content:', error)
       setFullTextError("Failed to load full text content. Please try again.")
@@ -1098,38 +1131,31 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     }
   }
 
-  // Update manuscript data when data source changes
-  // Load manuscript data on component mount
-  useEffect(() => {
-    const loadManuscript = async () => {
-      try {
-        const manuscriptData = await getManuscriptDetail(msid)
-        setManuscript(manuscriptData)
-        setNotes((manuscriptData as any)?.notes || "")
-        setDataAvailability((manuscriptData as any)?.dataAvailability || "")
-        setNotesValue((manuscriptData as any)?.notes || "")
-      } catch (error) {
-        console.error('Error loading manuscript:', error)
-      }
-    }
-    
-    loadManuscript()
-  }, [msid])
-
+  // Load manuscript data when component mounts or when data source/msid changes
   useEffect(() => {
     setIsDetailLoadComplete(false) // Reset load state when switching
     
     if (useApiData) {
+      // Load from API
       fetchApiManuscriptDetail()
     } else {
-      // Reset to mock data
-      const mockManuscript = getManuscriptDetail(msid)
-      setManuscript(mockManuscript)
-      setNotes(mockManuscript.notes)
-      setDataAvailability(mockManuscript.dataAvailability)
-      setIsDetailLoadComplete(true) // Mark as loaded for mock data
+      // Load mock data
+      const loadMockData = async () => {
+        try {
+          const manuscriptData = await getManuscriptDetail(msid)
+          setManuscript(manuscriptData)
+          setNotes((manuscriptData as any)?.notes || "")
+          setDataAvailability((manuscriptData as any)?.dataAvailability || "")
+          setNotesValue((manuscriptData as any)?.notes || "")
+          setIsDetailLoadComplete(true)
+        } catch (error) {
+          console.error('Error loading mock manuscript:', error)
+          setIsDetailLoadComplete(true) // Still mark as complete to prevent infinite loading
+        }
+      }
+      loadMockData()
     }
-  }, [useApiData, msid])
+  }, [useApiData, msid]) // Only depend on these two values
 
   const [editingConflicts, setEditingConflicts] = useState<{
     hasConflicts: boolean
@@ -1509,7 +1535,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   }
 
   const handleSaveNotes = () => {
-    console.log("[v0] Saving notes for manuscript:", manuscript?.id, "Notes:", notesValue)
     setIsEditingNotes(false)
     // Update the manuscript object and local state
     if (manuscript) {
@@ -1518,15 +1543,19 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setNotes(notesValue) // Also update the notes state to trigger the useEffect
   }
 
+  // Auto-save changes to manuscript data (with debounce to prevent excessive updates)
   useEffect(() => {
     if (!manuscript) return
     
     const timer = setTimeout(() => {
+      // Only save if the current values differ from the manuscript
       if (
         notes !== manuscript?.notes ||
         dataAvailability !== manuscript?.dataAvailability ||
         linkedData !== manuscript?.linkedData
       ) {
+        // Update manuscript without triggering re-fetch
+        // Note: This doesn't change msid or useApiData, so won't trigger the first useEffect
         setManuscript((prev: any) => ({
           ...prev,
           notes,
@@ -1539,7 +1568,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     }, 2000)
 
     return () => clearTimeout(timer)
-  }, [notes, dataAvailability, linkedData, manuscript?.notes, manuscript?.dataAvailability])
+  }, [notes, dataAvailability, linkedData])
 
   const getStatusBadge = (status: string, priority: string) => {
     let variant: "default" | "secondary" | "destructive" | "outline" = "default"
@@ -1950,7 +1979,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const handleDeleteSelectedFiles = () => {
     // In a real app, this would delete the selected files
-    console.log("[v0] Deleting selected files:", Array.from(selectedSourceFiles))
     setSelectedSourceFiles(new Set())
   }
 
@@ -1993,7 +2021,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    console.log(`[v0] Downloading file: ${fileName}`)
   }
 
   const handleEditFile = (fileId: number) => {
@@ -2003,7 +2030,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const handleDeleteFile = (fileId: number) => {
     setSourceDataFiles((prev) => prev.filter((file) => file.id !== fileId))
-    console.log(`[v0] Deleted file with ID: ${fileId}`)
   }
 
   const handleReplaceFile = (newFileName: string) => {
@@ -2084,11 +2110,15 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
             {/* AI Checks List */}
             {(() => {
-              const allChecks = [
+              // Memoize expensive computations for performance
+              const allChecks = useMemo(() => [
                 ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
-                ...(manuscript?.figures || []).flatMap(fig => fig.qcChecks || [])
-              ];
-              const aiChecks = allChecks.filter(check => check.aiGenerated);
+                ...(manuscript?.figures || []).flatMap((fig: any) => fig.qcChecks || [])
+              ], [manuscript?.qcChecks, manuscript?.figures]);
+              
+              const aiChecks = useMemo(() => 
+                allChecks.filter(check => check.aiGenerated), [allChecks]
+              );
               
               if (aiChecks.length === 0) return null;
               
@@ -2157,7 +2187,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             {(manuscript?.figures?.length || 0) > 0 && (
               <div className="space-y-6">
                 <div className="flex space-x-1 border-b border-gray-200 bg-gray-50 rounded-t-lg p-1">
-                  {(manuscript?.figures || []).map((figure, index) => (
+                  {(manuscript?.figures || []).map((figure: any, index: number) => (
                     <button
                       key={figure.id}
                       onClick={() => setSelectedFigureIndex(index)}
@@ -2239,7 +2269,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                         })()}
                         
                         {/* AI Feedback Flags on Panels */}
-                        {selectedFigure.panels.map((panel, panelIndex) => {
+                        {selectedFigure.panels.map((panel: any, panelIndex: number) => {
                           const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
                             check.panelId === panel.id
                           ) || []
@@ -2280,7 +2310,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           <div>
                             <h4 className="font-semibold mb-3">Panel Details</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
-                              {selectedFigure.panels.map((panel, panelIndex) => {
+                              {selectedFigure.panels.map((panel: any, panelIndex: number) => {
                                 const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
                                   check.panelId === panel.id
                                 ) || []
@@ -2296,7 +2326,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                         className={`w-full h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded border flex items-center justify-center relative overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 ${
                                           hoveredPanel === panel.id ? 'ring-2 ring-blue-500 shadow-lg scale-105' : ''
                                         }`}
-                                        onClick={() => setShowPanelPopup({figureId: selectedFigure.id, panelId: panel.id})}
+                                        onClick={() => setShowPanelPopup({panelId: panel.id, position: { x: 0, y: 0 }})}
                                         onMouseEnter={() => setHoveredPanel(panel.id)}
                                         onMouseLeave={() => setHoveredPanel(null)}
                                       >
@@ -3183,7 +3213,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => console.log('View file:', file.filename)}
+                            onClick={() => {}}
                             title="View file"
                           >
                             <LucideEye className="w-4 h-4" />
@@ -3395,12 +3425,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                         {(() => {
                           // Find the specific panel that was clicked
                           const selectedFigure = manuscript?.figures?.[0];
-                          const panel = selectedFigure?.panels?.find(p => p.id === showPanelPopup.panelId);
+                          const panel = selectedFigure?.panels?.find((p: any) => p.id === showPanelPopup.panelId);
                           
-                          // Debug logging
-                          console.log('Panel data:', panel);
-                          console.log('Panel ID:', showPanelPopup.panelId);
-                          console.log('Available panels:', selectedFigure?.panels?.map(p => ({ id: p.id, caption: p.caption, legend: p.legend, description: p.description })));
                           
                           // Check for caption in multiple possible properties
                           // Note: Real data from local files stores captions in 'legend' property
@@ -3429,13 +3455,18 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                 
                 {/* Use the same AI/QC checks that are displayed in the main view above panels */}
                 {(() => {
-                  // Use the same logic as the main view for AI checks
-                  const allChecks = [
+                  // Use the same logic as the main view for AI checks (memoized for performance)
+                  const allChecks = useMemo(() => [
                     ...(Array.isArray(manuscript?.qcChecks) ? manuscript.qcChecks : []),
-                    ...(manuscript?.figures || []).flatMap(fig => fig.qcChecks || [])
-                  ];
-                  const aiChecks = allChecks.filter(check => check.aiGenerated);
-                  const qcChecks = allChecks.filter(check => !check.aiGenerated);
+                    ...(manuscript?.figures || []).flatMap((fig: any) => fig.qcChecks || [])
+                  ], [manuscript?.qcChecks, manuscript?.figures]);
+                  
+                  const aiChecks = useMemo(() => 
+                    allChecks.filter(check => check.aiGenerated), [allChecks]
+                  );
+                  const qcChecks = useMemo(() => 
+                    allChecks.filter(check => !check.aiGenerated), [allChecks]
+                  );
                   
                   return (
                     <div className="space-y-4">

@@ -1,12 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { validateApiAuth, createUnauthorizedResponse } from '@/lib/api-auth'
+import { shouldBypassAuth, getDevUser } from '@/lib/dev-bypass-auth'
 
 // Backend API route for fetching manuscript full text content
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Validate authentication (with development bypass)
+  let user;
+  if (shouldBypassAuth()) {
+    console.log("🔧 Development mode - bypassing authentication");
+    user = getDevUser();
+  } else {
+    user = await validateApiAuth(request);
+    if (!user) {
+      return createUnauthorizedResponse();
+    }
+  }
+
   const manuscriptId = params.id
-  const DATA4REV_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api'
+  // Data4Rev API endpoint (base URL without /v1 suffix) - backend only
+  const DATA4REV_API_BASE = process.env.DATA4REV_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api'
   
   try {
     console.log(`📄 Fetching full text content for manuscript ID: ${manuscriptId}`)

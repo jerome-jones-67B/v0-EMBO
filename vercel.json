@@ -1,11 +1,37 @@
 {
-  "env": {
-    "NEXT_PUBLIC_API_BASE_URL": "https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api",
-    "NEXT_PUBLIC_API_TIMEOUT": "10000",
-    "NEXT_PUBLIC_API_RETRIES": "3",
-    "NEXT_PUBLIC_USE_MOCK_DATA": "true",
-    "NEXT_PUBLIC_ENABLE_REALTIME": "false",
-    "NEXT_PUBLIC_ENABLE_ANALYTICS": "false",
-    "NEXT_PUBLIC_MAX_FILE_SIZE": "52428800"
-  }
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods", 
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, Cookie"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/v1/(.*)",
+      "destination": "/api/v1/$1"
+    }
+  ]
 }
