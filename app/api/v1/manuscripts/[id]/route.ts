@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateApiAuth, createUnauthorizedResponse } from '@/lib/api-auth';
+import { shouldBypassAuth, getDevUser } from '@/lib/dev-bypass-auth';
 
 // Mock detailed manuscript data
 const mockManuscriptDetails = {
@@ -365,13 +367,25 @@ const mockManuscriptDetails = {
   }
 };
 
-// Data4Rev API endpoint
-const DATA4REV_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api/v1';
+// Data4Rev API endpoint (base URL without /v1 suffix) - backend only
+const DATA4REV_API_BASE = process.env.DATA4REV_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Validate authentication (with development bypass)
+  let user;
+  if (shouldBypassAuth()) {
+    console.log("🔧 Development mode - bypassing authentication");
+    user = getDevUser();
+  } else {
+    user = await validateApiAuth(request);
+    if (!user) {
+      return createUnauthorizedResponse();
+    }
+  }
+
   const manuscriptId = params.id;
   
   try {
@@ -393,7 +407,7 @@ export async function GET(
       console.warn('⚠️ No authentication token found - API call may fail');
     }
 
-    const apiUrl = `${DATA4REV_API_BASE}/manuscripts/${manuscriptId}`;
+    const apiUrl = `${DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}`;
     console.log('Calling Data4Rev API:', apiUrl);
 
     const apiResponse = await fetch(apiUrl, {

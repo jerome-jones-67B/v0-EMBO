@@ -28,21 +28,21 @@ export const config = {
   },
 } as const;
 
-// API Endpoints - Data4Rev API structure
+// API Endpoints - paths relative to base URL (no /api prefix needed)
 export const endpoints = {
-  manuscripts: '/api/v1/manuscripts',
-  manuscriptDetails: (id: string) => `/api/v1/manuscripts/${id}`,
-  manuscriptContent: (id: string) => `/api/v1/manuscripts/${id}/content`,
-  manuscriptDeposit: (id: string) => `/api/v1/manuscripts/${id}/deposit`,
-  figures: (manuscriptId: string) => `/api/v1/manuscripts/${manuscriptId}/figures`,
-  figure: (manuscriptId: string, figureId: string) => `/api/v1/manuscripts/${manuscriptId}/figures/${figureId}`,
-  panels: (manuscriptId: string, figureId: string) => `/api/v1/manuscripts/${manuscriptId}/figures/${figureId}/panels`,
-  panel: (manuscriptId: string, figureId: string, panelId: string) => `/api/v1/manuscripts/${manuscriptId}/figures/${figureId}/panels/${panelId}`,
-  links: (manuscriptId: string) => `/api/v1/manuscripts/${manuscriptId}/links`,
-  link: (manuscriptId: string, linkId: string) => `/api/v1/manuscripts/${manuscriptId}/links/${linkId}`,
-  sourceData: (manuscriptId: string) => `/api/v1/manuscripts/${manuscriptId}/source-data`,
-  sourceDataItem: (manuscriptId: string, sourceDataId: string) => `/api/v1/manuscripts/${manuscriptId}/source-data/${sourceDataId}`,
-  files: '/api/v1/files',
-  file: (fileId: string) => `/api/v1/files/${fileId}`,
-  checkResults: (manuscriptId: string) => `/api/v1/manuscripts/${manuscriptId}/check-results`,
+  manuscripts: '/v1/manuscripts',
+  manuscriptDetails: (id: string) => `/v1/manuscripts/${id}`,
+  manuscriptContent: (id: string) => `/v1/manuscripts/${id}/content`,
+  manuscriptDeposit: (id: string) => `/v1/manuscripts/${id}/deposit`,
+  figures: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/figures`,
+  figure: (manuscriptId: string, figureId: string) => `/v1/manuscripts/${manuscriptId}/figures/${figureId}`,
+  panels: (manuscriptId: string, figureId: string) => `/v1/manuscripts/${manuscriptId}/figures/${figureId}/panels`,
+  panel: (manuscriptId: string, figureId: string, panelId: string) => `/v1/manuscripts/${manuscriptId}/figures/${figureId}/panels/${panelId}`,
+  links: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/links`,
+  link: (manuscriptId: string, linkId: string) => `/v1/manuscripts/${manuscriptId}/links/${linkId}`,
+  sourceData: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/source-data`,
+  sourceDataItem: (manuscriptId: string, sourceDataId: string) => `/v1/manuscripts/${manuscriptId}/source-data/${sourceDataId}`,
+  files: '/v1/files',
+  file: (fileId: string) => `/v1/files/${fileId}`,
+  checkResults: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/check-results`,
 } as const;

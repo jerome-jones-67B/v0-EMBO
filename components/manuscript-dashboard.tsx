@@ -14,6 +14,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { Settings2, Database, Zap } from "lucide-react"
 import { ManuscriptDetail } from "./manuscript-detail" // Import the new manuscript detail component
+import { UserNav } from "./user-nav"
+import { useSession } from "next-auth/react"
+import { endpoints, config } from "@/lib/config"
 import { dataService } from "@/lib/data-service"
 import { getValidStatusesForTab as getValidStatuses, getStatusMapping } from "@/lib/status-mapping"
 import { Eye, Download, MoreHorizontal, UserPlus, UserMinus, Pause, Play } from "lucide-react"
@@ -361,7 +364,13 @@ const initialMockManuscripts = [
 type SortField = "msid" | "receivedDate" | "title" | "authors" | "status" | "priority" | "lastModified"
 type SortDirection = "asc" | "desc"
 
+// Helper function to build full API URLs
+const buildApiUrl = (endpoint: string): string => {
+  return `${config.api.baseUrl}${endpoint}`
+}
+
 export default function ManuscriptDashboard() {
+  const { data: session } = useSession()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
@@ -623,12 +632,20 @@ export default function ManuscriptDashboard() {
   const fetchApiData = async () => {
     console.log('🚀 Starting API data fetch...')
     setIsLoadingApi(true)
+    
+    if (!session) {
+      console.error('❌ No session available for API call')
+      setIsLoadingApi(false)
+      return
+    }
+    
     try {
-      const response = await fetch('/api/v1/manuscripts', {
+      const response = await fetch(buildApiUrl(endpoints.manuscripts), {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_AUTH_TOKEN || ''}`
+          'Cookie': document.cookie, // Include session cookies
         },
+        credentials: 'include', // Include cookies in the request
       })
       
       if (!response.ok) {
@@ -963,6 +980,9 @@ export default function ManuscriptDashboard() {
                   </div>
                 </div>
                 <p className="text-muted-foreground">Manuscript validation and curation workflow management</p>
+              </div>
+              <div className="flex items-center">
+                <UserNav />
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-sm">

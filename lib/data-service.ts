@@ -207,7 +207,7 @@ export class DataService {
       submissionType: mockManuscript.submissionType || 'Research Article',
       wordCount: mockManuscript.wordCount,
       collaborators: mockManuscript.collaborators || [],
-      figures: mockManuscript.figures || [],
+      figures: (mockManuscript as any).figures || [],
     };
   }
 
