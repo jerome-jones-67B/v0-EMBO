@@ -14,10 +14,11 @@ Perfect for initial stakeholder demos with email/password authentication only.
 - Add these variables for **Production** environment:
 
 ```bash
-NEXTAUTH_URL=https://v0-embo.vercel.app
+# For Demo Mode (Mock Data)
+NEXTAUTH_URL=https://your-app-name.vercel.app
 NEXTAUTH_SECRET=0s91uq+rrqC76nxe3TzD3fi9bUmXwspeuEOcDxQ/UCg=
 NEXT_PUBLIC_USE_MOCK_DATA=true
-NEXT_PUBLIC_API_BASE_URL=https://v0-embo.vercel.app/api
+NEXT_PUBLIC_API_BASE_URL=https://your-app-name.vercel.app/api
 DATA4REV_API_BASE_URL=https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api
 DATA4REV_AUTH_TOKEN=demo-token
 NEXT_PUBLIC_API_TIMEOUT=10000
@@ -26,6 +27,11 @@ NEXT_PUBLIC_ENABLE_REALTIME=false
 NEXT_PUBLIC_ENABLE_ANALYTICS=false
 NEXT_PUBLIC_MAX_FILE_SIZE=52428800
 NODE_ENV=production
+BYPASS_AUTH=false
+
+# For Real API Mode (Production Data)
+# Change NEXT_PUBLIC_USE_MOCK_DATA=false
+# Update DATA4REV_AUTH_TOKEN with real token
 ```
 
 #### 2. **Deploy**
