@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react'
 import RealDataManager from '@/components/real-data-manager'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/ui'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
