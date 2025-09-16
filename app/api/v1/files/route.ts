@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateApiAuth, createUnauthorizedResponse } from '@/lib/api-auth';
+import { shouldBypassAuth, getDevUser } from '@/lib/dev-bypass-auth';
 
 // Mock file data
 const mockFiles = [
@@ -23,6 +25,18 @@ const mockFiles = [
 ];
 
 export async function GET(request: NextRequest) {
+  // Validate authentication (with development bypass)
+  let user;
+  if (shouldBypassAuth()) {
+    console.log("🔧 Development mode - bypassing authentication");
+    user = getDevUser();
+  } else {
+    user = await validateApiAuth(request);
+    if (!user) {
+      return createUnauthorizedResponse();
+    }
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '0');
@@ -49,6 +63,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Validate authentication (with development bypass)
+  let user;
+  if (shouldBypassAuth()) {
+    console.log("🔧 Development mode - bypassing authentication");
+    user = getDevUser();
+  } else {
+    user = await validateApiAuth(request);
+    if (!user) {
+      return createUnauthorizedResponse();
+    }
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;

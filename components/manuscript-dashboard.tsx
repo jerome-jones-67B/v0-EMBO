@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { Settings2, Database, Zap } from "lucide-react"
 import { ManuscriptDetail } from "./manuscript-detail" // Import the new manuscript detail component
+import { UserNav } from "./user-nav"
+import { useSession } from "next-auth/react"
+import { endpoints, config } from "@/lib/config"
 import { dataService } from "@/lib/data-service"
 import { getValidStatusesForTab as getValidStatuses, getStatusMapping } from "@/lib/status-mapping"
 import { Eye, Download, MoreHorizontal, UserPlus, UserMinus, Pause, Play } from "lucide-react"
@@ -361,7 +364,13 @@ const initialMockManuscripts = [
 type SortField = "msid" | "receivedDate" | "title" | "authors" | "status" | "priority" | "lastModified"
 type SortDirection = "asc" | "desc"
 
+// Helper function to build full API URLs
+const buildApiUrl = (endpoint: string): string => {
+  return `${config.api.baseUrl}${endpoint}`
+}
+
 export default function ManuscriptDashboard() {
+  const { data: session } = useSession()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
@@ -377,6 +386,7 @@ export default function ManuscriptDashboard() {
   const [useApiData, setUseApiData] = useState(!dataService.getUseMockData())
   const [apiManuscripts, setApiManuscripts] = useState<any[]>([])
   const [isLoadingApi, setIsLoadingApi] = useState(false)
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false)
 
   const [visibleColumns, setVisibleColumns] = useState({
     actions: true,
@@ -395,7 +405,7 @@ export default function ManuscriptDashboard() {
   const toggleColumn = (columnKey: string) => {
     setVisibleColumns((prev) => ({
       ...prev,
-      [columnKey]: !prev[columnKey],
+      [columnKey]: !prev[columnKey as keyof typeof prev],
     }))
   }
 
@@ -450,9 +460,10 @@ export default function ManuscriptDashboard() {
 
   const filteredAndSortedManuscripts = useMemo(() => {
     const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    
     const filtered = currentManuscripts.filter((manuscript) => {
       // Use workflowState for tab filtering (mapped from API status)
-      const workflowState = manuscript.workflowState || manuscript.workflowState || 'no-pipeline-results'
+      const workflowState = manuscript.workflowState || 'no-pipeline-results'
       if (workflowState !== activeTab) return false
 
       // Use displayStatus for status filtering
@@ -460,15 +471,8 @@ export default function ManuscriptDashboard() {
       if (statusFilter !== "all" && displayStatus !== statusFilter) return false
 
       if (priorityFilter !== "all") {
-        if (priorityFilter === "urgent") {
-          // Urgent includes both overdue and nearly due manuscripts
-          const isUrgent = manuscript.msid === "EMBO-2024-001" || manuscript.msid === "EMBO-2024-011"
-          if (!isUrgent) return false
-        } else if (priorityFilter === "normal") {
-          // Normal includes all other manuscripts
-          const isUrgent = manuscript.msid === "EMBO-2024-001" || manuscript.msid === "EMBO-2024-011"
-          if (isUrgent) return false
-        }
+        if (priorityFilter === "urgent" && manuscript.priority !== "urgent") return false
+        if (priorityFilter === "normal" && manuscript.priority === "urgent") return false
       }
 
       if (assigneeFilter !== "all" && manuscript.assignedTo !== assigneeFilter) return false
@@ -628,11 +632,20 @@ export default function ManuscriptDashboard() {
   const fetchApiData = async () => {
     console.log('🚀 Starting API data fetch...')
     setIsLoadingApi(true)
+    
+    if (!session) {
+      console.error('❌ No session available for API call')
+      setIsLoadingApi(false)
+      return
+    }
+    
     try {
-      const response = await fetch('/api/v1/manuscripts', {
+      const response = await fetch(buildApiUrl(endpoints.manuscripts), {
         headers: {
           'Content-Type': 'application/json',
+          'Cookie': document.cookie, // Include session cookies
         },
+        credentials: 'include', // Include cookies in the request
       })
       
       if (!response.ok) {
@@ -646,6 +659,7 @@ export default function ManuscriptDashboard() {
       const transformedManuscripts = data.manuscripts.map((manuscript: any) => {
         const statusMapping = getStatusMapping(manuscript.status)
         return {
+          id: manuscript.id, // ✅ Include the integer ID for API calls
           msid: manuscript.msid,
           receivedDate: manuscript.received_at?.split('T')[0] || '2024-01-01',
           title: manuscript.title,
@@ -670,20 +684,39 @@ export default function ManuscriptDashboard() {
       
       setApiManuscripts(transformedManuscripts)
       console.log('📋 API manuscripts set:', transformedManuscripts.length, 'manuscripts')
+      console.log('🔍 Workflow states found:', [...new Set(transformedManuscripts.map((m: any) => m.workflowState))])
     } catch (error) {
       console.error('❌ Failed to fetch API data:', error)
       // Keep using mock data on error
       setUseApiData(false)
     } finally {
       setIsLoadingApi(false)
+      setIsInitialLoadComplete(true)
       console.log('🏁 API data fetch completed')
     }
   }
+
+  // Initial data loading effect
+  useEffect(() => {
+    const initializeData = async () => {
+      if (useApiData) {
+        console.log('🔄 Initializing with API data...')
+        await fetchApiData()
+      } else {
+        console.log('🔄 Initializing with mock data...')
+        setIsInitialLoadComplete(true)
+      }
+    }
+
+    initializeData()
+  }, []) // Only run on mount
 
   // Switch between API and mock data
   const handleDataSourceSwitch = async (useApi: boolean) => {
     console.log('🔄 Toggling data source:', useApi ? 'API' : 'Mock')
     setUseApiData(useApi)
+    setIsInitialLoadComplete(false) // Reset load state when switching
+    
     // Update the data service to use the correct data source
     dataService.setUseMockData(!useApi)
     console.log('📊 Data service now using mock data:', dataService.getUseMockData())
@@ -691,11 +724,15 @@ export default function ManuscriptDashboard() {
     if (useApi && apiManuscripts.length === 0) {
       console.log('🌐 Fetching API data...')
       await fetchApiData()
+    } else {
+      // For mock data, mark as loaded immediately
+      setIsInitialLoadComplete(true)
     }
   }
 
   const getUniqueAssignees = () => {
-    const assignees = [...new Set(mockManuscripts.map((m) => m.assignedTo))]
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    const assignees = [...new Set(currentManuscripts.map((m) => m.assignedTo))]
     const sortedAssignees = assignees.sort()
 
     // If current user has assigned manuscripts, put them first
@@ -708,19 +745,20 @@ export default function ManuscriptDashboard() {
   }
 
   const getTabCounts = () => {
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
     const counts = {
       "ready-for-curation": { total: 0, new: 0, inProgress: 0, onHold: 0, needsValidation: 0, urgent: 0 },
       "deposited-to-biostudies": { total: 0, needsValidation: 0, urgent: 0, onHold: 0, new: 0, inProgress: 0 },
       "no-pipeline-results": { total: 0, needsValidation: 0, urgent: 0, onHold: 0, new: 0, inProgress: 0 },
     }
 
-    mockManuscripts.forEach((manuscript) => {
+    currentManuscripts.forEach((manuscript) => {
       if (manuscript.workflowState === "ready-for-curation") {
         counts["ready-for-curation"].total++
         if (manuscript.status === "New submission") counts["ready-for-curation"].new++
         if (manuscript.status === "In Progress") counts["ready-for-curation"].inProgress++
         if (manuscript.status === "On hold") counts["ready-for-curation"].onHold++
-        if (manuscript.msid === "EMBO-2024-001" || manuscript.msid === "EMBO-2024-011")
+        if (manuscript.hasErrors || manuscript.hasWarnings)
           counts["ready-for-curation"].needsValidation++
         if (manuscript.priority === "urgent") counts["ready-for-curation"].urgent++
       } else if (manuscript.workflowState === "deposited-to-biostudies") {
@@ -737,12 +775,13 @@ export default function ManuscriptDashboard() {
   }
 
   const getGlobalCounts = () => {
-    const totalManuscripts = mockManuscripts.length
-    const urgentCount = mockManuscripts.filter((m) => m.msid === "EMBO-2024-001" || m.msid === "EMBO-2024-011").length
-    const onHoldCount = mockManuscripts.filter((m) => m.status === "On hold").length
-    const newCount = mockManuscripts.filter((m) => m.status === "New submission").length
-    const inProgressCount = mockManuscripts.filter((m) => m.status === "In Progress").length
-    const totalOnHoldCount = mockManuscripts.filter((m) => m.status === "On hold").length
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    const totalManuscripts = currentManuscripts.length
+    const urgentCount = currentManuscripts.filter((m) => m.priority === "urgent").length
+    const onHoldCount = currentManuscripts.filter((m) => m.status === "On hold").length
+    const newCount = currentManuscripts.filter((m) => m.status === "New submission").length
+    const inProgressCount = currentManuscripts.filter((m) => m.status === "In Progress").length
+    const totalOnHoldCount = currentManuscripts.filter((m) => m.status === "On hold").length
 
     return {
       total: totalManuscripts,
@@ -755,6 +794,7 @@ export default function ManuscriptDashboard() {
   }
 
   const getStatusCounts = () => {
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
     const counts = {
       "New submission": 0,
       "In Progress": 0,
@@ -764,8 +804,9 @@ export default function ManuscriptDashboard() {
       "Waiting for data": 0,
     }
 
-    mockManuscripts.forEach((manuscript) => {
-      counts[manuscript.status] = (counts[manuscript.status] || 0) + 1
+    currentManuscripts.forEach((manuscript) => {
+      const status = manuscript.status as keyof typeof counts
+      counts[status] = (counts[status] || 0) + 1
     })
 
     return counts
@@ -854,6 +895,42 @@ export default function ManuscriptDashboard() {
 
   const statusCounts = getStatusCounts()
 
+  // Loading screen component
+  const LoadingScreen = () => (
+    <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+      <div className="text-center space-y-6">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Database className="w-6 h-6 text-blue-600" />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-gray-900">Loading EMBO Dashboard</h2>
+          <p className="text-gray-600">
+            {useApiData 
+              ? "Fetching manuscript data from Data4Rev API..."
+              : "Preparing dashboard interface..."
+            }
+          </p>
+        </div>
+        
+        {useApiData && (
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <Zap className="w-4 h-4 text-green-600" />
+            <span>Connected to live API</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // Show loading screen if initial data hasn't loaded yet
+  if (!isInitialLoadComplete || (useApiData && isLoadingApi && apiManuscripts.length === 0)) {
+    return <LoadingScreen />
+  }
+
   return (
     <TooltipProvider>
       <div className="container mx-auto p-6 space-y-6">
@@ -903,6 +980,9 @@ export default function ManuscriptDashboard() {
                   </div>
                 </div>
                 <p className="text-muted-foreground">Manuscript validation and curation workflow management</p>
+              </div>
+              <div className="flex items-center">
+                <UserNav />
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-sm">
@@ -1015,7 +1095,7 @@ export default function ManuscriptDashboard() {
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="ready-for-curation" className="flex items-center gap-2">
-                  <Tooltip delayDuration={800} skipDelayDuration={300}>
+                  <Tooltip delayDuration={800}>
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-2">
                         <span className="cursor-help">Ready for Curation</span>
@@ -1194,7 +1274,7 @@ export default function ManuscriptDashboard() {
                                 <div key={column.key} className="flex items-center space-x-2">
                                   <Checkbox
                                     id={column.key}
-                                    checked={visibleColumns[column.key]}
+                                    checked={visibleColumns[column.key as keyof typeof visibleColumns]}
                                     onCheckedChange={() => toggleColumn(column.key)}
                                   />
                                   <label htmlFor={column.key} className="text-sm font-normal cursor-pointer">
@@ -1310,11 +1390,11 @@ export default function ManuscriptDashboard() {
                                         <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 transform -translate-x-full translate-x-8">
                                           <div className="py-1">
                                             <button
-                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                               onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
-                                                setSelectedManuscript(manuscript.msid)
+                                                setSelectedManuscript(useApiData ? manuscript.id?.toString() || manuscript.msid : manuscript.msid)
                                                 setOpenDropdown(null)
                                               }}
                                             >
@@ -1323,7 +1403,7 @@ export default function ManuscriptDashboard() {
                                             </button>
 
                                             <button
-                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                               onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
@@ -1337,7 +1417,7 @@ export default function ManuscriptDashboard() {
                                             <div className="border-t border-gray-200 my-1" />
 
                                             <button
-                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                               onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
@@ -1363,7 +1443,7 @@ export default function ManuscriptDashboard() {
                                             {manuscript.assignee ? (
                                               <>
                                                 <button
-                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                                   onClick={(e) => {
                                                     e.preventDefault()
                                                     e.stopPropagation()
@@ -1375,7 +1455,7 @@ export default function ManuscriptDashboard() {
                                                   Assign to me
                                                 </button>
                                                 <button
-                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                                   onClick={(e) => {
                                                     e.preventDefault()
                                                     e.stopPropagation()
@@ -1389,7 +1469,7 @@ export default function ManuscriptDashboard() {
                                               </>
                                             ) : (
                                               <button
-                                                className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                                 onClick={(e) => {
                                                   e.preventDefault()
                                                   e.stopPropagation()
@@ -1461,7 +1541,7 @@ export default function ManuscriptDashboard() {
                               {visibleColumns.msid && (
                                 <TableCell className="text-sm font-medium">
                                   <button
-                                    onClick={() => setSelectedManuscript(manuscript.msid)}
+                                    onClick={() => setSelectedManuscript(useApiData ? manuscript.id?.toString() || manuscript.msid : manuscript.msid)}
                                     className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                                   >
                                     {highlightSearchTerm(manuscript.msid, searchTerm)}
@@ -1473,7 +1553,7 @@ export default function ManuscriptDashboard() {
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <button
-                                        onClick={() => setSelectedManuscript(manuscript.msid)}
+                                        onClick={() => setSelectedManuscript(useApiData ? manuscript.id?.toString() || manuscript.msid : manuscript.msid)}
                                         className="truncate cursor-pointer text-blue-600 hover:text-blue-800 hover:underline text-left w-full"
                                         title={manuscript.title}
                                       >

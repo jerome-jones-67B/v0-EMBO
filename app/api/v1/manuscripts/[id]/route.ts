@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateApiAuth, createUnauthorizedResponse } from '@/lib/api-auth';
+import { shouldBypassAuth, getDevUser } from '@/lib/dev-bypass-auth';
 
 // Mock detailed manuscript data
 const mockManuscriptDetails = {
@@ -365,26 +367,128 @@ const mockManuscriptDetails = {
   }
 };
 
+// Data4Rev API endpoint (base URL without /v1 suffix) - backend only
+const DATA4REV_API_BASE = process.env.DATA4REV_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const id = parseInt(params.id);
-    const manuscript = mockManuscriptDetails[id as keyof typeof mockManuscriptDetails];
+  // Validate authentication (with development bypass)
+  let user;
+  if (shouldBypassAuth()) {
+    console.log("🔧 Development mode - bypassing authentication");
+    user = getDevUser();
+  } else {
+    user = await validateApiAuth(request);
+    if (!user) {
+      return createUnauthorizedResponse();
+    }
+  }
 
-    if (!manuscript) {
-      return NextResponse.json(
-        { error: 'Manuscript not found' },
-        { status: 404 }
-      );
+  const manuscriptId = params.id;
+  
+  try {
+    // Try to fetch from Data4Rev API first
+    console.log('🔍 Fetching manuscript details from Data4Rev API for ID:', manuscriptId);
+    
+    // Prepare headers with authentication
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+
+    // Add authentication if available
+    const authToken = process.env.DATA4REV_AUTH_TOKEN || process.env.AUTH_TOKEN;
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+      console.log('🔐 Adding authentication header to Data4Rev API call');
+    } else {
+      console.warn('⚠️ No authentication token found - API call may fail');
     }
 
-    return NextResponse.json(manuscript);
+    const apiUrl = `${DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}`;
+    console.log('Calling Data4Rev API:', apiUrl);
+
+    const apiResponse = await fetch(apiUrl, {
+      method: 'GET',
+      headers,
+      // Add timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    });
+
+    if (!apiResponse.ok) {
+      // If authentication fails or manuscript not found, fall back to mock data
+      if (apiResponse.status === 403) {
+        console.warn('🔒 Authentication failed - falling back to mock data');
+        return handleMockDataFallback(manuscriptId);
+      }
+      if (apiResponse.status === 404) {
+        console.warn('📄 Manuscript not found in API - falling back to mock data');
+        return handleMockDataFallback(manuscriptId);
+      }
+      throw new Error(`Data4Rev API responded with status: ${apiResponse.status} ${apiResponse.statusText}`);
+    }
+
+    const apiData = await apiResponse.json();
+    console.log('✅ Data4Rev API response received:', { 
+      msid: apiData.msid,
+      figureCount: apiData.figures?.length || 0,
+      qcCheckCount: apiData.check_results?.length || 0
+    });
+
+    // Return the data in the expected format
+    return NextResponse.json(apiData);
   } catch (error) {
-    console.error('Error fetching manuscript details:', error);
+    console.error('❌ Error fetching manuscript details from Data4Rev API:', error);
+    
+    // For network errors or API unavailability, fall back to mock data
+    console.warn('🔄 API error - falling back to mock data');
+    return handleMockDataFallback(manuscriptId);
+  }
+}
+
+// Fallback function to handle mock data when API is unavailable
+function handleMockDataFallback(manuscriptId: string) {
+  try {
+    // Try to find by numeric ID first
+    const numericId = parseInt(manuscriptId);
+    let manuscript = mockManuscriptDetails[numericId as keyof typeof mockManuscriptDetails];
+    
+    // If not found by numeric ID, try to find by MSID in mock data
+    if (!manuscript) {
+      // Search through mock data for matching MSID
+      const mockValues = Object.values(mockManuscriptDetails);
+      const foundManuscript = mockValues.find((m: any) => m.msid === manuscriptId);
+      if (foundManuscript) {
+        manuscript = foundManuscript;
+      }
+    }
+    
+    // If still not found, return the first available mock manuscript
+    if (!manuscript) {
+      console.warn('📄 Manuscript not found in mock data, returning first available');
+      manuscript = Object.values(mockManuscriptDetails)[0];
+    }
+
+    console.log('📦 Returning mock manuscript data:', { 
+      msid: manuscript.msid,
+      figureCount: manuscript.figures?.length || 0,
+      qcCheckCount: manuscript.check_results?.length || 0,
+      fallback: true
+    });
+
+    return NextResponse.json({
+      ...manuscript,
+      fallback: true // Indicate this is mock data
+    });
+  } catch (error) {
+    console.error('❌ Error in mock data fallback:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch manuscript details' },
+      { 
+        error: 'Failed to fetch manuscript details - both API and fallback failed',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }
