@@ -132,3 +132,4 @@ vercel --prod
 Your professional demo environment will be live and ready for stakeholder presentations in just a few minutes. No complex OAuth setup, no external API coordination - just a clean, functional demonstration of your manuscript management system.
 
 **Happy demoing! 🎬**
+
