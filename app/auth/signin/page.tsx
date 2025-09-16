@@ -113,7 +113,7 @@ export default function SignIn() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your.email../../..embo.org"
+                  placeholder="your.email@embo.org"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
@@ -147,7 +147,7 @@ export default function SignIn() {
 
           <div className="text-sm text-muted-foreground text-center">
             <p>Demo credentials:</p>
-            <p><strong>Email:</strong> editorial.assistant../../..embo.org</p>
+            <p><strong>Email:</strong> editorial.assistant@embo.org</p>
             <p><strong>Password:</strong> embo2025</p>
           </div>
         </CardContent>
