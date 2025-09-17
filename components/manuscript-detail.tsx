@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useSession } from "next-auth/react"
 import { endpoints, config } from "@/lib/config"
+import { getFigureImageUrl, getFigureThumbnailUrl, getPanelImageUrl, getImageUrl } from "@/lib/image-utils"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -995,32 +996,126 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       }
       const apiData: any = await response.json()
       
+      // Fetch validation data separately
+      let validationData: any = null;
+      try {
+        const validationResponse = await fetch(`/api/v1/manuscripts/${msid}/validation`);
+        if (validationResponse.ok) {
+          validationData = await validationResponse.json();
+        }
+      } catch (validationError) {
+        console.warn('Failed to fetch validation data:', validationError);
+      }
+
       // Transform API data to match our manuscript format
       const statusMapping = getStatusMapping(apiData.status)
       
+      // Helper function to add validation checks to figure
+      const addValidationChecksToFigure = (figure: any, figureIndex: number, validationData: any) => {
+        let figureChecks = (figure.check_results || []).map((check: any) => ({
+          type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+          message: check.message || check.check_name || 'No message',
+          details: check.details || check.message || check.check_name || 'No details available',
+          aiGenerated: check.ai_generated !== undefined ? check.ai_generated : true,
+          dismissed: false,
+          figureTitle: figure.label || `Figure ${figure.id}`,
+          panelId: check.panel_id || null
+        }));
+
+        // Add figure-level validation checks if available
+        if (validationData && !validationData.fallback && validationData.figures) {
+          const figureValidation = validationData.figures.find((f: any, index: number) => 
+            f.label === figure.label || index === figureIndex
+          );
+          
+          if (figureValidation) {
+            // Add figure label checks
+            if (figureValidation.label && Array.isArray(figureValidation.label)) {
+              figureValidation.label.forEach((check: any) => {
+                figureChecks.push({
+                  type: check.status === 'failed' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+                  message: check.message || check.check_name || 'Figure label validation',
+                  details: check.details || check.message || 'Figure label validation details',
+                  aiGenerated: true,
+                  dismissed: false,
+                  figureTitle: figure.label || `Figure ${figure.id}`,
+                  validationSource: 'figure-label',
+                  id: check.id
+                });
+              });
+            }
+            
+            // Add figure image checks
+            if (figureValidation.image && Array.isArray(figureValidation.image)) {
+              figureValidation.image.forEach((check: any) => {
+                figureChecks.push({
+                  type: check.status === 'failed' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+                  message: check.message || check.check_name || 'Figure image validation',
+                  details: check.details || check.message || 'Figure image validation details',
+                  aiGenerated: true,
+                  dismissed: false,
+                  figureTitle: figure.label || `Figure ${figure.id}`,
+                  validationSource: 'figure-image',
+                  id: check.id
+                });
+              });
+            }
+
+            // Add figure links checks
+            if (figureValidation.links && Array.isArray(figureValidation.links)) {
+              figureValidation.links.forEach((linkChecks: any[]) => {
+                if (Array.isArray(linkChecks)) {
+                  linkChecks.forEach((check: any) => {
+                    figureChecks.push({
+                      type: check.status === 'failed' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+                      message: check.message || check.check_name || 'Figure link validation',
+                      details: check.details || check.message || 'Figure link validation details',
+                      aiGenerated: true,
+                      dismissed: false,
+                      figureTitle: figure.label || `Figure ${figure.id}`,
+                      validationSource: 'figure-links',
+                      id: check.id
+                    });
+                  });
+                }
+              });
+            }
+          }
+        }
+
+        return figureChecks;
+      };
+
       // Transform API data structure to UI structure
-      const transformedFigures = (apiData.figures || []).map((figure: any) => ({
+      const transformedFigures = (apiData.figures || []).map((figure: any, figureIndex: number) => ({
         ...figure,
+        // Ensure UI-expected fields are mapped correctly
+        title: figure.label || figure.title || `Figure ${figure.id}`, // API uses 'label', UI expects 'title'
+        legend: figure.caption || figure.legend || '', // API uses 'caption', UI expects 'legend'
+        // Add image URLs using our image serving system
+        fullImagePath: getFigureImageUrl(msid, figure.id, { type: 'full' }),
+        thumbnailPath: getFigureThumbnailUrl(msid, figure.id, 200),
+        imageSource: useApiData ? 'api' : 'placeholder',
         // Ensure panels have linkedData arrays for source data links
         panels: (figure.panels || []).map((panel: any) => ({
           ...panel,
+          id: panel.label || panel.id, // Ensure panel ID matches expected format (A, B, C, etc.)
+          description: panel.caption || panel.description || '', // Map caption to description
+          // Add panel-specific image URLs
+          imagePath: getPanelImageUrl(msid, figure.id, panel.label || panel.id),
+          thumbnailPath: getPanelImageUrl(msid, figure.id, panel.label || panel.id, { type: 'thumbnail' }),
           linkedData: panel.source_data || [],
           qcChecks: (panel.check_results || []).map((check: any) => ({
             type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
             message: check.message || check.check_name || 'No message',
             details: check.details || check.message || check.check_name || 'No details available',
-            aiGenerated: check.ai_generated || true,
-            dismissed: false
+            aiGenerated: check.ai_generated !== undefined ? check.ai_generated : true,
+            dismissed: false,
+            panelId: panel.label || panel.id
           }))
         })),
-        // Transform check_results to qcChecks format
-        qcChecks: (figure.check_results || []).map((check: any) => ({
-          type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
-          message: check.message || check.check_name || 'No message',
-          details: check.details || check.message || check.check_name || 'No details available',
-          aiGenerated: check.ai_generated || true,
-          dismissed: false
-        })),
+        // Transform check_results to qcChecks format and integrate validation data
+        qcChecks: addValidationChecksToFigure(figure, figureIndex, validationData),
         // Transform links to linkedData format
         linkedData: (figure.links || []).map((link: any) => ({
           type: link.database || 'Repository',
@@ -1031,13 +1126,95 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       }))
       
       // Transform manuscript-level check_results to qcChecks
-      const transformedQcChecks = (apiData.check_results || []).map((check: any) => ({
+      let transformedQcChecks = (apiData.check_results || []).map((check: any) => ({
         type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
         message: check.message || check.check_name || 'No message',
         details: check.details || check.message || check.check_name || 'No details available',
-        aiGenerated: check.ai_generated || true,
-        dismissed: false
-      }))
+        aiGenerated: check.ai_generated !== undefined ? check.ai_generated : true,
+        dismissed: false,
+        manuscriptLevel: true // Flag to distinguish manuscript-level checks
+      }));
+
+      // Integrate validation data if available (for manuscript-level checks)
+      if (validationData && !validationData.fallback) {
+        const validationChecks: any[] = [];
+        
+        // Process manuscript-level validation checks
+        if (validationData.links && Array.isArray(validationData.links)) {
+          validationData.links.forEach((linkChecks: any[]) => {
+            if (Array.isArray(linkChecks)) {
+              linkChecks.forEach((check: any) => {
+                validationChecks.push({
+                  type: check.status === 'failed' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+                  message: check.message || check.check_name || 'Validation check',
+                  details: check.details || check.message || 'Validation details',
+                  aiGenerated: true,
+                  dismissed: false,
+                  manuscriptLevel: true,
+                  validationSource: 'links',
+                  id: check.id
+                });
+              });
+            }
+          });
+        }
+        
+        // Add validation checks to transformed checks
+        transformedQcChecks = [...transformedQcChecks, ...validationChecks];
+      }
+
+      // Validation logging for data transformation (dev only)
+      if (process.env.NODE_ENV === 'development') {
+        console.group('📊 API Data Transformation Validation')
+        console.log('Raw API data:', apiData)
+        console.log('Validation data:', validationData)
+        console.log('Transformed figures:', transformedFigures)
+        console.log('Figure count:', transformedFigures.length)
+        
+        // Enhanced figure logging
+        transformedFigures.forEach((fig: any, index: number) => {
+          console.log(`Figure ${index + 1} (${fig.id}):`, {
+            title: fig.title,
+            legend: fig.legend?.substring(0, 50) + '...',
+            panelCount: fig.panels?.length || 0,
+            checkCount: fig.qcChecks?.length || 0,
+            hasRealCoordinates: fig.panels?.some((p: any) => p.x1 !== null && p.y1 !== null),
+            validationIntegrated: fig.qcChecks?.some((c: any) => c.validationSource)
+          })
+        })
+        
+        console.log('Transformed QC checks:', transformedQcChecks)
+        console.log('Check summary:', {
+          total: transformedQcChecks.length,
+          aiGenerated: transformedQcChecks.filter((c: any) => c.aiGenerated).length,
+          manual: transformedQcChecks.filter((c: any) => !c.aiGenerated).length,
+          fromValidation: transformedQcChecks.filter((c: any) => c.validationSource).length,
+          manuscriptLevel: transformedQcChecks.filter((c: any) => c.manuscriptLevel).length
+        })
+        
+        console.log('Image serving summary:', {
+          figuresWithImages: transformedFigures.filter((f: any) => f.fullImagePath).length,
+          imageSource: useApiData ? 'api-serving' : 'placeholder-fallback',
+          panelsWithImages: transformedFigures.reduce((acc: number, fig: any) => 
+            acc + (fig.panels?.filter((p: any) => p.imagePath).length || 0), 0
+          ),
+          sampleUrls: transformedFigures.slice(0, 2).map((f: any) => ({
+            figureId: f.id,
+            fullImage: f.fullImagePath,
+            thumbnail: f.thumbnailPath
+          }))
+        })
+        
+        // Panel coordinate validation
+        const panelsWithCoords = transformedFigures.flatMap((fig: any) => 
+          fig.panels?.filter((p: any) => p.x1 !== null && p.y1 !== null) || []
+        );
+        console.log('Panels with real coordinates:', panelsWithCoords.length, '/', 
+          transformedFigures.reduce((acc: number, fig: any) => acc + (fig.panels?.length || 0), 0)
+        );
+        
+        console.groupEnd()
+      }
 
       const transformedManuscript = {
         id: apiData.id,
@@ -1109,7 +1286,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setFullTextError(null)
     
     try {
-      const response = await fetch(buildApiUrl(endpoints.manuscriptContent(msid)), {
+      const response = await fetch(`/api/v1/manuscripts/${msid}/content`, {
         headers: {
           'Content-Type': 'application/json',
           'Cookie': document.cookie,
@@ -1126,9 +1303,22 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       if (data.fallback) {
         setFullTextError(data.content)
         setFullTextContent("")
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('📄 Full text content fallback:', data.source || 'unknown');
+        }
       } else {
         setFullTextContent(typeof data.content === 'string' ? data.content : JSON.stringify(data.content, null, 2))
         setFullTextError(null)
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📄 Full text content loaded:', {
+            source: data.source,
+            contentType: data.content_type,
+            wordCount: data.word_count,
+            fallback: data.fallback
+          });
+        }
       }
       
     } catch (error) {
@@ -1514,32 +1704,121 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setEditingFigure(null)
   }
 
-  const handleAddFigure = () => {
-    const newFigure = {
-      id: `figure-${Date.now()}`,
-      title: `Figure ${(manuscript.figures?.length || 0) + 1}`,
-      legend: "",
+  const handleAddFigure = async () => {
+    if (!manuscript) return
+
+    const newFigureData = {
+      label: `Figure ${(manuscript.figures?.length || 0) + 1}`,
+      caption: "Enter figure caption here...",
       sort_order: (manuscript.figures?.length || 0) + 1,
-      panels: [],
+      panels: [
+        {
+          label: "A",
+          caption: "Panel A description",
+          x1: null,
+          y1: null,
+          x2: null,
+          y2: null,
+          confidence: null,
+          sort_order: 1,
+          source_data: [],
+          links: []
+        }
+      ],
       links: [],
-      source_data: [],
-      check_results: [],
-      linkedData: [],
-      qcChecks: []
+      source_data: []
     }
 
-    setManuscript((prev: any) => ({
-      ...prev,
-      figures: [...prev.figures, newFigure],
-    }))
-  }
+    try {
+      // Use API to create figure if using API data
+      if (useApiData) {
+        const response = await fetch(`/api/v1/manuscripts/${msid}/figures`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(newFigureData)
+        });
 
-  const handleDeleteFigure = (figureIndex: number) => {
-    if (window.confirm("Are you sure you want to delete this figure?")) {
+        if (response.ok) {
+          const createdFigure = await response.json();
+          
+          // Refresh manuscript data to get the updated figure list
+          await fetchApiManuscriptDetail();
+          
+          console.log('✅ Figure created via API:', createdFigure);
+          return;
+        } else {
+          console.warn('❌ API figure creation failed, falling back to mock');
+        }
+      }
+
+      // Fallback to mock figure creation
+      const newFigure = {
+        id: `figure-${Date.now()}`,
+        title: newFigureData.label,
+        legend: newFigureData.caption,
+        sort_order: newFigureData.sort_order,
+        panels: [
+          {
+            id: "A",
+            description: "Panel A description",
+            linkedData: [],
+            qcChecks: []
+          }
+        ],
+        links: [],
+        source_data: [],
+        check_results: [],
+        linkedData: [],
+        qcChecks: []
+      }
+
       setManuscript((prev: any) => ({
         ...prev,
-        figures: prev.figures.filter((_: any, index: number) => index !== figureIndex),
+        figures: [...prev.figures, newFigure],
       }))
+      
+    } catch (error) {
+      console.error('Error creating figure:', error);
+      alert('Failed to create figure. Please try again.');
+    }
+  }
+
+  const handleDeleteFigure = async (figureIndex: number) => {
+    if (!manuscript?.figures || figureIndex < 0 || figureIndex >= manuscript.figures.length) return
+
+    const figureToDelete = manuscript.figures[figureIndex];
+    
+    if (window.confirm(`Are you sure you want to delete ${figureToDelete.title || figureToDelete.label}?`)) {
+      try {
+        // Use API to delete figure if using API data and figure has an ID
+        if (useApiData && figureToDelete.id && !String(figureToDelete.id).startsWith('figure-')) {
+          const response = await fetch(`/api/v1/manuscripts/${msid}/figures/${figureToDelete.id}`, {
+            method: 'DELETE'
+          });
+
+          if (response.ok) {
+            // Refresh manuscript data to get the updated figure list
+            await fetchApiManuscriptDetail();
+            
+            console.log('✅ Figure deleted via API');
+            return;
+          } else {
+            console.warn('❌ API figure deletion failed, falling back to local removal');
+          }
+        }
+
+        // Fallback to local removal
+        setManuscript((prev: any) => ({
+          ...prev,
+          figures: prev.figures.filter((_: any, index: number) => index !== figureIndex),
+        }))
+        
+      } catch (error) {
+        console.error('Error deleting figure:', error);
+        alert('Failed to delete figure. Please try again.');
+      }
     }
   }
 
@@ -2082,7 +2361,17 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             </CardHeader>
             <CardContent>
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No figures available for this manuscript.</p>
+                <p className="text-muted-foreground mb-2">
+                  {useApiData ? 
+                    "No figures found in API data for this manuscript." : 
+                    "No figures available for this manuscript."
+                  }
+                </p>
+                {useApiData && (
+                  <p className="text-xs text-gray-500">
+                    Check if the manuscript includes figure data in the API response.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -2128,6 +2417,20 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               const aiChecks = useMemo(() => 
                 allChecks.filter(check => check.aiGenerated), [allChecks]
               );
+              
+              // Development validation logging
+              if (process.env.NODE_ENV === 'development' && manuscript?.figures) {
+                console.group('🔍 Figures Review Tab Data Validation')
+                console.log('Manuscript figures:', manuscript.figures)
+                console.log('All checks aggregated:', allChecks)
+                console.log('AI checks filtered:', aiChecks)
+                console.log('Figures with QC checks:', manuscript.figures.map((fig: any) => ({
+                  id: fig.id,
+                  title: fig.title,
+                  qcChecksCount: fig.qcChecks?.length || 0
+                })))
+                console.groupEnd()
+              }
               
               if (aiChecks.length === 0) return null;
               
@@ -2241,48 +2544,115 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Figure Image */}
                       <div className="relative">
-                        <img
-                          src={(selectedFigure as any).fullImagePath || getFigureImage(manuscript?.title || '', selectedFigure.id, selectedFigure.title)}
-                          alt={selectedFigure.title}
-                          className={`w-full object-contain border rounded-lg ${
-                            showExpandedFigure === selectedFigure.id ? "max-h-96" : "max-h-64"
-                          }`}
-                        />
+                        <div className="relative">
+                          <img
+                            src={selectedFigure.fullImagePath || getImageUrl(msid, selectedFigure.id, { type: 'full' }, useApiData)}
+                            alt={selectedFigure.title}
+                            className={`w-full object-contain border rounded-lg ${
+                              showExpandedFigure === selectedFigure.id ? "max-h-96" : "max-h-64"
+                            }`}
+                            onLoad={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              const isFromAPI = target.src.includes('/api/v1/manuscripts/');
+                              if (process.env.NODE_ENV === 'development') {
+                                console.log(`🖼️ Figure image loaded: ${isFromAPI ? 'API' : 'Placeholder'}`, target.src);
+                              }
+                            }}
+                            onError={(e) => {
+                              // Fallback to placeholder on error
+                              const target = e.target as HTMLImageElement;
+                              if (!target.src.includes('placeholder')) {
+                                console.warn(`❌ Image failed to load: ${target.src}, falling back to placeholder`);
+                                target.src = getImageUrl(msid, selectedFigure.id, { type: 'full' }, false);
+                              }
+                            }}
+                          />
+                          
+                          {/* Image Source Indicator */}
+                          <div className="absolute top-2 right-2">
+                            {selectedFigure.imageSource === 'api' ? (
+                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-300">
+                                🖼️ API Image
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">
+                                📝 Placeholder
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                         
                         {/* Hover Bounding Box Overlay */}
                         {hoveredPanel && (() => {
-                          // Define panel positions on the main figure
-                          const panelPositions: Record<string, {left: string, top: string, width: string, height: string}> = {
-                            'A': { left: '5%', top: '5%', width: '40%', height: '40%' },
-                            'B': { left: '55%', top: '5%', width: '40%', height: '40%' },
-                            'C': { left: '5%', top: '50%', width: '40%', height: '40%' },
-                            'D': { left: '55%', top: '50%', width: '40%', height: '40%' },
-                            'E': { left: '5%', top: '5%', width: '30%', height: '30%' },
-                            'F': { left: '35%', top: '5%', width: '30%', height: '30%' },
-                            'G': { left: '65%', top: '5%', width: '30%', height: '30%' },
-                            'H': { left: '5%', top: '35%', width: '30%', height: '30%' },
-                            'I': { left: '35%', top: '35%', width: '30%', height: '30%' },
-                            'J': { left: '65%', top: '35%', width: '30%', height: '30%' }
-                          };
+                          // Get real panel coordinates from API data
+                          const panel = selectedFigure.panels?.find((p: any) => p.id === hoveredPanel || p.label === hoveredPanel);
                           
-                          const position = panelPositions[hoveredPanel] || { left: '15%', top: '25%', width: '35%', height: '45%' };
+                          if (!panel) {
+                            // Fallback to mock positions if panel not found or no coordinates
+                            const panelPositions: Record<string, {left: string, top: string, width: string, height: string}> = {
+                              'A': { left: '5%', top: '5%', width: '40%', height: '40%' },
+                              'B': { left: '55%', top: '5%', width: '40%', height: '40%' },
+                              'C': { left: '5%', top: '50%', width: '40%', height: '40%' },
+                              'D': { left: '55%', top: '50%', width: '40%', height: '40%' },
+                            };
+                            const position = panelPositions[hoveredPanel] || { left: '15%', top: '25%', width: '35%', height: '45%' };
+                            
+                            return (
+                              <div className="absolute border-2 border-blue-500 rounded pointer-events-none animate-pulse"
+                                   style={position}>
+                                <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                                  Panel {hoveredPanel} (Mock)
+                                </div>
+                              </div>
+                            );
+                          }
                           
+                          // Use real API coordinates if available
+                          if (panel.x1 !== null && panel.y1 !== null && panel.x2 !== null && panel.y2 !== null) {
+                            // Calculate percentage positions based on image dimensions
+                            // Note: You may need to adjust these calculations based on actual image dimensions
+                            const imageRect = (document.querySelector('img[alt="' + selectedFigure.title + '"]') as HTMLImageElement)?.getBoundingClientRect();
+                            const imageWidth = imageRect?.width || 800; // fallback width
+                            const imageHeight = imageRect?.height || 600; // fallback height
+                            
+                            const position = {
+                              left: `${(panel.x1 / imageWidth) * 100}%`,
+                              top: `${(panel.y1 / imageHeight) * 100}%`,
+                              width: `${((panel.x2 - panel.x1) / imageWidth) * 100}%`,
+                              height: `${((panel.y2 - panel.y1) / imageHeight) * 100}%`
+                            };
+                            
+                            return (
+                              <div className="absolute border-2 border-green-500 rounded pointer-events-none animate-pulse"
+                                   style={position}>
+                                <div className="absolute -top-6 left-0 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                                  Panel {hoveredPanel} (API) {panel.confidence && `${Math.round(panel.confidence * 100)}%`}
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          // Fallback if coordinates are null
+                          const fallbackPosition = { left: '15%', top: '25%', width: '35%', height: '45%' };
                           return (
-                            <div className="absolute border-2 border-blue-500 rounded pointer-events-none animate-pulse"
-                                 style={position}>
-                              <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                                Panel {hoveredPanel}
+                            <div className="absolute border-2 border-orange-500 rounded pointer-events-none animate-pulse"
+                                 style={fallbackPosition}>
+                              <div className="absolute -top-6 left-0 bg-orange-500 text-white text-xs px-2 py-1 rounded">
+                                Panel {hoveredPanel} (No Coords)
                               </div>
                             </div>
                           );
                         })()}
                         
                         {/* AI Feedback Flags on Panels */}
-                        {selectedFigure.panels.map((panel: any, panelIndex: number) => {
+                        {(selectedFigure.panels || []).map((panel: any, panelIndex: number) => {
                           const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
-                            check.panelId === panel.id
+                            check.panelId === panel.id || check.panelId === panel.label
                           ) || []
-                          const hasIssues = panelChecks.some((check: any) => check.status === 'failed' || check.status === 'warning')
+                          const hasIssues = panelChecks.some((check: any) => 
+                            check.type === 'error' || check.type === 'warning' || 
+                            check.status === 'failed' || check.status === 'warning'
+                          )
                           
                           if (!hasIssues) return null
                           
@@ -2340,9 +2710,24 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                         onMouseLeave={() => setHoveredPanel(null)}
                                       >
                                         <img
-                                          src={(panel as any).thumbnailPath || (panel as any).imagePath || getFigureImage(manuscript.title, selectedFigure.id, selectedFigure.title)}
+                                          src={panel.thumbnailPath || panel.imagePath || getPanelImageUrl(msid, selectedFigure.id, panel.id, { type: 'thumbnail' })}
                                           alt={`Panel ${panel.id}`}
                                           className="w-full h-full object-cover opacity-60"
+                                          onLoad={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            const isFromAPI = target.src.includes('/api/v1/manuscripts/');
+                                            if (process.env.NODE_ENV === 'development') {
+                                              console.log(`🖼️ Panel ${panel.id} thumbnail loaded: ${isFromAPI ? 'API' : 'Placeholder'}`);
+                                            }
+                                          }}
+                                          onError={(e) => {
+                                            // Fallback to main figure thumbnail on error
+                                            const target = e.target as HTMLImageElement;
+                                            if (!target.src.includes('placeholder')) {
+                                              console.warn(`❌ Panel thumbnail failed: ${target.src}, falling back`);
+                                              target.src = getFigureThumbnailUrl(msid, selectedFigure.id, 200);
+                                            }
+                                          }}
                                         />
                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                           <span className="text-white text-xs font-bold bg-black bg-opacity-70 px-2 py-1 rounded">
@@ -2881,13 +3266,35 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
                 {/* Figure Image with Panel Overlays */}
                 <div className="relative">
-                  <img
-                    src={getFigureImage(manuscript?.title || '', figure.id, figure.label)}
-                    alt={figure.label}
-                    className={`w-full object-contain border rounded-lg ${
-                      showExpandedFigure === figure.id ? "max-h-96" : "max-h-64"
-                    }`}
-                  />
+                  <div className="relative">
+                    <img
+                      src={getImageUrl(msid, figure.id, { type: 'full' }, useApiData)}
+                      alt={figure.label}
+                      className={`w-full object-contain border rounded-lg ${
+                        showExpandedFigure === figure.id ? "max-h-96" : "max-h-64"
+                      }`}
+                      onError={(e) => {
+                        // Fallback to placeholder on error
+                        const target = e.target as HTMLImageElement;
+                        if (!target.src.includes('placeholder')) {
+                          target.src = getImageUrl(msid, figure.id, { type: 'full' }, false);
+                        }
+                      }}
+                    />
+                    
+                    {/* Image Source Indicator for List View */}
+                    <div className="absolute top-2 right-2">
+                      {useApiData ? (
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-300">
+                          🖼️ API
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">
+                          📝 Mock
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
 
                   {/* Panel Mapping Overlays */}
                   {overlayVisibility[figure.id] && figure.panels.length > 0 ? (
@@ -3655,7 +4062,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       {(() => {
                         // Use the same main figure image that's displayed in the main view
                         const selectedFigure = manuscript?.figures?.[0]; // Use the currently selected figure
-                        const mainImageSrc = (selectedFigure as any)?.fullImagePath || getFigureImage(manuscript?.title || '', selectedFigure?.id || '', selectedFigure?.title || '');
+                        const mainImageSrc = (selectedFigure as any)?.fullImagePath || getImageUrl(msid, selectedFigure?.id || '', { type: 'full' }, useApiData);
                         
                         return (
                           <>
