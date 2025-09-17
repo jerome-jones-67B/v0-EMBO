@@ -1047,13 +1047,17 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         doi: apiData.doi,
         lastModified: apiData.received_at,
         status: apiData.status,
-        assignedTo: "Dr. Sarah Wilson", // Not available in API
+        assignedTo: "Dr. Sarah Wilson", // Not available in API - TODO: Implement assignment system
         currentStatus: statusMapping.displayStatus,
-        modifiedBy: "Dr. Sarah Chen", // Not available in API
+        modifiedBy: "Dr. Sarah Chen", // Not available in API - TODO: Add modification tracking
         priority: statusMapping.priority,
+        // Properly map API fields
+        journal: apiData.journal || "Journal not specified",
+        accessionNumber: apiData.accession_number || null,
+        errors: apiData.errors || null,
         abstract: apiData.note || "No abstract available",
-        notes: apiData.note || "No additional notes",
-        dataAvailability: "Available", // Not available in API
+        notes: apiData.note || "No additional notes", // TODO: Separate from abstract
+        dataAvailability: "Available", // Not available in API - TODO: Add data availability tracking
         figures: transformedFigures,
         files: apiData.files || [],
         links: apiData.links || [],
@@ -1065,7 +1069,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         workflowState: statusMapping.workflowState,
         badgeVariant: statusMapping.badgeVariant,
         isMapped: statusMapping.isMapped,
-        unmappedFields: ['assignedTo', 'modifiedBy', 'dataAvailability'], // Fields not available in API
+        unmappedFields: ['assignedTo', 'modifiedBy', 'dataAvailability'], // Fields not available in API - requires backend assignment/tracking system
         // Transform check_results to qcChecks format
         qcChecks: transformedQcChecks,
         // Add fallback indicator if present
@@ -3355,23 +3359,23 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {/* Manuscript Metadata */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
+          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                 Authors
               </h4>
-              <div className="pt-1">
+              <div>
                 <AuthorList authors={manuscript.authors} />
               </div>
             </div>
             
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                 DOI
               </h4>
-              <div className="pt-1">
+              <div>
                 <a
                   href={`https://doi.org/${manuscript.doi}`}
                   target="_blank"
@@ -3383,20 +3387,20 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               </div>
             </div>
             
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
-                Received Date
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                Received
               </h4>
-              <div className="pt-1">
+              <div>
                 <p className="text-sm text-gray-900">{manuscript.received}</p>
               </div>
             </div>
             
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                 Assigned To
               </h4>
-              <div className="pt-1">
+              <div>
                 <div className="flex items-center gap-2">
                   {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
                     <>
@@ -3414,164 +3418,213 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                     <span className="text-sm text-gray-400 italic">Unassigned</span>
                   )}
                 </div>
-                {manuscript.lastModified && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Last updated: {new Date(manuscript.lastModified).toLocaleString()}
-                  </p>
-                )}
               </div>
             </div>
             
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                Journal
+              </h4>
+              <div>
+                <p className="text-sm text-gray-900">{manuscript.journal || 'Not specified'}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                Accession
+              </h4>
+              <div>
+                <p className="text-sm text-gray-900 font-mono">{manuscript.accessionNumber || 'Not assigned'}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                 Modified By
               </h4>
-              <div className="pt-1">
+              <div>
                 <p className="text-sm text-gray-900">{manuscript.modifiedBy}</p>
               </div>
             </div>
           </div>
+          
+          {/* API Validation Errors */}
+          {manuscript.errors && (
+            <div className="border rounded-lg p-4 bg-red-50 border-red-200">
+              <h4 className="text-sm font-semibold text-red-700 uppercase tracking-wide mb-2 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                API Validation Errors
+              </h4>
+              <p className="text-sm text-red-800">{manuscript.errors}</p>
+            </div>
+          )}
 
-          {/* Assignment Information Panel */}
+          {/* Assignment Information Panel - Compact */}
           <div className="border rounded-lg p-4 bg-gray-50">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Assignment Information
+                Assignment
               </h3>
               {session?.user && (
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
                   {session.user.name || session.user.email}
                 </div>
               )}
             </div>
             
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Current Assignee:</span>
-                <div className="flex items-center gap-2">
-                  {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
-                    <>
-                      {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" title="Assigned to you" />
-                      )}
-                      <span className="text-sm font-medium">{manuscript.assignedTo}</span>
-                      {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
-                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                          You
-                        </Badge>
-                      )}
-                    </>
-                  ) : (
-                    <span className="text-sm text-gray-400 italic">Unassigned</span>
-                  )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Left Column - Assignment Status */}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Current Assignee</label>
+                  <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                    {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
+                      <>
+                        {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                          <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" title="Assigned to you" />
+                        )}
+                        <span className="text-sm font-medium text-gray-900 flex-1">{manuscript.assignedTo}</span>
+                        {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
+                            You
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-sm text-gray-400 italic">Unassigned</span>
+                    )}
+                  </div>
                 </div>
+                
+                {manuscript.lastModified && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 block mb-1">Last Change</label>
+                    <div className="p-2 bg-white rounded border">
+                      <span className="text-xs text-gray-500">
+                        {new Date(manuscript.lastModified).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               
-              {manuscript.lastModified && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Last Assignment Change:</span>
-                  <span className="text-sm text-gray-500">
-                    {new Date(manuscript.lastModified).toLocaleString()}
-                  </span>
-                </div>
-              )}
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Assignment Actions:</span>
-                <div className="flex items-center gap-2">
-                  {session?.user ? (
-                    <>
-                      {manuscript.assignedTo && 
-                       manuscript.assignedTo !== "" && 
-                       (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setManuscript((prev: any) => ({
-                              ...prev,
-                              assignedTo: "",
-                              lastModified: new Date().toISOString()
-                            }))
-                            setTimeout(() => {
-                              alert(`Manuscript unassigned from you.`)
-                            }, 100)
-                          }}
-                          className="flex items-center gap-1 text-xs"
-                        >
-                          <UserMinus className="w-3 h-3" />
-                          Unassign
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const userName = session.user.name || session.user.email || 'Unknown User'
-                            setManuscript((prev: any) => ({
-                              ...prev,
-                              assignedTo: userName,
-                              lastModified: new Date().toISOString()
-                            }))
-                            setTimeout(() => {
-                              alert(`Manuscript assigned to you.`)
-                            }, 100)
-                          }}
-                          className="flex items-center gap-1 text-xs"
-                        >
-                          <UserPlus className="w-3 h-3" />
-                          Assign to me
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    <span className="text-xs text-gray-400">Login required</span>
-                  )}
+              {/* Right Column - Actions */}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Actions</label>
+                  <div className="space-y-2">
+                    {session?.user ? (
+                      <>
+                        {manuscript.assignedTo && 
+                         manuscript.assignedTo !== "" && 
+                         (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
+                          <Button
+                            variant="outline"
+                            size="default"
+                            onClick={() => {
+                              setManuscript((prev: any) => ({
+                                ...prev,
+                                assignedTo: "",
+                                lastModified: new Date().toISOString()
+                              }))
+                              setTimeout(() => {
+                                alert(`Manuscript unassigned from you.`)
+                              }, 100)
+                            }}
+                            className="w-full flex items-center justify-center gap-2"
+                          >
+                            <UserMinus className="w-4 h-4" />
+                            Unassign from me
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="default"
+                            onClick={() => {
+                              const userName = session.user.name || session.user.email || 'Unknown User'
+                              setManuscript((prev: any) => ({
+                                ...prev,
+                                assignedTo: userName,
+                                lastModified: new Date().toISOString()
+                              }))
+                              setTimeout(() => {
+                                alert(`Manuscript assigned to you.`)
+                              }, 100)
+                            }}
+                            className="w-full flex items-center justify-center gap-2"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                            Assign to me
+                          </Button>
+                        )}
+                        <p className="text-xs text-gray-400 text-center">
+                          Changes reflected immediately
+                        </p>
+                      </>
+                    ) : (
+                      <div className="p-2 bg-white rounded border text-center">
+                        <span className="text-xs text-gray-400">Login required</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <Tabs defaultValue={selectedView} className="w-full">
-            <TabsList>
-              <TabsTrigger value="manuscript" onClick={() => setSelectedView("manuscript")}>
-                Manuscript Review
-              </TabsTrigger>
-              <TabsTrigger value="list" onClick={() => setSelectedView("list")}>
-                List Review
-              </TabsTrigger>
-              <TabsTrigger 
-                value="fulltext" 
-                onClick={() => {
-                  setSelectedView("fulltext")
-                  if (useApiData && !fullTextContent && !fullTextError) {
-                    fetchFullTextContent()
-                  }
-                }}
-                disabled={!useApiData}
-                title={!useApiData ? "Full text viewing is only available when using API data" : "View the complete manuscript text"}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Full Text
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="manuscript">
-              <ManuscriptReviewView />
-            </TabsContent>
-            <TabsContent value="list">
-              <ListReviewView />
-            </TabsContent>
-            <TabsContent value="fulltext">
-              <FullTextView
-                useApiData={useApiData}
-                isLoadingFullText={isLoadingFullText}
-                fullTextError={fullTextError}
-                fullTextContent={fullTextContent}
-                fetchFullTextContent={fetchFullTextContent}
-              />
-            </TabsContent>
-          </Tabs>
+          {/* Main Review Tabs - Enhanced Visibility */}
+          <div className="border-t bg-white">
+            <Tabs defaultValue={selectedView} className="w-full">
+              <TabsList className="h-12 p-1 bg-gray-100 rounded-none border-b w-full justify-start">
+                <TabsTrigger 
+                  value="manuscript" 
+                  onClick={() => setSelectedView("manuscript")}
+                  className="flex-1 h-10 text-base font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border-blue-500 data-[state=active]:text-blue-700"
+                >
+                  📊 Manuscript Review
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="list" 
+                  onClick={() => setSelectedView("list")}
+                  className="flex-1 h-10 text-base font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  📋 List Review
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="fulltext" 
+                  onClick={() => {
+                    setSelectedView("fulltext")
+                    if (useApiData && !fullTextContent && !fullTextError) {
+                      fetchFullTextContent()
+                    }
+                  }}
+                  disabled={!useApiData}
+                  title={!useApiData ? "Full text viewing is only available when using API data" : "View the complete manuscript text"}
+                  className="flex-1 h-10 text-base font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm disabled:opacity-50"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  📄 Full Text
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="manuscript">
+                <ManuscriptReviewView />
+              </TabsContent>
+              <TabsContent value="list">
+                <ListReviewView />
+              </TabsContent>
+              <TabsContent value="fulltext">
+                <FullTextView
+                  useApiData={useApiData}
+                  isLoadingFullText={isLoadingFullText}
+                  fullTextError={fullTextError}
+                  fullTextContent={fullTextContent}
+                  fetchFullTextContent={fetchFullTextContent}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
         </CardContent>
       </Card>
 
