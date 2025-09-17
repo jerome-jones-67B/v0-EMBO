@@ -655,8 +655,124 @@ export default function ManuscriptDashboard() {
     setShowPrioritySubmenu(null)
   }
 
+  // Function to assign manuscript to current user
+  const assignToMe = async (msid: string) => {
+    if (!session?.user) {
+      alert('You must be logged in to assign manuscripts.')
+      return
+    }
 
+    const userName = session.user.name || session.user.email || 'Unknown User'
+    
+    if (useApiData) {
+      // Update API manuscripts state
+      setApiManuscripts((prev) =>
+        prev.map((manuscript) => {
+          if (manuscript.msid === msid) {
+            return { 
+              ...manuscript, 
+              assignedTo: userName,
+              lastModified: new Date().toISOString()
+            }
+          }
+          return manuscript
+        }),
+      )
+      
+      // In a real implementation, this would call an API endpoint to update the assignment
+      // PUT /api/v1/manuscripts/{id}/assign with { assignedTo: session.user.id }
+      
+      // Show user feedback
+      setTimeout(() => {
+        alert(`Manuscript ${msid} assigned to you.`)
+      }, 100)
+    } else {
+      // Update the mock manuscripts state  
+      setMockManuscripts((prev) =>
+        prev.map((manuscript) => {
+          if (manuscript.msid === msid) {
+            return { 
+              ...manuscript, 
+              assignedTo: userName,
+              lastModified: new Date().toISOString()
+            }
+          }
+          return manuscript
+        }),
+      )
+      
+      // Show user feedback
+      setTimeout(() => {
+        alert(`Manuscript ${msid} assigned to you.`)
+      }, 100)
+    }
 
+    // Close dropdown
+    setOpenDropdown(null)
+    setDropdownPosition(null)
+  }
+
+  // Function to unassign manuscript from current user
+  const unassignFromMe = async (msid: string) => {
+    if (!session?.user) {
+      alert('You must be logged in to unassign manuscripts.')
+      return
+    }
+    
+    if (useApiData) {
+      // Update API manuscripts state
+      setApiManuscripts((prev) =>
+        prev.map((manuscript) => {
+          if (manuscript.msid === msid) {
+            return { 
+              ...manuscript, 
+              assignedTo: "",
+              lastModified: new Date().toISOString()
+            }
+          }
+          return manuscript
+        }),
+      )
+      
+      // In a real implementation, this would call an API endpoint to update the assignment
+      // DELETE /api/v1/manuscripts/{id}/assign
+      
+      // Show user feedback
+      setTimeout(() => {
+        alert(`Manuscript ${msid} unassigned from you.`)
+      }, 100)
+    } else {
+      // Update the mock manuscripts state  
+      setMockManuscripts((prev) =>
+        prev.map((manuscript) => {
+          if (manuscript.msid === msid) {
+            return { 
+              ...manuscript, 
+              assignedTo: "",
+              lastModified: new Date().toISOString()
+            }
+          }
+          return manuscript
+        }),
+      )
+      
+      // Show user feedback
+      setTimeout(() => {
+        alert(`Manuscript ${msid} unassigned from you.`)
+      }, 100)
+    }
+
+    // Close dropdown
+    setOpenDropdown(null)
+    setDropdownPosition(null)
+  }
+
+  // Helper function to check if current user is assigned to a manuscript
+  const isAssignedToMe = (manuscript: any) => {
+    if (!session?.user || !manuscript.assignedTo || manuscript.assignedTo === "") return false
+    const userName = session.user.name || session.user.email || 'Unknown User'
+    return manuscript.assignedTo === userName
+  }
 
   const handleDownloadFiles = async (msid: string, title: string) => {
     
@@ -808,27 +924,6 @@ export default function ManuscriptDashboard() {
     }
   }
 
-  const assignManuscript = (msid: string, assignee: string) => {
-    setMockManuscripts((prev) =>
-      prev.map((manuscript) => {
-        if (manuscript.msid === msid) {
-          return { ...manuscript, assignee }
-        }
-        return manuscript
-      }),
-    )
-  }
-
-  const unassignManuscript = (msid: string) => {
-    setMockManuscripts((prev) =>
-      prev.map((manuscript) => {
-        if (manuscript.msid === msid) {
-          return { ...manuscript }
-        }
-        return manuscript
-      }),
-    )
-  }
 
   const filteredAndSortedManuscripts = useMemo(() => {
     const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
@@ -2027,43 +2122,25 @@ export default function ManuscriptDashboard() {
 
                                             <div className="border-t border-gray-200 my-1" />
 
-                                            {manuscript.assignee ? (
-                                              <>
-                                                <button
-                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                                  onClick={(e) => {
-                                                    e.preventDefault()
-                                                    e.stopPropagation()
-                                                    assignManuscript(manuscript.msid, "Current User")
-                                                    setOpenDropdown(null)
-                                                    setDropdownPosition(null)
-                                                  }}
-                                                >
-                                                  <UserPlus className="w-4 h-4 mr-2" />
-                                                  Assign to me
-                                                </button>
-                                                <button
-                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                                  onClick={(e) => {
-                                                    e.preventDefault()
-                                                    e.stopPropagation()
-                                                    unassignManuscript(manuscript.msid)
-                                                    setOpenDropdown(null)
-                                                    setDropdownPosition(null)
-                                                  }}
-                                                >
-                                                  <UserMinus className="w-4 h-4 mr-2" />
-                                                  Unassign
-                                                </button>
-                                              </>
+                                            {isAssignedToMe(manuscript) ? (
+                                              <button
+                                                className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                                onClick={(e) => {
+                                                  e.preventDefault()
+                                                  e.stopPropagation()
+                                                  unassignFromMe(manuscript.msid)
+                                                }}
+                                              >
+                                                <UserMinus className="w-4 h-4 mr-2" />
+                                                Unassign from me
+                                              </button>
                                             ) : (
                                               <button
                                                 className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                                 onClick={(e) => {
                                                   e.preventDefault()
                                                   e.stopPropagation()
-                                                  assignManuscript(manuscript.msid, "Current User")
-                                                  setOpenDropdown(null)
+                                                  assignToMe(manuscript.msid)
                                                 }}
                                               >
                                                 <UserPlus className="w-4 h-4 mr-2" />
@@ -2346,12 +2423,20 @@ export default function ManuscriptDashboard() {
                                 <TableCell className="text-sm">
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <span className="cursor-help">
-                                        {highlightSearchTerm(manuscript.assignedTo, searchTerm)}
-                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        {isAssignedToMe(manuscript) && (
+                                          <div className="w-2 h-2 bg-blue-500 rounded-full" title="Assigned to you" />
+                                        )}
+                                        <span className="cursor-help">
+                                          {manuscript.assignedTo || <span className="text-gray-400 italic">Unassigned</span>}
+                                        </span>
+                                      </div>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       <p>Assigned curator/reviewer</p>
+                                      {isAssignedToMe(manuscript) && (
+                                        <p className="text-xs text-blue-400">Assigned to you</p>
+                                      )}
                                       <p className="text-xs text-muted-foreground">
                                         Last modified: {new Date(manuscript.lastModified).toLocaleString()}
                                       </p>
