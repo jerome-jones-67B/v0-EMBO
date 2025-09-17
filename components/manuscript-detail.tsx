@@ -33,6 +33,8 @@ import {
   Check,
   RotateCcw,
   Database,
+  UserPlus,
+  UserMinus,
 } from "lucide-react"
 import { mockLinkedData, mockSourceData } from "@/lib/mock"
 import { dataService } from "@/lib/data-service"
@@ -3295,39 +3297,239 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl font-bold">{manuscript.title}</CardTitle>
             <div className="flex items-center gap-2">
+              {/* Assignment Action Buttons */}
+              {session?.user && (
+                <>
+                  {manuscript.assignedTo && 
+                   manuscript.assignedTo !== "" && 
+                   (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Update manuscript assignment
+                        setManuscript((prev: any) => ({
+                          ...prev,
+                          assignedTo: "",
+                          lastModified: new Date().toISOString()
+                        }))
+                        // Show feedback
+                        setTimeout(() => {
+                          alert(`Manuscript unassigned from you.`)
+                        }, 100)
+                      }}
+                      className="flex items-center gap-1"
+                    >
+                      <UserMinus className="w-4 h-4" />
+                      Unassign from me
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const userName = session.user.name || session.user.email || 'Unknown User'
+                        // Update manuscript assignment
+                        setManuscript((prev: any) => ({
+                          ...prev,
+                          assignedTo: userName,
+                          lastModified: new Date().toISOString()
+                        }))
+                        // Show feedback
+                        setTimeout(() => {
+                          alert(`Manuscript assigned to you.`)
+                        }, 100)
+                      }}
+                      className="flex items-center gap-1"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Assign to me
+                    </Button>
+                  )}
+                </>
+              )}
+              
+              {/* Status Badges */}
               <Badge variant="outline">{manuscript.status}</Badge>
               <Badge variant="secondary">{(manuscript as any).workflowState || 'In Review'}</Badge>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Authors</Label>
-              <AuthorList authors={manuscript.authors} />
+        <CardContent className="space-y-6">
+          {/* Manuscript Metadata */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
+                Authors
+              </h4>
+              <div className="pt-1">
+                <AuthorList authors={manuscript.authors} />
+              </div>
             </div>
-            <div>
-              <Label>DOI</Label>
-              <a
-                href={`https://doi.org/${manuscript.doi}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-              >
-                {manuscript.doi}
-              </a>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
+                DOI
+              </h4>
+              <div className="pt-1">
+                <a
+                  href={`https://doi.org/${manuscript.doi}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer block"
+                >
+                  {manuscript.doi}
+                </a>
+              </div>
             </div>
-            <div>
-              <Label>Received Date</Label>
-              <p className="text-sm">{manuscript.received}</p>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
+                Received Date
+              </h4>
+              <div className="pt-1">
+                <p className="text-sm text-gray-900">{manuscript.received}</p>
+              </div>
             </div>
-            <div>
-              <Label>Assigned To</Label>
-              <p className="text-sm">{manuscript.assignedTo}</p>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
+                Assigned To
+              </h4>
+              <div className="pt-1">
+                <div className="flex items-center gap-2">
+                  {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
+                    <>
+                      {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full" title="Assigned to you" />
+                      )}
+                      <span className="text-sm text-gray-900 font-medium">{manuscript.assignedTo}</span>
+                      {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          You
+                        </Badge>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-400 italic">Unassigned</span>
+                  )}
+                </div>
+                {manuscript.lastModified && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last updated: {new Date(manuscript.lastModified).toLocaleString()}
+                  </p>
+                )}
+              </div>
             </div>
-            <div>
-              <Label>Modified By</Label>
-              <p className="text-sm">{manuscript.modifiedBy}</p>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1">
+                Modified By
+              </h4>
+              <div className="pt-1">
+                <p className="text-sm text-gray-900">{manuscript.modifiedBy}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Assignment Information Panel */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Assignment Information
+              </h3>
+              {session?.user && (
+                <div className="text-xs text-gray-500">
+                  {session.user.name || session.user.email}
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Current Assignee:</span>
+                <div className="flex items-center gap-2">
+                  {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
+                    <>
+                      {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full" title="Assigned to you" />
+                      )}
+                      <span className="text-sm font-medium">{manuscript.assignedTo}</span>
+                      {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          You
+                        </Badge>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-400 italic">Unassigned</span>
+                  )}
+                </div>
+              </div>
+              
+              {manuscript.lastModified && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Last Assignment Change:</span>
+                  <span className="text-sm text-gray-500">
+                    {new Date(manuscript.lastModified).toLocaleString()}
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Assignment Actions:</span>
+                <div className="flex items-center gap-2">
+                  {session?.user ? (
+                    <>
+                      {manuscript.assignedTo && 
+                       manuscript.assignedTo !== "" && 
+                       (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setManuscript((prev: any) => ({
+                              ...prev,
+                              assignedTo: "",
+                              lastModified: new Date().toISOString()
+                            }))
+                            setTimeout(() => {
+                              alert(`Manuscript unassigned from you.`)
+                            }, 100)
+                          }}
+                          className="flex items-center gap-1 text-xs"
+                        >
+                          <UserMinus className="w-3 h-3" />
+                          Unassign
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const userName = session.user.name || session.user.email || 'Unknown User'
+                            setManuscript((prev: any) => ({
+                              ...prev,
+                              assignedTo: userName,
+                              lastModified: new Date().toISOString()
+                            }))
+                            setTimeout(() => {
+                              alert(`Manuscript assigned to you.`)
+                            }, 100)
+                          }}
+                          className="flex items-center gap-1 text-xs"
+                        >
+                          <UserPlus className="w-3 h-3" />
+                          Assign to me
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-400">Login required</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
