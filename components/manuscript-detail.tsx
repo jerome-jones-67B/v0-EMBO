@@ -55,6 +55,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Bot } from "lucide-react"
+import { AuthorList } from "./author-list"
 
 // Function to assign diverse images with much more variety
 function getFigureImage(manuscriptTitle: string, figureId: string, figureTitle: string): string {
@@ -3303,11 +3304,18 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Authors</Label>
-              <p className="text-sm">{manuscript.authors}</p>
+              <AuthorList authors={manuscript.authors} />
             </div>
             <div>
               <Label>DOI</Label>
-              <p className="text-sm">{manuscript.doi}</p>
+              <a
+                href={`https://doi.org/${manuscript.doi}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+              >
+                {manuscript.doi}
+              </a>
             </div>
             <div>
               <Label>Received Date</Label>
