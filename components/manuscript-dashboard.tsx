@@ -20,7 +20,7 @@ import { useSession } from "next-auth/react"
 import { endpoints, config } from "@/lib/config"
 import { dataService } from "@/lib/data-service"
 import { getValidStatusesForTab as getValidStatuses, getStatusMapping } from "@/lib/status-mapping"
-import { Eye, Download, MoreHorizontal, Pause, Play, Flag, ChevronRight, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, Check, AlertTriangle, Users, Info, Edit2, UserPlus, UserMinus, Clock, X } from "lucide-react"
+import { Eye, Download, MoreHorizontal, Pause, Play, Flag, ChevronRight, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, Check, AlertTriangle, Users, Info, Edit2, UserPlus, UserMinus, Clock, X, FileText, Archive, Image } from "lucide-react"
 
 const initialMockManuscripts = [
   {
@@ -509,6 +509,7 @@ export default function ManuscriptDashboard() {
   const [downloadProgress, setDownloadProgress] = useState<{[key: string]: {status: string, progress: number, currentFile?: string, totalFiles?: number, downloadedFiles?: number, currentFileSize?: string, downloadSpeed?: string}}>({})
   const [showDownloadToast, setShowDownloadToast] = useState<{[key: string]: boolean}>({})
   const [downloadConnections, setDownloadConnections] = useState<{[key: string]: EventSource | null}>({})
+  const [downloadAbortControllers, setDownloadAbortControllers] = useState<{[key: string]: AbortController | null}>({})
   const [showPrioritySubmenu, setShowPrioritySubmenu] = useState<string | null>(null)
   const [dropdownPosition, setDropdownPosition] = useState<{top: number, left: number, right: string} | null>(null)
 
@@ -774,12 +775,16 @@ export default function ManuscriptDashboard() {
     return manuscript.assignedTo === userName
   }
 
-  const handleDownloadFiles = async (msid: string, title: string) => {
+  const handleDownloadFiles = async (msid: string, title: string, fileType: string = 'essential') => {
     
     // Determine the manuscript ID for the API call
     const manuscriptId = useApiData ? 
       (apiManuscripts.find(m => m.msid === msid)?.id?.toString() || msid) : 
       msid;
+    
+    // Create AbortController for this download
+    const abortController = new AbortController();
+    setDownloadAbortControllers(prev => ({...prev, [msid]: abortController}));
     
     // Add manuscript to downloading set and show progress
     setDownloadingManuscripts(prev => new Set(prev).add(msid));
@@ -835,6 +840,17 @@ export default function ManuscriptDashboard() {
           setTimeout(() => {
             alert(`Download Failed\n\nError: ${data.error}\n\nManuscript: ${title}\nMSID: ${msid}\n\nPlease try again or contact support if the problem persists.`);
           }, 500);
+        } else if (data.type === 'cancelled') {
+          setDownloadProgress(prev => ({
+            ...prev,
+            [msid]: {
+              status: 'Download cancelled',
+              progress: data.progress || 0,
+              currentFile: data.message || 'Download was cancelled'
+            }
+          }));
+          
+          console.log(`🛑 Download cancelled for ${msid}: ${data.message}`);
         }
       } catch (parseError) {
         console.error('❌ Failed to parse SSE message:', parseError);
@@ -848,8 +864,8 @@ export default function ManuscriptDashboard() {
     };
     
     try {
-      // Build the download URL
-      const downloadUrl = buildApiUrl(`/v1/manuscripts/${manuscriptId}/download?format=zip&type=all`);
+      // Build the download URL with specified file type
+      const downloadUrl = buildApiUrl(`/v1/manuscripts/${manuscriptId}/download?format=zip&type=${fileType}`);
       
       
       // Make the API call (this will trigger the SSE progress updates)
@@ -859,6 +875,7 @@ export default function ManuscriptDashboard() {
           'Cookie': document.cookie,
         },
         credentials: 'include',
+        signal: abortController.signal,
       });
       
       if (!response.ok) {
@@ -890,17 +907,29 @@ export default function ManuscriptDashboard() {
     } catch (error) {
       console.error('❌ Download failed:', error);
       
-      setDownloadProgress(prev => ({
-        ...prev, 
-        [msid]: {status: 'Download failed', progress: 0}
-      }));
-      
-      // Show error notification with fallback options
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setTimeout(() => {
-        alert(`Download Failed\n\nError: ${errorMessage}\n\nManuscript: ${title}\nMSID: ${msid}\n\nPlease try again or contact support if the problem persists.`);
-      }, 500);
+      // Check if this was a user cancellation
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log(`🛑 Download cancelled by user for ${msid}`);
+        setDownloadProgress(prev => ({
+          ...prev, 
+          [msid]: {status: 'Download cancelled', progress: 0}
+        }));
+      } else {
+        setDownloadProgress(prev => ({
+          ...prev, 
+          [msid]: {status: 'Download failed', progress: 0}
+        }));
+        
+        // Show error notification with fallback options (only for actual errors, not cancellations)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        setTimeout(() => {
+          alert(`Download Failed\n\nError: ${errorMessage}\n\nManuscript: ${title}\nMSID: ${msid}\n\nPlease try again or contact support if the problem persists.`);
+        }, 500);
+      }
     } finally {
+      // Clean up AbortController
+      setDownloadAbortControllers(prev => ({...prev, [msid]: null}));
+      
       // Close SSE connection and hide progress after a delay
       setTimeout(() => {
         const connection = downloadConnections[msid];
@@ -1498,48 +1527,48 @@ export default function ManuscriptDashboard() {
                 </div>
                 <p className="text-muted-foreground">Manuscript validation and curation workflow management</p>
               </div>
-              <div className="flex items-center">
-                <UserNav />
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-sm">
-                  {globalCounts.total} manuscripts
-                </Badge>
-                {globalCounts.urgent > 0 && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge variant="destructive" className="text-sm">
-                        {globalCounts.urgent} urgent
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Manuscripts requiring immediate attention across all tabs</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-                {globalCounts.onHold > 0 && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge variant="destructive" className="text-sm">
-                        {globalCounts.onHold} on hold
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Manuscripts on hold across all tabs</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-                <div className="flex gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {globalCounts.new} new
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-sm">
+                    {globalCounts.total} manuscripts
                   </Badge>
-                  <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                    {globalCounts.inProgress} in progress
-                  </Badge>
-                  <Badge variant="destructive" className="text-xs bg-red-50 text-red-700 border-red-200">
-                    {globalCounts.totalOnHold} on hold
-                  </Badge>
+                  {globalCounts.urgent > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="destructive" className="text-sm">
+                          {globalCounts.urgent} urgent
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Manuscripts requiring immediate attention across all tabs</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                  {globalCounts.onHold > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="destructive" className="text-sm">
+                          {globalCounts.onHold} on hold
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Manuscripts on hold across all tabs</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                  <div className="flex gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {globalCounts.new} new
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      {globalCounts.inProgress} in progress
+                    </Badge>
+                    <Badge variant="destructive" className="text-xs bg-red-50 text-red-700 border-red-200">
+                      {globalCounts.totalOnHold} on hold
+                    </Badge>
+                  </div>
                 </div>
+                <UserNav />
               </div>
             </div>
 
@@ -1692,12 +1721,22 @@ export default function ManuscriptDashboard() {
                         size="sm"
                         className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800"
                         onClick={() => {
+                          // Abort the download request if it's in progress
+                          const abortController = downloadAbortControllers[msid];
+                          if (abortController && !abortController.signal.aborted) {
+                            console.log(`🛑 Aborting download for ${msid}`);
+                            abortController.abort();
+                          }
+                          
                           // Close SSE connection when manually closing
                           const connection = downloadConnections[msid];
                           if (connection) {
                             connection.close();
                             setDownloadConnections(prev => ({...prev, [msid]: null}));
                           }
+                          
+                          // Clean up AbortController
+                          setDownloadAbortControllers(prev => ({...prev, [msid]: null}));
                           
                           setShowDownloadToast(prev => ({...prev, [msid]: false}));
                           setDownloadProgress(prev => {
@@ -2081,19 +2120,89 @@ export default function ManuscriptDashboard() {
                                               View details
                                             </button>
 
-                                            <button
-                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer relative"
-                                              onClick={(e) => {
-                                                e.preventDefault()
-                                                e.stopPropagation()
-                                                handleDownloadFiles(manuscript.msid, manuscript.title)
-                                                setOpenDropdown(null)
-                                                setDropdownPosition(null)
-                                              }}
-                                            >
-                                              <Download className="w-4 h-4 mr-2" />
-                                              Download files
-                                            </button>
+                                            <div className="relative">
+                                              <button
+                                                className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer relative group"
+                                                onClick={(e) => {
+                                                  e.preventDefault()
+                                                  e.stopPropagation()
+                                                  handleDownloadFiles(manuscript.msid, manuscript.title, 'essential')
+                                                  setOpenDropdown(null)
+                                                  setDropdownPosition(null)
+                                                }}
+                                              >
+                                                <Download className="w-4 h-4 mr-2" />
+                                                Download files
+                                                <ChevronRight className="w-3 h-3 ml-auto opacity-50 group-hover:opacity-100" />
+                                              </button>
+                                              
+                                              {/* Download submenu */}
+                                              <div className="absolute left-full top-0 ml-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                                <button
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                  onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    handleDownloadFiles(manuscript.msid, manuscript.title, 'essential')
+                                                    setOpenDropdown(null)
+                                                  }}
+                                                >
+                                                  <FileText className="w-4 h-4 mr-2" />
+                                                  Essential files
+                                                  <span className="ml-auto text-xs text-gray-500">Default</span>
+                                                </button>
+                                                <button
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                  onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    handleDownloadFiles(manuscript.msid, manuscript.title, 'all')
+                                                    setOpenDropdown(null)
+                                                  }}
+                                                >
+                                                  <Archive className="w-4 h-4 mr-2" />
+                                                  Complete archive
+                                                  <span className="ml-auto text-xs text-gray-500">All files</span>
+                                                </button>
+                                                <div className="border-t border-gray-200 my-1" />
+                                                <button
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                  onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    handleDownloadFiles(manuscript.msid, manuscript.title, 'manuscript')
+                                                    setOpenDropdown(null)
+                                                  }}
+                                                >
+                                                  <FileText className="w-4 h-4 mr-2" />
+                                                  Manuscript only
+                                                </button>
+                                                <button
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                  onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    handleDownloadFiles(manuscript.msid, manuscript.title, 'figures')
+                                                    setOpenDropdown(null)
+                                                  }}
+                                                >
+                                                  <Image className="w-4 h-4 mr-2" />
+                                                  Figures only
+                                                </button>
+                                                <button
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                  onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    handleDownloadFiles(manuscript.msid, manuscript.title, 'supplementary')
+                                                    setOpenDropdown(null)
+                                                  }}
+                                                >
+                                                  <Database className="w-4 h-4 mr-2" />
+                                                  Supplementary data
+                                                </button>
+                                              </div>
+                                            </div>
 
                                             <div className="border-t border-gray-200 my-1" />
 

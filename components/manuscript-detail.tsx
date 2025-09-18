@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useSession } from "next-auth/react"
 import { endpoints, config } from "@/lib/config"
-import { getFigureImageUrl, getFigureThumbnailUrl, getPanelImageUrl, getImageUrl } from "@/lib/image-utils"
+import { getImageUrl } from "@/lib/image-utils"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +36,7 @@ import {
   Database,
   UserPlus,
   UserMinus,
+  Send,
 } from "lucide-react"
 import { mockLinkedData, mockSourceData } from "@/lib/mock"
 import { dataService } from "@/lib/data-service"
@@ -59,56 +60,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Bot } from "lucide-react"
 import { AuthorList } from "./author-list"
-
-// Function to assign diverse images with much more variety
-function getFigureImage(manuscriptTitle: string, figureId: string, figureTitle: string): string {
-  // Check if this is a newly created figure (starts with "figure-")
-  if (String(figureId).startsWith('figure-')) {
-    // Return a placeholder image for newly created figures
-    return '/placeholder-e9mgd.png'
-  }
-  
-  // All available scientific images - use them all!
-  const allImages = [
-    '/protein-structures.png',
-    '/protein-structure-control.png',
-    '/molecular-interactions.png',
-    '/hsp70-binding.png',
-    '/co-chaperone-recruitment.png',
-    '/atp-folding-cycle.png',
-    '/microscopy-0-hours.png',
-    '/microscopy-two-hours.png', 
-    '/microscopy-6-hours.png',
-    '/microscopy-24-hours.png',
-    '/quantitative-analysis-graph.png',
-    '/quantitative-aggregation-graph.png',
-    '/protein-aggregation-time-course.png'
-  ]
-  
-  // Create maximum diversity by combining multiple factors
-  const figureIdStr = String(figureId)
-  const seed = manuscriptTitle + figureIdStr + figureTitle
-  const hash1 = Math.abs(hashCode(seed))
-  const hash2 = Math.abs(hashCode(seed.split('').reverse().join('')))
-  const hash3 = Math.abs(hashCode(figureIdStr + manuscriptTitle.length))
-  const hash4 = Math.abs(hashCode(figureTitle + figureIdStr.length))
-  
-  // Use multiple hash combinations with different multipliers for maximum distribution
-  const imageIndex = (hash1 + hash2 * 7 + hash3 * 13 + hash4 * 23) % allImages.length
-  
-  return allImages[imageIndex]
-}
-
-// Simple hash function for consistent image assignment
-function hashCode(str: string): number {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32-bit integer
-  }
-  return hash
-}
 
 interface ManuscriptDetailProps {
   msid: string
@@ -910,6 +861,7 @@ const buildApiUrl = (endpoint: string): string => {
   return `${baseUrl}${endpoint}`
 }
 
+
 const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) => {
   const { data: session } = useSession()
   const [selectedView, setSelectedView] = useState<"manuscript" | "list" | "fulltext">("manuscript")
@@ -945,6 +897,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [fullTextContent, setFullTextContent] = useState<string>("")
   const [isLoadingFullText, setIsLoadingFullText] = useState(false)
   const [fullTextError, setFullTextError] = useState<string | null>(null)
+  const [isDepositing, setIsDepositing] = useState(false)
+  const [depositError, setDepositError] = useState<string | null>(null)
+  // Track actual image load status per figure (figureId -> 'api' | 'fallback' | 'loading')
+  const [imageLoadStatus, setImageLoadStatus] = useState<Record<string, 'api' | 'fallback' | 'loading'>>({})
+  // Track permanently failed images to prevent continuous retrying
+  const [permanentlyFailedImages, setPermanentlyFailedImages] = useState<Set<string>>(new Set())
+  // Track active image requests to prevent duplicates
+  const activeImageRequests = useRef<Set<string>>(new Set())
   const [currentEditor, setCurrentEditor] = useState<{
     name: string
     email: string
@@ -962,6 +922,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   })
 
   const [showConflictDetails, setShowConflictDetails] = useState(false)
+  const [assignmentAccordionOpen, setAssignmentAccordionOpen] = useState(false)
+  const [notesAccordionOpen, setNotesAccordionOpen] = useState(false)
 
   // Add ref to prevent multiple simultaneous API calls
   const [isFetching, setIsFetching] = useState(false)
@@ -984,7 +946,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     }
     
     try {
-      const response = await fetch(buildApiUrl(endpoints.manuscriptDetails(msid)), {
+      const response = await fetch(`${buildApiUrl(endpoints.manuscriptDetails(msid))}?apiMode=true`, {
         headers: {
           'Content-Type': 'application/json',
           'Cookie': document.cookie,
@@ -992,9 +954,15 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         credentials: 'include',
       })
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`)
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(`API request failed: ${response.status} - ${errorData.error || response.statusText}`)
       }
       const apiData: any = await response.json()
+      
+      // Check if this is an error response from API mode
+      if (apiData.error && apiData.isApiMode) {
+        throw new Error(`Data4Rev API Error: ${apiData.error} - ${apiData.details}`)
+      }
       
       // Fetch validation data separately
       let validationData: any = null;
@@ -1092,18 +1060,18 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         // Ensure UI-expected fields are mapped correctly
         title: figure.label || figure.title || `Figure ${figure.id}`, // API uses 'label', UI expects 'title'
         legend: figure.caption || figure.legend || '', // API uses 'caption', UI expects 'legend'
-        // Add image URLs using our image serving system
-        fullImagePath: getFigureImageUrl(msid, figure.id, { type: 'full' }),
-        thumbnailPath: getFigureThumbnailUrl(msid, figure.id, 200),
+        // Add image URLs using our image serving system - these will be overridden in JSX for real-time URL generation
+        fullImagePath: null, // Always generate fresh URLs in JSX to prevent caching API URLs
+        thumbnailPath: null, // Always generate fresh URLs in JSX to prevent caching API URLs
         imageSource: useApiData ? 'api' : 'placeholder',
         // Ensure panels have linkedData arrays for source data links
         panels: (figure.panels || []).map((panel: any) => ({
           ...panel,
           id: panel.label || panel.id, // Ensure panel ID matches expected format (A, B, C, etc.)
           description: panel.caption || panel.description || '', // Map caption to description
-          // Add panel-specific image URLs
-          imagePath: getPanelImageUrl(msid, figure.id, panel.label || panel.id),
-          thumbnailPath: getPanelImageUrl(msid, figure.id, panel.label || panel.id, { type: 'thumbnail' }),
+          // Add panel-specific image URLs - these will be overridden in JSX for real-time URL generation
+          imagePath: null, // Always generate fresh URLs in JSX to prevent caching API URLs
+          thumbnailPath: null, // Always generate fresh URLs in JSX to prevent caching API URLs
           linkedData: panel.source_data || [],
           qcChecks: (panel.check_results || []).map((check: any) => ({
             type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
@@ -1258,11 +1226,32 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       setDataAvailability(transformedManuscript.dataAvailability)
     } catch (error) {
       console.error('Failed to fetch API manuscript details:', error)
-      // Keep using mock data on error - fallback to mock data
-      const mockManuscript = await getManuscriptDetail(msid)
-      setManuscript(mockManuscript)
-      setNotes((mockManuscript as any)?.notes || "")
-      setDataAvailability((mockManuscript as any)?.dataAvailability || "")
+      
+      // In API mode, show error information instead of falling back
+      setManuscript({
+        id: msid,
+        title: `API Error: Failed to load manuscript ${msid}`,
+        authors: [],
+        received: new Date().toISOString().split('T')[0],
+        doi: '',
+        lastModified: new Date().toISOString(),
+        status: 'api-error',
+        displayStatus: 'API Error',
+        workflowState: 'no-pipeline-results',
+        priority: 'high',
+        error: error instanceof Error ? error.message : String(error),
+        isApiError: true,
+        figures: [],
+        abstract: `Failed to fetch manuscript data from Data4Rev API: ${error instanceof Error ? error.message : String(error)}`,
+        notes: `API Error: ${error instanceof Error ? error.message : String(error)}`,
+        dataAvailability: 'Data unavailable due to API error',
+        qcChecks: [],
+        links: [],
+        sourceData: [],
+        depositionEvents: []
+      })
+      setNotes(`API Error: ${error instanceof Error ? error.message : String(error)}`)
+      setDataAvailability('Data unavailable due to API error')
     } finally {
       setIsLoadingApi(false)
       setIsFetching(false) // Reset fetching state
@@ -1333,6 +1322,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   // Load manuscript data when component mounts or when data source/msid changes
   useEffect(() => {
     setIsDetailLoadComplete(false) // Reset load state when switching
+    
+    // Initialize image load status when switching modes or manuscripts
+    setImageLoadStatus({})
+    // Clear permanently failed images when switching manuscripts/modes
+    setPermanentlyFailedImages(new Set())
+    // Clear active requests to prevent stale request tracking
+    activeImageRequests.current.clear()
     
     if (useApiData) {
       // Load from API
@@ -1831,6 +1827,52 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setNotes(notesValue) // Also update the notes state to trigger the useEffect
   }
 
+  const handleDepositToBioStudies = async () => {
+    if (!manuscript?.id) {
+      setDepositError("No manuscript ID available for deposit")
+      return
+    }
+
+    setIsDepositing(true)
+    setDepositError(null)
+
+    try {
+      const response = await fetch(`/api/v1/manuscripts/${manuscript.id}/deposit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      
+      // Update manuscript status to deposited
+      setManuscript((prev: any) => ({
+        ...prev,
+        status: 'deposited',
+        displayStatus: 'Deposited',
+        workflowState: 'deposited-to-biostudies',
+        badgeVariant: 'outline',
+        lastModified: new Date().toISOString(),
+        depositResult: result
+      }))
+
+      // Show success message
+      alert('Manuscript successfully deposited to BioStudies!')
+      
+    } catch (error) {
+      console.error('Deposit failed:', error)
+      setDepositError(error instanceof Error ? error.message : 'Failed to deposit manuscript')
+    } finally {
+      setIsDepositing(false)
+    }
+  }
+
   // Auto-save changes to manuscript data (with debounce to prevent excessive updates)
   useEffect(() => {
     if (!manuscript) return
@@ -1857,6 +1899,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
     return () => clearTimeout(timer)
   }, [notes, dataAvailability, linkedData])
+
+  // Handle fulltext fetching when selectedView changes to "fulltext"
+  useEffect(() => {
+    if (selectedView === "fulltext" && useApiData && !fullTextContent && !fullTextError) {
+      fetchFullTextContent()
+    }
+  }, [selectedView, useApiData, fullTextContent, fullTextError, fetchFullTextContent])
 
   const getStatusBadge = (status: string, priority: string) => {
     let variant: "default" | "secondary" | "destructive" | "outline" = "default"
@@ -2060,33 +2109,52 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     }
   }
 
-  const filterAIChecks = (checks: any[]) => {
+  // Memoize filter functions to prevent recreating on every render
+  const filterAIChecks = useCallback((checks: any[]) => {
     return checks.filter((check: any, index: any) => {
       if (!check.aiGenerated) return true
       const checkId = getCheckId(check, "general", index)
       return showIgnoredChecks || !ignoredChecks.has(checkId)
     })
-  }
+  }, [showIgnoredChecks, ignoredChecks])
 
-  const filterFigureAIChecks = (checks: any[], figureId: string) => {
+  const filterFigureAIChecks = useCallback((checks: any[], figureId: string) => {
     return checks.filter((check: any, index: any) => {
       if (!check.aiGenerated) return true
       const checkId = getCheckId(check, `figure-${figureId}`, index)
       return showIgnoredChecks || !ignoredChecks.has(checkId)
     })
-  }
+  }, [showIgnoredChecks, ignoredChecks])
 
-  const allQCChecks = manuscript ? [
+  // Memoize expensive QC checks computations to prevent constant re-renders
+  const allQCChecks = useMemo(() => manuscript ? [
     ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
     ...(Array.isArray(manuscript.figures) ? manuscript.figures.flatMap((fig: any) =>
       (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check: any) => ({ ...check, figureId: fig.id, figureTitle: fig.title })),
     ) : []),
-  ] : []
+  ] : [], [manuscript?.qcChecks, manuscript?.figures])
 
-  const validationIssues = allQCChecks.filter((check) => !check.aiGenerated)
-  const aiChecks = allQCChecks.filter((check) => check.aiGenerated)
-  const errorCount = validationIssues.filter((check) => check.type === "error").length
-  const warningCount = validationIssues.filter((check) => check.type === "warning").length
+  const validationIssues = useMemo(() => 
+    allQCChecks.filter((check) => !check.aiGenerated), [allQCChecks]
+  )
+  
+  const aiChecks = useMemo(() => 
+    allQCChecks.filter((check) => check.aiGenerated), [allQCChecks]
+  )
+  
+  const errorCount = useMemo(() => 
+    validationIssues.filter((check) => check.type === "error").length, [validationIssues]
+  )
+  
+  const warningCount = useMemo(() => 
+    validationIssues.filter((check) => check.type === "warning").length, [validationIssues]
+  )
+
+  // Memoize filtered AI checks for ManuscriptReviewView
+  const visibleAiChecks = useMemo(() => 
+    aiChecks.filter((check: any) => showIgnoredChecks || !ignoredChecks.has(getCheckId(check, "ai-quality", 0))), 
+    [aiChecks, showIgnoredChecks, ignoredChecks]
+  )
 
   const toggleOverlays = (figureId: string) => {
     setOverlayVisibility((prev) => ({
@@ -2345,11 +2413,30 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     }
   }
 
-  const ManuscriptReviewView = () => {
+  // Memoize ManuscriptReviewView component to prevent unnecessary re-renders
+  const ManuscriptReviewView = React.memo(() => {
     const [selectedFigureIndex, setSelectedFigureIndex] = useState(0)
-    const selectedFigure = manuscript?.figures?.[selectedFigureIndex]
+    // Use manuscript.figures directly instead of local state to avoid render loops
+    const figuresData = manuscript?.figures || []
+    const selectedFigure = figuresData?.[selectedFigureIndex]
 
-    if (!manuscript?.figures || manuscript.figures.length === 0) {
+    // Memoize panel click handler to prevent re-renders
+    const handlePanelClick = useCallback((panelId: string) => {
+      setShowPanelPopup({panelId, position: { x: 0, y: 0 }})
+    }, [])
+
+    // Memoize figure selection handlers - removed automatic tab switching
+    const handleFigureSelect = useCallback((index: number) => {
+      setSelectedFigureIndex(index);
+      // Note: Removed automatic setSelectedView("manuscript") to prevent unwanted tab switching
+    }, [])
+
+    // Memoize simple figure index selection
+    const handleFigureIndexSelect = useCallback((index: number) => {
+      setSelectedFigureIndex(index);
+    }, [])
+
+    if (!figuresData || figuresData.length === 0) {
       return (
         <div className="space-y-8">
           <Card>
@@ -2361,17 +2448,19 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             </CardHeader>
             <CardContent>
               <div className="text-center py-8">
+                <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                 <p className="text-muted-foreground mb-2">
                   {useApiData ? 
                     "No figures found in API data for this manuscript." : 
                     "No figures available for this manuscript."
                   }
                 </p>
-                {useApiData && (
-                  <p className="text-xs text-gray-500">
-                    Check if the manuscript includes figure data in the API response.
-                  </p>
-                )}
+                <p className="text-xs text-gray-500 mb-4">
+                  {useApiData 
+                    ? "Check if the manuscript includes figure data in the API response."
+                    : "Add figures to start the review process."
+                  }
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -2384,407 +2473,483 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           {/* Figures Section - Now First and Primary Focus */}
           <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                <FileText className="w-6 h-6" />
-                Figures Review
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {manuscript?.figures?.length || 0} figure{(manuscript?.figures?.length || 0) !== 1 ? 's' : ''}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAddFigure()}
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Figure
-                </Button>
-              </div>
-            </div>
+            <CardTitle className="flex items-center gap-2 text-xl font-bold">
+              <FileText className="w-6 h-6" />
+              Figures Review
+            </CardTitle>
           </CardHeader>
           <CardContent>
 
             {/* AI Checks List */}
-            {(() => {
-              // Memoize expensive computations for performance
-              const allChecks = useMemo(() => [
-                ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
-                ...(manuscript?.figures || []).flatMap((fig: any) => fig.qcChecks || [])
-              ], [manuscript?.qcChecks, manuscript?.figures]);
-              
-              const aiChecks = useMemo(() => 
-                allChecks.filter(check => check.aiGenerated), [allChecks]
-              );
-              
-              // Development validation logging
-              if (process.env.NODE_ENV === 'development' && manuscript?.figures) {
-                console.group('🔍 Figures Review Tab Data Validation')
-                console.log('Manuscript figures:', manuscript.figures)
-                console.log('All checks aggregated:', allChecks)
-                console.log('AI checks filtered:', aiChecks)
-                console.log('Figures with QC checks:', manuscript.figures.map((fig: any) => ({
-                  id: fig.id,
-                  title: fig.title,
-                  qcChecksCount: fig.qcChecks?.length || 0
-                })))
-                console.groupEnd()
-              }
-              
-              if (aiChecks.length === 0) return null;
-              
-              return (
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-900">
-                    All AI Checks ({aiChecks.length})
-                  </h4>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {aiChecks.map((check, index) => {
-                      const checkId = getCheckId(check, "ai-quality", index);
-                      const isIgnored = ignoredChecks.has(checkId);
-                      const isApproved = approvedChecks.has(checkId);
-                      
-                      if (isIgnored && !showIgnoredChecks) return null;
-                      
-                      return (
-                        <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${
-                          isApproved ? 'bg-green-50 border-green-200' :
-                          isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
-                          check.type === 'error' ? 'bg-red-50 border-red-200' :
-                          check.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
-                          'bg-blue-50 border-blue-200'
-                        }`}>
-                          {getQCIcon(check.type)}
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm">{check.message}</span>
-                                {isApproved && (
-                                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                                    <Check className="w-3 h-3 mr-1" />
-                                    Approved
-                                  </Badge>
-                                )}
-                                {isIgnored && (
-                                  <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
-                                    <X className="w-3 h-3 mr-1" />
-                                    Ignored
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">
-                                  {(check as any).figureTitle ? `Figure ${(check as any).figureTitle}` : 'General'}
-                                </span>
-                                {renderCheckActions(check, "ai-quality", index)}
-                              </div>
+            {visibleAiChecks.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-900">
+                  All AI Checks ({visibleAiChecks.length})
+                </h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {visibleAiChecks.map((check, index) => {
+                    const isIgnored = ignoredChecks.has(check.checkId);
+                    const isApproved = approvedChecks.has(check.checkId);
+                    
+                    return (
+                      <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${
+                        isApproved ? 'bg-green-50 border-green-200' :
+                        isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
+                        check.type === 'error' ? 'bg-red-50 border-red-200' :
+                        check.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                        'bg-blue-50 border-blue-200'
+                      }`}>
+                        {getQCIcon(check.type)}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">{check.message}</span>
+                              {isApproved && (
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Approved
+                                </Badge>
+                              )}
+                              {isIgnored && (
+                                <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                                  <X className="w-3 h-3 mr-1" />
+                                  Ignored
+                                </Badge>
+                              )}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
-                            {(check as any).panelId && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                Panel: {(check as any).panelId}
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {(check as any).figureTitle ? `Figure ${(check as any).figureTitle}` : 'General'}
+                              </span>
+                              {renderCheckActions({...check, checkId: check.checkId}, "ai-quality", index)}
+                            </div>
                           </div>
+                          <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
+                          {(check as any).panelId && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Panel: {(check as any).panelId}
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Figure Tabs Navigation */}
+            {figuresData.length > 0 && (
+              <div className="space-y-6">
+                {/* Horizontal Figure Tabs */}
+                <div className="border-b border-gray-200">
+                  <div className="flex space-x-1 overflow-x-auto pb-0">
+                    {figuresData.map((figure: any, index: number) => (
+                      <button
+                        key={figure.id}
+                        onClick={() => handleFigureIndexSelect(index)}
+                        className={`px-4 py-3 text-sm font-medium rounded-t-lg border-b-2 transition-all duration-200 whitespace-nowrap min-w-0 flex items-center gap-2 cursor-pointer ${
+                          selectedFigureIndex === index
+                            ? 'text-blue-600 border-blue-500 bg-blue-50'
+                            : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="font-semibold">Figure {index + 1}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                            {figure.panels?.length || 0}p
+                          </span>
+                          {figure.qcChecks && figure.qcChecks.length > 0 && (
+                            <span className="text-xs bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded">
+                              {figure.qcChecks.length}c
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 </div>
-              );
-            })()}
 
-            {/* Tab-based Figure Navigation */}
-            {(manuscript?.figures?.length || 0) > 0 && (
-              <div className="space-y-6">
-                <div className="flex space-x-1 border-b border-gray-200 bg-gray-50 rounded-t-lg p-1">
-                  {(manuscript?.figures || []).map((figure: any, index: number) => (
-                    <button
-                      key={figure.id}
-                      onClick={() => setSelectedFigureIndex(index)}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                        selectedFigureIndex === index
-                          ? 'bg-white text-blue-600 shadow-sm border border-gray-200'
-                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                      }`}
-                    >
-                      Figure {index + 1}: {figure.title}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Selected Figure Display */}
+                {/* Selected Figure Content - Organized Sections */}
                 {selectedFigure && (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">{selectedFigure.title}</h3>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowExpandedFigure(showExpandedFigure === selectedFigure.id ? null : selectedFigure.id)}
-                        >
-                          <ZoomIn className="w-4 h-4 mr-1" />
-                          {showExpandedFigure === selectedFigure.id ? "Collapse" : "Expand"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteFigure(selectedFigureIndex)}
-                          className="text-red-600 hover:text-red-700"
-                          title="Delete figure"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                  <div className="space-y-8">
+                    {/* Figure Header with Actions */}
+                    <div className="bg-white border rounded-lg p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900">{selectedFigure.title || selectedFigure.label}</h3>
+                          <p className="text-sm text-gray-500 mt-1">Figure {selectedFigureIndex + 1} of {figuresData.length}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            size="default"
+                            variant="outline"
+                            onClick={() => setShowExpandedFigure(showExpandedFigure === selectedFigure.id ? null : selectedFigure.id)}
+                            className="flex items-center gap-2 hover:bg-gray-100 cursor-pointer transition-colors"
+                          >
+                            <ZoomIn className="w-4 h-4" />
+                            {showExpandedFigure === selectedFigure.id ? "Collapse" : "Expand"}
+                          </Button>
+                          <Button
+                            size="default"
+                            variant="outline"
+                            onClick={() => handleEditFigure(selectedFigureIndex)}
+                            className="flex items-center gap-2 hover:bg-gray-100 cursor-pointer transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Edit Figure
+                          </Button>
+                          <Button
+                            size="default"
+                            variant="outline"
+                            onClick={() => handleDeleteFigure(selectedFigureIndex)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center gap-2 cursor-pointer transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Figure Statistics */}
+                      <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{selectedFigure.panels?.length || 0}</div>
+                          <div className="text-xs text-gray-600 uppercase tracking-wide">Panels</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-yellow-600">{(selectedFigure.qcChecks || []).length}</div>
+                          <div className="text-xs text-gray-600 uppercase tracking-wide">QC Checks</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">{(selectedFigure.linkedData || []).length}</div>
+                          <div className="text-xs text-gray-600 uppercase tracking-wide">Linked Data</div>
+                        </div>
+                        <div className="text-center">
+                          <div className={`text-2xl font-bold ${imageLoadStatus[String(selectedFigure.id)] === 'api' ? 'text-green-600' : 'text-amber-600'}`}>
+                            {imageLoadStatus[String(selectedFigure.id)] === 'api' ? 'API' : 'Mock'}
+                          </div>
+                          <div className="text-xs text-gray-600 uppercase tracking-wide">Image Source</div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Side-by-side Figure and Caption Layout */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Figure Image */}
-                      <div className="relative">
-                        <div className="relative">
-                          <img
-                            src={selectedFigure.fullImagePath || getImageUrl(msid, selectedFigure.id, { type: 'full' }, useApiData)}
-                            alt={selectedFigure.title}
-                            className={`w-full object-contain border rounded-lg ${
-                              showExpandedFigure === selectedFigure.id ? "max-h-96" : "max-h-64"
-                            }`}
-                            onLoad={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              const isFromAPI = target.src.includes('/api/v1/manuscripts/');
-                              if (process.env.NODE_ENV === 'development') {
-                                console.log(`🖼️ Figure image loaded: ${isFromAPI ? 'API' : 'Placeholder'}`, target.src);
-                              }
-                            }}
-                            onError={(e) => {
-                              // Fallback to placeholder on error
-                              const target = e.target as HTMLImageElement;
-                              if (!target.src.includes('placeholder')) {
-                                console.warn(`❌ Image failed to load: ${target.src}, falling back to placeholder`);
-                                target.src = getImageUrl(msid, selectedFigure.id, { type: 'full' }, false);
-                              }
-                            }}
-                          />
-                          
-                          {/* Image Source Indicator */}
-                          <div className="absolute top-2 right-2">
-                            {selectedFigure.imageSource === 'api' ? (
-                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-300">
-                                🖼️ API Image
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">
-                                📝 Placeholder
-                              </Badge>
-                            )}
-                          </div>
+                    {/* Figure Image Section */}
+                    <div className="bg-white border rounded-lg p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-semibold text-gray-900">Figure Image</h4>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleOverlays(selectedFigure.id)}
+                            className="hover:bg-gray-100 cursor-pointer transition-colors"
+                          >
+                            <LucideEye className="w-4 h-4 mr-1" />
+                            {overlayVisibility[selectedFigure.id] ? 'Hide' : 'Show'} Overlays
+                          </Button>
                         </div>
+                      </div>
+                      
+                      <div className="relative">
+                        <img
+                          src={getImageUrl(msid, selectedFigure.id, { type: 'full' }, useApiData)}
+                          alt={selectedFigure.title}
+                          className={`w-full object-contain border rounded-lg ${
+                            showExpandedFigure === selectedFigure.id ? "max-h-[600px]" : "max-h-[400px]"
+                          }`}
+                          onLoad={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            const isFromAPI = target.src.includes('/api/v1/manuscripts/') && !target.src.includes('/public/');
+                            const figureId = String(selectedFigure.id);
+                            const newStatus = isFromAPI ? 'api' : 'fallback';
+                            
+                            // Only update if status has changed to prevent endless loops
+                            setImageLoadStatus(prev => {
+                              if (prev[figureId] === newStatus) {
+                                return prev; // No change, prevent re-render
+                              }
+                              return {
+                                ...prev,
+                                [figureId]: newStatus
+                              };
+                            });
+                            
+                            // Only log once per image load
+                            if (!target.hasAttribute('data-loaded')) {
+                              console.log(`🖼️ Figure ${selectedFigure.id} image loaded successfully:`, {
+                                source: isFromAPI ? 'API Data4Rev' : 'Fallback Mock',
+                                url: target.src,
+                                naturalWidth: target.naturalWidth,
+                                naturalHeight: target.naturalHeight,
+                                currentSrc: target.currentSrc
+                              });
+                              
+                              // Mark as loaded to prevent duplicate logs
+                              target.setAttribute('data-loaded', 'true');
+                              target.setAttribute('data-source', isFromAPI ? 'api' : 'fallback');
+                            }
+                          }}
+                          onError={async (e) => {
+                            const target = e.target as HTMLImageElement;
+                            const figureId = String(selectedFigure.id);
+                            const imageKey = `${figureId}-full`;
+                            
+                            if (!target.src.includes('placeholder') && !target.src.includes('/public/') && useApiData) {
+                              // Check if this image is already marked as permanently failed
+                              if (permanentlyFailedImages.has(imageKey)) {
+                                console.log(`⚠️ Skipping retry for permanently failed image: ${imageKey}`);
+                                return;
+                              }
+                              
+                              // Mark as permanently failed (likely unsupported format like EPS)
+                              console.warn(`🚫 Marking image as permanently failed: ${imageKey} (likely unsupported format)`);
+                              setPermanentlyFailedImages(prev => new Set(prev).add(imageKey));
+                              console.warn(`❌ API image failed to load: ${target.src}, falling back to placeholder`);
+                              
+                              // Update status to fallback when API image fails
+                              setImageLoadStatus(prev => ({
+                                ...prev,
+                                [figureId]: 'fallback'
+                              }));
+                              
+                              target.src = getImageUrl(msid, selectedFigure.id, { type: 'full' }, false);
+                              target.setAttribute('data-source', 'placeholder-fallback');
+                            }
+                          }}
+                        />
                         
-                        {/* Hover Bounding Box Overlay */}
-                        {hoveredPanel && (() => {
-                          // Get real panel coordinates from API data
-                          const panel = selectedFigure.panels?.find((p: any) => p.id === hoveredPanel || p.label === hoveredPanel);
-                          
-                          if (!panel) {
-                            // Fallback to mock positions if panel not found or no coordinates
-                            const panelPositions: Record<string, {left: string, top: string, width: string, height: string}> = {
-                              'A': { left: '5%', top: '5%', width: '40%', height: '40%' },
-                              'B': { left: '55%', top: '5%', width: '40%', height: '40%' },
-                              'C': { left: '5%', top: '50%', width: '40%', height: '40%' },
-                              'D': { left: '55%', top: '50%', width: '40%', height: '40%' },
-                            };
-                            const position = panelPositions[hoveredPanel] || { left: '15%', top: '25%', width: '35%', height: '45%' };
+                        {/* Image Source Indicator */}
+                        <div className="absolute top-3 right-3">
+                          {(() => {
+                            const figureId = String(selectedFigure.id);
+                            const actualLoadStatus = imageLoadStatus[figureId];
                             
-                            return (
-                              <div className="absolute border-2 border-blue-500 rounded pointer-events-none animate-pulse"
-                                   style={position}>
-                                <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                                  Panel {hoveredPanel} (Mock)
-                                </div>
-                              </div>
-                            );
-                          }
-                          
-                          // Use real API coordinates if available
-                          if (panel.x1 !== null && panel.y1 !== null && panel.x2 !== null && panel.y2 !== null) {
-                            // Calculate percentage positions based on image dimensions
-                            // Note: You may need to adjust these calculations based on actual image dimensions
-                            const imageRect = (document.querySelector('img[alt="' + selectedFigure.title + '"]') as HTMLImageElement)?.getBoundingClientRect();
-                            const imageWidth = imageRect?.width || 800; // fallback width
-                            const imageHeight = imageRect?.height || 600; // fallback height
-                            
-                            const position = {
-                              left: `${(panel.x1 / imageWidth) * 100}%`,
-                              top: `${(panel.y1 / imageHeight) * 100}%`,
-                              width: `${((panel.x2 - panel.x1) / imageWidth) * 100}%`,
-                              height: `${((panel.y2 - panel.y1) / imageHeight) * 100}%`
-                            };
-                            
-                            return (
-                              <div className="absolute border-2 border-green-500 rounded pointer-events-none animate-pulse"
-                                   style={position}>
-                                <div className="absolute -top-6 left-0 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                                  Panel {hoveredPanel} (API) {panel.confidence && `${Math.round(panel.confidence * 100)}%`}
-                                </div>
-                              </div>
-                            );
-                          }
-                          
-                          // Fallback if coordinates are null
-                          const fallbackPosition = { left: '15%', top: '25%', width: '35%', height: '45%' };
-                          return (
-                            <div className="absolute border-2 border-orange-500 rounded pointer-events-none animate-pulse"
-                                 style={fallbackPosition}>
-                              <div className="absolute -top-6 left-0 bg-orange-500 text-white text-xs px-2 py-1 rounded">
-                                Panel {hoveredPanel} (No Coords)
-                              </div>
+                            if (actualLoadStatus === 'api') {
+                              return (
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-300 shadow-sm">
+                                  🖼️ API Image
+                                </Badge>
+                              );
+                            } else if (actualLoadStatus === 'fallback' || !useApiData) {
+                              return (
+                                <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300 shadow-sm">
+                                  📝 Fallback Mock
+                                </Badge>
+                              );
+                            } else {
+                              return (
+                                <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300 shadow-sm">
+                                  ⏳ Loading...
+                                </Badge>
+                              );
+                            }
+                          })()}
+                        </div>
+
+                        {/* Panel Overlays */}
+                        {overlayVisibility[selectedFigure.id] && (selectedFigure.panels || []).map((panel: any, panelIndex: number) => (
+                          <div
+                            key={panel.id}
+                            className="absolute border-2 border-blue-500 bg-blue-500/10 rounded cursor-pointer hover:bg-blue-500/20 transition-colors"
+                            style={{
+                              left: `${5 + (panelIndex % 3) * 30}%`,
+                              top: `${5 + Math.floor(panelIndex / 3) * 25}%`,
+                              width: "25%",
+                              height: "20%",
+                            }}
+                            onClick={() => handlePanelClick(panel.id)}
+                          >
+                            <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded shadow-sm">
+                              Panel {panel.id || panel.label}
                             </div>
-                          );
-                        })()}
-                        
-                        {/* AI Feedback Flags on Panels */}
-                        {(selectedFigure.panels || []).map((panel: any, panelIndex: number) => {
-                          const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
-                            check.panelId === panel.id || check.panelId === panel.label
-                          ) || []
-                          const hasIssues = panelChecks.some((check: any) => 
-                            check.type === 'error' || check.type === 'warning' || 
-                            check.status === 'failed' || check.status === 'warning'
-                          )
-                          
-                          if (!hasIssues) return null
-                          
-                          return (
-                            <div
-                              key={panel.id}
-                              className="absolute border-2 border-red-500 bg-red-500/20 rounded"
-                              style={{
-                                left: `${10 + (panelIndex % 2) * 45}%`,
-                                top: `${10 + Math.floor(panelIndex / 2) * 40}%`,
-                                width: "40%",
-                                height: "35%",
-                              }}
-                            >
-                              <div className="absolute -top-6 left-0 bg-red-500 text-white rounded px-2 py-1 text-xs font-bold shadow-sm">
-                                {panel.description} - Issues
-                              </div>
-                            </div>
-                          )
-                        })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Figure Content Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Figure Caption Section */}
+                      <div className="bg-white border rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-gray-900">Figure Caption</h4>
+                          <Button size="sm" variant="outline" className="hover:bg-gray-100 cursor-pointer transition-colors">
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit Caption
+                          </Button>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                          <p className="text-sm leading-relaxed text-gray-700">
+                            {selectedFigure.legend || "No caption available for this figure."}
+                          </p>
+                        </div>
                       </div>
 
-                      {/* Figure Caption and Details */}
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-semibold mb-2">Figure Caption</h4>
-                          <div className="max-h-48 overflow-y-auto p-3 bg-gray-50 rounded border text-sm">
-                            {selectedFigure.legend || "No caption available for this figure."}
+                      {/* Panels Management Section */}
+                      <div className="bg-white border rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            Panels ({selectedFigure.panels?.length || 0})
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                console.log('Add panel clicked for figure:', selectedFigure.id);
+                              }}
+                              className="hover:bg-gray-100 cursor-pointer transition-colors"
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              Add Panel
+                            </Button>
                           </div>
                         </div>
-
-                        {/* Panel Details with Thumbnails */}
-                        {selectedFigure.panels.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold mb-3">Panel Details</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
-                              {selectedFigure.panels.map((panel: any, panelIndex: number) => {
-                                const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
-                                  check.panelId === panel.id
-                                ) || []
-                                const linkedSourceData = (selectedFigure.linkedData as any)?.filter((data: any) => 
-                                  data.panelId === panel.id
-                                ) || []
-                                
-                                return (
-                                  <div key={panel.id} className="border rounded-lg p-3 hover:shadow-sm transition-shadow">
-                                    {/* Panel Thumbnail */}
-                                    <div className="relative mb-2">
-                                      <div 
-                                        className={`w-full h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded border flex items-center justify-center relative overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 ${
-                                          hoveredPanel === panel.id ? 'ring-2 ring-blue-500 shadow-lg scale-105' : ''
-                                        }`}
-                                        onClick={() => setShowPanelPopup({panelId: panel.id, position: { x: 0, y: 0 }})}
-                                        onMouseEnter={() => setHoveredPanel(panel.id)}
-                                        onMouseLeave={() => setHoveredPanel(null)}
-                                      >
-                                        <img
-                                          src={panel.thumbnailPath || panel.imagePath || getPanelImageUrl(msid, selectedFigure.id, panel.id, { type: 'thumbnail' })}
-                                          alt={`Panel ${panel.id}`}
-                                          className="w-full h-full object-cover opacity-60"
-                                          onLoad={(e) => {
-                                            const target = e.target as HTMLImageElement;
-                                            const isFromAPI = target.src.includes('/api/v1/manuscripts/');
-                                            if (process.env.NODE_ENV === 'development') {
-                                              console.log(`🖼️ Panel ${panel.id} thumbnail loaded: ${isFromAPI ? 'API' : 'Placeholder'}`);
-                                            }
-                                          }}
-                                          onError={(e) => {
-                                            // Fallback to main figure thumbnail on error
-                                            const target = e.target as HTMLImageElement;
-                                            if (!target.src.includes('placeholder')) {
-                                              console.warn(`❌ Panel thumbnail failed: ${target.src}, falling back`);
-                                              target.src = getFigureThumbnailUrl(msid, selectedFigure.id, 200);
-                                            }
-                                          }}
-                                        />
-                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                          <span className="text-white text-xs font-bold bg-black bg-opacity-70 px-2 py-1 rounded">
-                                            {panel.id}
-                                          </span>
-                                        </div>
-                                        {/* AI Feedback Flag */}
-                                        {panelChecks.length > 0 && (
-                                          <div className="absolute top-1 right-1">
-                                            <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                                              <Cpu className="w-2 h-2 text-white" />
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Panel Info */}
-                                    <div className="space-y-1">
-                                      <div className="text-sm font-medium text-gray-900">{panel.id}</div>
-                                      <div className="text-xs text-gray-600 line-clamp-2">{panel.description}</div>
-                                      
-                                      {/* Panel Caption/Legend */}
-                                      {(panel as any).legend && (
-                                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700 max-h-20 overflow-y-auto">
-                                          <div className="font-medium text-gray-800 mb-1">Caption:</div>
-                                          <div className="line-clamp-3">{(panel as any).legend}</div>
-                                        </div>
-                                      )}
-                                      
-                                      {/* Status Badges */}
-                                      <div className="flex items-center gap-1 flex-wrap">
-                                        {linkedSourceData.length > 0 && (
-                                          <Badge variant="outline" className="text-xs px-1 py-0">
-                                            📁 {linkedSourceData.length}
-                                          </Badge>
-                                        )}
-                                        {panelChecks.length > 0 && (
-                                          <Badge 
-                                            variant={panelChecks.some((c: any) => c.status === 'failed') ? "destructive" : "secondary"}
-                                            className="text-xs px-1 py-0"
-                                          >
-                                            <Cpu className="w-2 h-2 mr-1" />
-                                            {panelChecks.length}
-                                          </Badge>
-                                        )}
-                                        {panel.hasIssues && (
-                                          <Badge variant="destructive" className="text-xs px-1 py-0">
-                                            ⚠️ Issues
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </div>
+                        
+                        {selectedFigure.panels && selectedFigure.panels.length > 0 ? (
+                          <div className="space-y-3 max-h-64 overflow-y-auto">
+                            {selectedFigure.panels.map((panel: any, panelIndex: number) => {
+                              const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
+                                check.panelId === panel.id || check.panelId === panel.label
+                              ) || []
+                              
+                              return (
+                                <div 
+                                  key={panel.id} 
+                                  className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                                  onClick={() => handlePanelClick(panel.id)}
+                                  onMouseEnter={() => setHoveredPanel(panel.id)}
+                                  onMouseLeave={() => setHoveredPanel(null)}
+                                >
+                                  <div className="w-10 h-10 bg-blue-100 rounded-lg border flex items-center justify-center flex-shrink-0">
+                                    <span className="text-sm font-bold text-blue-700">{panel.id || panel.label}</span>
                                   </div>
-                                )
-                              })}
-                            </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-gray-900 truncate">
+                                      {panel.description || `Panel ${panel.id || panel.label}`}
+                                    </div>
+                                    {panelChecks.length > 0 && (
+                                      <div className="flex items-center gap-1 mt-1">
+                                        <Badge variant="secondary" className="text-xs">
+                                          {panelChecks.length} checks
+                                        </Badge>
+                                        {panelChecks.some((c: any) => c.type === 'error') && (
+                                          <Badge variant="destructive" className="text-xs">Issues</Badge>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditPanel(selectedFigureIndex, panelIndex);
+                                      }}
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <Plus className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No panels added yet</p>
+                            <p className="text-xs mt-1">Click "Add Panel" to create the first panel</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Additional Sections Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Figure QC Checks Section */}
+                      {(selectedFigure.qcChecks && selectedFigure.qcChecks.length > 0) && (
+                        <div className="bg-white border rounded-lg p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                              <AlertTriangle className="w-5 h-5 text-orange-500" />
+                              QC Checks ({selectedFigure.qcChecks.length})
+                            </h4>
+                          </div>
+                          
+                          <div className="space-y-3 max-h-64 overflow-y-auto">
+                            {selectedFigure.qcChecks.map((check: any, checkIndex: number) => (
+                              <div key={checkIndex} className={`p-3 rounded-lg border ${
+                                check.type === 'error' ? 'bg-red-50 border-red-200' :
+                                check.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                                'bg-blue-50 border-blue-200'
+                              }`}>
+                                <div className="flex items-start gap-2">
+                                  {getQCIcon(check.type)}
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-gray-900">{check.message}</p>
+                                    <p className="text-xs text-gray-600 mt-1">{check.details}</p>
+                                    {check.panelId && (
+                                      <p className="text-xs text-blue-600 mt-1">Panel: {check.panelId}</p>
+                                    )}
+                                  </div>
+                                  {check.aiGenerated && (
+                                    <div className="flex gap-1">
+                                      {getQCActions(check, `figure-${selectedFigure.id}`, checkIndex)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Figure Linked Data Section */}
+                      <div className="bg-white border rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <Link className="w-5 h-5 text-blue-500" />
+                            Linked Data ({(selectedFigure.linkedData || []).length})
+                          </h4>
+                          <Button size="sm" variant="outline" className="hover:bg-gray-100 cursor-pointer transition-colors">
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add Data Link
+                          </Button>
+                        </div>
+                        
+                        {selectedFigure.linkedData && selectedFigure.linkedData.length > 0 ? (
+                          <div className="space-y-3 max-h-64 overflow-y-auto">
+                            {selectedFigure.linkedData.map((data: any, dataIndex: number) => (
+                              <div key={dataIndex} className="p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Badge variant="outline" className="text-xs">{data.type}</Badge>
+                                      <span className="text-sm font-medium text-gray-900 truncate">{data.identifier}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-600 truncate">{data.description}</p>
+                                  </div>
+                                  <div className="flex items-center gap-1 ml-2">
+                                    <Button size="sm" variant="ghost" asChild>
+                                      <a href={data.url} target="_blank" rel="noopener noreferrer">
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    </Button>
+                                    <Button size="sm" variant="ghost">
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <Link className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No linked data yet</p>
+                            <p className="text-xs mt-1">Add repository links and data sources</p>
                           </div>
                         )}
                       </div>
@@ -3217,294 +3382,121 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         </Card>
       )}
 
-          {/* Figures Section - Now First and Primary Focus */}
+          {/* Quick Figures Overview */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-bold">
             <FileText className="w-6 h-6" />
-            Figures Review
+            All Figures Overview
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-8">
-          {(manuscript.figures || []).map((figure: any, figureIndex: number) => (
-            <div key={figure.id} className="space-y-4 border-b pb-6 last:border-b-0">
-              <div className="space-y-4">
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(figuresData || []).map((figure: any, figureIndex: number) => (
+            <div 
+              key={figure.id} 
+              className="border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer"
+              onClick={() => handleFigureSelect(figureIndex)}
+            >
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">{figure.label}</h3>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        setOverlayVisibility((prev) => ({
-                          ...prev,
-                          [figure.id]: !prev[figure.id],
-                        }))
-                      }
-                    >
-                      {overlayVisibility[figure.id] ? "Hide Panel Mapping" : "Show Panel Mapping"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowExpandedFigure(showExpandedFigure === figure.id ? null : figure.id)}
-                    >
-                      <ZoomIn className="w-4 h-4 mr-1" />
-                      {showExpandedFigure === figure.id ? "Collapse" : "Expand"}
-                    </Button>
+                  <h3 className="font-semibold truncate">Figure {figureIndex + 1}</h3>
+                  <div className="flex items-center gap-1">
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleDeleteFigure(figureIndex)}
-                      className="text-red-600 hover:text-red-700"
-                      title="Delete figure"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Figure Image with Panel Overlays */}
-                <div className="relative">
-                  <div className="relative">
-                    <img
-                      src={getImageUrl(msid, figure.id, { type: 'full' }, useApiData)}
-                      alt={figure.label}
-                      className={`w-full object-contain border rounded-lg ${
-                        showExpandedFigure === figure.id ? "max-h-96" : "max-h-64"
-                      }`}
-                      onError={(e) => {
-                        // Fallback to placeholder on error
-                        const target = e.target as HTMLImageElement;
-                        if (!target.src.includes('placeholder')) {
-                          target.src = getImageUrl(msid, figure.id, { type: 'full' }, false);
-                        }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditFigure(figureIndex);
                       }}
-                    />
-                    
-                    {/* Image Source Indicator for List View */}
-                    <div className="absolute top-2 right-2">
-                      {useApiData ? (
-                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-300">
-                          🖼️ API
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">
-                          📝 Mock
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Panel Mapping Overlays */}
-                  {overlayVisibility[figure.id] && figure.panels.length > 0 ? (
-                    figure.panels.map((panel: any, panelIndex: number) => (
-                      <div
-                        key={panel.id}
-                        className={`absolute border-2 transition-all ${
-                          panel.hasIssues ? "border-red-500 bg-red-500/20" : "border-emerald-500 bg-emerald-500/10"
-                        }`}
-                        style={{
-                          left: `${10 + (panelIndex % 2) * 45}%`,
-                          top: `${10 + Math.floor(panelIndex / 2) * 40}%`,
-                          width: "40%",
-                          height: "35%",
-                        }}
-                      >
-                        <div className="absolute -top-6 left-0 bg-white border rounded px-2 py-1 text-xs font-bold shadow-sm">
-                          {panel.label}
-                        </div>
-                      </div>
-                    ))
-                  ) : overlayVisibility[figure.id] && figure.panels.length === 0 ? (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="bg-white/90 border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-600">
-                        No panels defined. Click "Add Panel" to start.
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Whole Figure Details */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Whole Figure Details</h3>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      title="Edit figure data"
-                      onClick={() => handleEditFigure(figureIndex)}
+                      title="Edit figure"
                     >
                       <Edit className="w-3 h-3" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
-                      title="Move figure up"
-                      onClick={() => moveFigure(figureIndex, figureIndex - 1)}
-                      disabled={figureIndex === 0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFigure(figureIndex);
+                      }}
+                      className="text-red-600 hover:text-red-700"
+                      title="Delete figure"
                     >
-                      <ChevronUp className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      title="Move figure down"
-                      onClick={() => moveFigure(figureIndex, figureIndex + 1)}
-                      disabled={figureIndex === (manuscript.figures?.length || 1) - 1}
-                    >
-                      <ChevronDown className="w-3 h-3" />
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
 
+                {/* Figure Thumbnail */}
+                <div className="relative">
+                  <div className="relative">
+                    <img
+                      src={getImageUrl(msid, figure.id, { type: 'thumbnail' }, useApiData)}
+                      alt={figure.title || figure.label}
+                      className="w-full h-32 object-cover border rounded"
+                      onLoad={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        // Prevent duplicate logging for thumbnails
+                        if (!target.hasAttribute('data-thumb-loaded')) {
+                          target.setAttribute('data-thumb-loaded', 'true');
+                        }
+                      }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (!target.src.includes('placeholder') && !target.hasAttribute('data-thumb-fallback')) {
+                          target.src = getImageUrl(msid, figure.id, { type: 'thumbnail' }, false);
+                          target.setAttribute('data-thumb-fallback', 'true');
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
-                  <div className="text-sm text-gray-900 bg-slate-50 p-4 rounded-lg border border-slate-200 leading-relaxed shadow-sm">
-                    {figure.caption || "No caption available for this figure."}
+                  <h4 className="font-medium text-sm truncate">{figure.title || figure.label}</h4>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{figure.panels?.length || 0} panels</span>
+                    <span>{(figure.qcChecks || []).length} checks</span>
                   </div>
-                </div>
-
-                {figure.linkedData && figure.linkedData.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Linked Data</Label>
-                    <div className="space-y-1">
-                      {figure.linkedData.map((data: any, index: number) => (
-                        <div key={index} className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                          {data.type}: {data.identifier}
-                        </div>
-                      ))}
+                  {figure.qcChecks && figure.qcChecks.length > 0 && (
+                    <div className="flex gap-1">
+                      {figure.qcChecks.some((c: any) => c.type === 'error') && (
+                        <Badge variant="destructive" className="text-xs">Issues</Badge>
+                      )}
+                      {figure.qcChecks.some((c: any) => c.type === 'warning') && (
+                        <Badge variant="outline" className="text-xs">Warnings</Badge>
+                      )}
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Panel Details & Order */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Panel Details & Order</h3>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {figure.panels.map((panel: any, panelIndex: number) => (
-                    <div
-                      key={panel.id}
-                      className="flex items-center justify-between gap-3 p-3 border rounded-lg bg-white"
-                    >
-                      <div className="flex items-center gap-2 flex-1">
-                        <Badge variant="secondary" className="text-xs font-mono">
-                          {panel.id}
-                        </Badge>
-
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center">
-                            <span className="font-medium">{panel.id}</span>
-                          </div>
-
-                          {panel.legend && (
-                            <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-1">{panel.legend}</div>
-                          )}
-
-                          <p className="text-sm text-gray-600">{panel.description}</p>
-                        </div>
-
-                        {panel.hasIssues && (
-                          <div className="flex items-center gap-1 text-amber-600">
-                            <AlertTriangle className="w-4 h-4" />
-                            <span className="text-xs">Needs attention</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          title="Move panel up"
-                          onClick={() => movePanel(figureIndex, panelIndex, panelIndex - 1)}
-                          disabled={panelIndex === 0}
-                        >
-                          <ArrowUp className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          title="Move panel down"
-                          onClick={() => movePanel(figureIndex, panelIndex, panelIndex + 1)}
-                          disabled={panelIndex === figure.panels.length - 1}
-                        >
-                          <ArrowDown className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          title="Edit panel details"
-                          onClick={() => handleEditPanel(figureIndex, panelIndex)}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          title="Remove panel"
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Enhanced Add Panel Button with Detection Options */}
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1 bg-transparent">
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add Panel Manually
-                    </Button>
-                    <Button size="sm" variant="outline" className="bg-transparent">
-                      Auto-detect Missing
-                    </Button>
-                  </div>
+                  )}
                 </div>
               </div>
-
-              {/* Figure QC Checks */}
-              {figure.qcChecks && figure.qcChecks.length > 0 && (
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <Cpu className="w-4 h-4" />
-                    AI/QC Checks
-                  </Label>
-                  {filterFigureAIChecks(figure.qcChecks, figure.id).map((check, checkIndex) => (
-                    <div key={checkIndex} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                      {getQCIcon(check.type)}
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{check.message}</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
-                      </div>
-                      {getQCActions(check, `figure-${figure.id}`, checkIndex)}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          ))}
+            ))}
+          </div>
         </CardContent>
       </Card>
+
       </div>
     )
-  }
+  })
 
   const ListReviewView = () => {
-    const allQCChecks = [
-      ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []).map((check: any) => ({ ...check, location: "General Manuscript" })),
-      ...(Array.isArray(manuscript.figures) ? manuscript.figures.flatMap((fig: any) =>
-        (Array.isArray(fig.qcChecks) ? fig.qcChecks : []).map((check: any) => ({ ...check, location: `Figure ${fig.id}`, figureTitle: fig.title })),
-      ) : []),
-    ]
+    // Use pre-computed checks from top level to avoid duplicate calculations
+    const allQCChecksWithLocation = allQCChecks.map((check: any) => ({
+      ...check,
+      location: check.figureId ? `Figure ${check.figureId}` : "General Manuscript"
+    }))
 
-    const validationIssues = allQCChecks.filter((check: any) => !check.aiGenerated)
-    const aiChecks = allQCChecks.filter((check: any) => check.aiGenerated)
+    const validationIssuesWithLocation = validationIssues.map((check: any) => ({
+      ...check,
+      location: check.figureId ? `Figure ${check.figureId}` : "General Manuscript"
+    }))
+    
+    const aiChecksWithLocation = aiChecks.map((check: any) => ({
+      ...check,
+      location: check.figureId ? `Figure ${check.figureId}` : "General Manuscript"
+    }))
 
     return (
       <div className="space-y-6">
@@ -3707,63 +3699,21 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl font-bold">{manuscript.title}</CardTitle>
-            <div className="flex items-center gap-2">
-              {/* Assignment Action Buttons */}
-              {session?.user && (
-                <>
-                  {manuscript.assignedTo && 
-                   manuscript.assignedTo !== "" && 
-                   (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Update manuscript assignment
-                        setManuscript((prev: any) => ({
-                          ...prev,
-                          assignedTo: "",
-                          lastModified: new Date().toISOString()
-                        }))
-                        // Show feedback
-                        setTimeout(() => {
-                          alert(`Manuscript unassigned from you.`)
-                        }, 100)
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      <UserMinus className="w-4 h-4" />
-                      Unassign from me
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const userName = session.user.name || session.user.email || 'Unknown User'
-                        // Update manuscript assignment
-                        setManuscript((prev: any) => ({
-                          ...prev,
-                          assignedTo: userName,
-                          lastModified: new Date().toISOString()
-                        }))
-                        // Show feedback
-                        setTimeout(() => {
-                          alert(`Manuscript assigned to you.`)
-                        }, 100)
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      Assign to me
-                    </Button>
-                  )}
-                </>
-              )}
-              
-              {/* Status Badges */}
-              <Badge variant="outline">{manuscript.status}</Badge>
-              <Badge variant="secondary">{(manuscript as any).workflowState || 'In Review'}</Badge>
-            </div>
+            {(manuscript.priority === 'urgent' || manuscript.priority === 'high') && (
+              <div className="flex items-center gap-2">
+                {/* Priority Badges */}
+                {manuscript.priority === 'urgent' && (
+                  <Badge variant="destructive" className="text-xs">
+                    URGENT
+                  </Badge>
+                )}
+                {manuscript.priority === 'high' && (
+                  <Badge variant="outline" className="text-xs border-orange-200 text-orange-700">
+                    HIGH
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -3795,11 +3745,19 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             </div>
             
             <div className="space-y-1.5">
-              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Received
-              </h4>
-              <div>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Received
+                </h4>
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Status
+                </h4>
+              </div>
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-900">{manuscript.received}</p>
+                <Badge variant={manuscript.badgeVariant || "outline"} className="text-xs">
+                  {manuscript.displayStatus || manuscript.status}
+                </Badge>
               </div>
             </div>
             
@@ -3867,146 +3825,360 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             </div>
           )}
 
-          {/* Assignment Information Panel - Compact */}
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Assignment
-              </h3>
-              {session?.user && (
-                <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
-                  {session.user.name || session.user.email}
+          {/* Assignment Accordion Panel */}
+          <div className="border rounded-lg bg-gray-50">
+            {/* Accordion Header - Always Visible */}
+            <button
+              onClick={() => setAssignmentAccordionOpen(!assignmentAccordionOpen)}
+              className="w-full p-4 flex items-center justify-between hover:bg-gray-100 transition-colors rounded-lg cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-gray-700" />
+                  <h3 className="text-sm font-semibold text-gray-700">Assignment & Actions</h3>
                 </div>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Left Column - Assignment Status */}
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600 block mb-1">Current Assignee</label>
-                  <div className="flex items-center gap-2 p-2 bg-white rounded border">
-                    {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
-                      <>
-                        {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
-                          <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" title="Assigned to you" />
-                        )}
-                        <span className="text-sm font-medium text-gray-900 flex-1">{manuscript.assignedTo}</span>
-                        {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
-                            You
-                          </Badge>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-sm text-gray-400 italic">Unassigned</span>
+                
+                {/* Compact Assignment Status */}
+                <div className="flex items-center gap-2 ml-2">
+                  {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
+                    <div className="flex items-center gap-2">
+                      {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full" title="Assigned to you" />
+                      )}
+                      <span className="text-xs font-medium text-gray-700">{manuscript.assignedTo}</span>
+                      {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          You
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-500 italic">Unassigned</span>
+                  )}
+                  
+                  {/* Status Indicators */}
+                  <div className="flex items-center gap-1">
+                    {session?.user && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full" title="Logged in" />
+                    )}
+                    {manuscript.workflowState === 'deposited-to-biostudies' && (
+                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                        Deposited
+                      </Badge>
                     )}
                   </div>
                 </div>
-                
-                {manuscript.lastModified && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 block mb-1">Last Change</label>
-                    <div className="p-2 bg-white rounded border">
-                      <span className="text-xs text-gray-500">
-                        {new Date(manuscript.lastModified).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
               
-              {/* Right Column - Actions */}
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600 block mb-1">Actions</label>
-                  <div className="space-y-2">
-                    {session?.user ? (
-                      <>
-                        {manuscript.assignedTo && 
-                         manuscript.assignedTo !== "" && 
-                         (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
-                          <Button
-                            variant="outline"
-                            size="default"
-                            onClick={() => {
-                              setManuscript((prev: any) => ({
-                                ...prev,
-                                assignedTo: "",
-                                lastModified: new Date().toISOString()
-                              }))
-                              setTimeout(() => {
-                                alert(`Manuscript unassigned from you.`)
-                              }, 100)
-                            }}
-                            className="w-full flex items-center justify-center gap-2"
-                          >
-                            <UserMinus className="w-4 h-4" />
-                            Unassign from me
-                          </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  {assignmentAccordionOpen ? 'Less' : 'More'}
+                </span>
+                {assignmentAccordionOpen ? (
+                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                )}
+              </div>
+            </button>
+
+            {/* Accordion Content - Expandable */}
+            {assignmentAccordionOpen && (
+              <div className="px-4 pb-4 border-t border-gray-200">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4">
+                  {/* Left Column - Assignment Details */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Current Assignee</label>
+                      <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                        {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
+                          <>
+                            {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                              <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" title="Assigned to you" />
+                            )}
+                            <span className="text-sm font-medium text-gray-900 flex-1">{manuscript.assignedTo}</span>
+                            {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
+                                You
+                              </Badge>
+                            )}
+                          </>
                         ) : (
-                          <Button
-                            variant="outline"
-                            size="default"
-                            onClick={() => {
-                              const userName = session.user.name || session.user.email || 'Unknown User'
-                              setManuscript((prev: any) => ({
-                                ...prev,
-                                assignedTo: userName,
-                                lastModified: new Date().toISOString()
-                              }))
-                              setTimeout(() => {
-                                alert(`Manuscript assigned to you.`)
-                              }, 100)
-                            }}
-                            className="w-full flex items-center justify-center gap-2"
-                          >
-                            <UserPlus className="w-4 h-4" />
-                            Assign to me
-                          </Button>
+                          <span className="text-sm text-gray-400 italic">Unassigned</span>
                         )}
-                        <p className="text-xs text-gray-400 text-center">
-                          Changes reflected immediately
-                        </p>
-                      </>
-                    ) : (
-                      <div className="p-2 bg-white rounded border text-center">
-                        <span className="text-xs text-gray-400">Login required</span>
+                      </div>
+                    </div>
+                    
+                    {manuscript.lastModified && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 block mb-1">Last Change</label>
+                        <div className="p-2 bg-white rounded border">
+                          <span className="text-xs text-gray-500">
+                            {new Date(manuscript.lastModified).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {session?.user && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 block mb-1">Current User</label>
+                        <div className="p-2 bg-white rounded border">
+                          <span className="text-xs text-gray-700">
+                            {session.user.name || session.user.email}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
+                  
+                  {/* Right Column - Actions */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Assignment Actions</label>
+                      <div className="space-y-2">
+                        {session?.user ? (
+                          <>
+                            {manuscript.assignedTo && 
+                             manuscript.assignedTo !== "" && 
+                             (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
+                              <Button
+                                variant="outline"
+                                size="default"
+                                onClick={() => {
+                                  setManuscript((prev: any) => ({
+                                    ...prev,
+                                    assignedTo: "",
+                                    lastModified: new Date().toISOString()
+                                  }))
+                                  setTimeout(() => {
+                                    alert(`Manuscript unassigned from you.`)
+                                  }, 100)
+                                }}
+                                className="w-full flex items-center justify-center gap-2"
+                              >
+                                <UserMinus className="w-4 h-4" />
+                                Unassign from me
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="default"
+                                onClick={() => {
+                                  const userName = session.user.name || session.user.email || 'Unknown User'
+                                  setManuscript((prev: any) => ({
+                                    ...prev,
+                                    assignedTo: userName,
+                                    lastModified: new Date().toISOString()
+                                  }))
+                                  setTimeout(() => {
+                                    alert(`Manuscript assigned to you.`)
+                                  }, 100)
+                                }}
+                                className="w-full flex items-center justify-center gap-2"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                                Assign to me
+                              </Button>
+                            )}
+                            <p className="text-xs text-gray-400 text-center">
+                              Changes reflected immediately
+                            </p>
+                          </>
+                        ) : (
+                          <div className="p-2 bg-white rounded border text-center">
+                            <span className="text-xs text-gray-400">Login required for assignment</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Deposit to BioStudies Section */}
+                    <div className="border-t pt-3">
+                      <label className="text-xs font-medium text-gray-600 block mb-2">Workflow Actions</label>
+                      {session?.user ? (
+                        <>
+                          <Button
+                            variant={manuscript.workflowState === 'deposited-to-biostudies' ? "outline" : "default"}
+                            size="default"
+                            onClick={handleDepositToBioStudies}
+                            disabled={isDepositing || manuscript.workflowState === 'deposited-to-biostudies'}
+                            className="w-full flex items-center justify-center gap-2"
+                          >
+                            <Send className="w-4 h-4" />
+                            {isDepositing ? (
+                              "Depositing..."
+                            ) : manuscript.workflowState === 'deposited-to-biostudies' ? (
+                              "Already Deposited"
+                            ) : (
+                              "Deposit to BioStudies"
+                            )}
+                          </Button>
+                          {depositError && (
+                            <p className="text-xs text-red-600 text-center mt-1">
+                              {depositError}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="p-2 bg-white rounded border text-center">
+                          <span className="text-xs text-gray-400">Login required for workflow actions</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+          </div>
+
+          {/* Notes Accordion Panel */}
+          <div className="border rounded-lg bg-gray-50">
+            {/* Accordion Header - Always Visible */}
+            <button
+              onClick={() => setNotesAccordionOpen(!notesAccordionOpen)}
+              className="w-full p-4 flex items-center justify-between hover:bg-gray-100 transition-colors rounded-lg cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-gray-700" />
+                  <h3 className="text-sm font-semibold text-gray-700">Notes & Comments</h3>
+                </div>
+                
+                {/* Compact Notes Status */}
+                <div className="flex items-center gap-2 ml-2">
+                  {notes && notes.trim() ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full" title="Has notes" />
+                      <span className="text-xs text-gray-600 max-w-32 truncate">{notes}</span>
+                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                        {notes.length > 50 ? `${notes.substring(0, 50)}...` : notes.length} chars
+                      </Badge>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-500 italic">No notes added</span>
+                  )}
+                  
+                  {lastSaved && (
+                    <span className="text-xs text-gray-400">
+                      Saved {lastSaved.toLocaleTimeString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  {notesAccordionOpen ? 'Less' : 'More'}
+                </span>
+                {notesAccordionOpen ? (
+                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                )}
+              </div>
+            </button>
+
+            {/* Accordion Content - Expandable */}
+            {notesAccordionOpen && (
+              <div className="px-4 pb-4 border-t border-gray-200">
+                <div className="pt-4">
+                  {isEditingNotes ? (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-gray-600 block">Manuscript Notes</label>
+                        <Textarea
+                          value={notesValue}
+                          onChange={(e) => setNotesValue(e.target.value)}
+                          placeholder="Add notes about this manuscript, review comments, or any relevant information..."
+                          className="min-h-[120px] resize-y focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setIsEditingNotes(false)
+                            setNotesValue(notes || "")
+                          }}
+                          className="hover:bg-gray-100 cursor-pointer transition-colors"
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={handleSaveNotes}
+                          className="hover:bg-blue-600 cursor-pointer transition-colors"
+                        >
+                          Save Notes
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium text-gray-600">Current Notes</label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setNotesValue(notes || "")
+                            setIsEditingNotes(true)
+                          }}
+                          className="hover:bg-gray-100 cursor-pointer transition-colors"
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          {notes ? "Edit Notes" : "Add Notes"}
+                        </Button>
+                      </div>
+                      
+                      {notes && notes.trim() ? (
+                        <div className="p-3 bg-white rounded-lg border">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-900">{notes}</p>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No notes added yet</p>
+                          <p className="text-xs mt-1">Click "Add Notes" to add comments or observations</p>
+                        </div>
+                      )}
+                      
+                      {lastSaved && (
+                        <p className="text-xs text-gray-500">
+                          Last saved: {lastSaved.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Main Review Tabs - Enhanced Visibility */}
           <div className="border-t bg-white">
-            <Tabs defaultValue={selectedView} className="w-full">
+            <Tabs 
+              value={selectedView} 
+              onValueChange={(value) => setSelectedView(value as "manuscript" | "list" | "fulltext")} 
+              className="w-full"
+            >
               <TabsList className="h-12 p-1 bg-gray-100 rounded-none border-b w-full justify-start">
                 <TabsTrigger 
                   value="manuscript" 
-                  onClick={() => setSelectedView("manuscript")}
                   className="flex-1 h-10 text-base font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border-blue-500 data-[state=active]:text-blue-700"
                 >
                   📊 Manuscript Review
                 </TabsTrigger>
                 <TabsTrigger 
                   value="list" 
-                  onClick={() => setSelectedView("list")}
                   className="flex-1 h-10 text-base font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 >
                   📋 List Review
                 </TabsTrigger>
                 <TabsTrigger 
                   value="fulltext" 
-                  onClick={() => {
-                    setSelectedView("fulltext")
-                    if (useApiData && !fullTextContent && !fullTextError) {
-                      fetchFullTextContent()
-                    }
-                  }}
                   disabled={!useApiData}
                   title={!useApiData ? "Full text viewing is only available when using API data" : "View the complete manuscript text"}
                   className="flex-1 h-10 text-base font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm disabled:opacity-50"
@@ -4062,7 +4234,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       {(() => {
                         // Use the same main figure image that's displayed in the main view
                         const selectedFigure = manuscript?.figures?.[0]; // Use the currently selected figure
-                        const mainImageSrc = (selectedFigure as any)?.fullImagePath || getImageUrl(msid, selectedFigure?.id || '', { type: 'full' }, useApiData);
+                        const mainImageSrc = getImageUrl(msid, selectedFigure?.id || '', { type: 'full' }, useApiData);
                         
                         return (
                           <>
@@ -4070,6 +4242,21 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                               src={mainImageSrc}
                               alt="Figure with highlighted panel"
                               className="w-full h-auto max-h-[400px] object-contain border rounded"
+                              onLoad={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                // Prevent duplicate logging for popup modal images
+                                if (!target.hasAttribute('data-popup-loaded')) {
+                                  target.setAttribute('data-popup-loaded', 'true');
+                                }
+                              }}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                if (!target.src.includes('placeholder') && !target.hasAttribute('data-popup-fallback')) {
+                                  // Try fallback image for popup
+                                  target.src = getImageUrl(msid, selectedFigure?.id || '', { type: 'full' }, false);
+                                  target.setAttribute('data-popup-fallback', 'true');
+                                }
+                              }}
                             />
                             {/* Bounding box overlay - outline only */}
                             <div className="absolute border-2 border-red-500 rounded pointer-events-none"
@@ -4125,95 +4312,95 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                   <h3 className="font-medium text-gray-900 mb-4">AI and QC Checks</h3>
                   <div className="max-h-64 overflow-y-auto">
                 
-                {/* Use the same AI/QC checks that are displayed in the main view above panels */}
-                {(() => {
-                  // Use the same logic as the main view for AI checks (memoized for performance)
-                  const allChecks = useMemo(() => [
-                    ...(Array.isArray(manuscript?.qcChecks) ? manuscript.qcChecks : []),
-                    ...(manuscript?.figures || []).flatMap((fig: any) => fig.qcChecks || [])
-                  ], [manuscript?.qcChecks, manuscript?.figures]);
-                  
-                  const aiChecks = useMemo(() => 
-                    allChecks.filter(check => check.aiGenerated), [allChecks]
-                  );
-                  const qcChecks = useMemo(() => 
-                    allChecks.filter(check => !check.aiGenerated), [allChecks]
-                  );
-                  
-                  return (
-                    <div className="space-y-4">
-                      {/* AI Checks - Same as main view */}
-                      {aiChecks.length > 0 && (
-                        <div>
-                          <h4 className="font-medium text-blue-600 mb-2 flex items-center gap-2">
-                            <Cpu className="w-4 h-4" />
-                            AI Checks ({aiChecks.length})
-                          </h4>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {aiChecks.map((check, index) => {
-                              const checkId = getCheckId(check, "ai-quality", index);
-                              const isIgnored = ignoredChecks.has(checkId);
-                              const isApproved = approvedChecks.has(checkId);
-                              
-                              if (isIgnored && !showIgnoredChecks) return null;
-                              
-                              return (
-                                <div key={index} className={`p-3 rounded-lg border ${
-                                  isApproved ? 'bg-green-50 border-green-200' :
-                                  isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
-                                  'bg-blue-50 border-blue-200'
-                                }`}>
-                                  <div className="flex items-start gap-2">
-                                    {getQCIcon(check.type)}
-                                    <div className="flex-1">
-                                      <p className="text-sm font-medium">{check.message}</p>
-                                      <p className="text-xs text-gray-600 mt-1">{check.details}</p>
-                                      {check.confidence && (
-                                        <p className="text-xs text-blue-600 mt-1">
-                                          Confidence: {Math.round(check.confidence * 100)}%
-                                        </p>
-            )}
-          </div>
-            </div>
-            </div>
-                              );
-                            })}
-            </div>
-              </div>
-            )}
-
-                      {/* QC Checks - Same as main view */}
-                      {qcChecks.length > 0 && (
-                        <div>
-                          <h4 className="font-medium text-orange-600 mb-2 flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4" />
-                            QC Checks ({qcChecks.length})
-                          </h4>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {qcChecks.map((check, index) => (
-                              <div key={index} className="p-3 bg-orange-50 border border-orange-200 rounded">
-                                <div className="flex items-start gap-2">
-                                  {getQCIcon(check.type)}
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium">{check.message}</p>
-                                    <p className="text-xs text-gray-600 mt-1">{check.details}</p>
-              </div>
+                {/* Use pre-computed AI/QC checks to avoid duplicate calculations */}
+                <div className="space-y-4">
+                  {/* AI Checks - Use top-level computation */}
+                  {(() => {
+                    const panelAiChecks = aiChecks;
+                    
+                    return panelAiChecks.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-blue-600 mb-2 flex items-center gap-2">
+                          <Cpu className="w-4 h-4" />
+                          AI Checks ({panelAiChecks.length})
+                        </h4>
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {panelAiChecks.map((check: any, index: number) => {
+                          const checkId = getCheckId(check, "ai-quality", index);
+                          const isIgnored = ignoredChecks.has(checkId);
+                          const isApproved = approvedChecks.has(checkId);
+                          
+                          if (isIgnored && !showIgnoredChecks) return null;
+                          
+                          return (
+                            <div key={index} className={`p-3 rounded-lg border ${
+                              isApproved ? 'bg-green-50 border-green-200' :
+                              isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
+                              'bg-blue-50 border-blue-200'
+                            }`}>
+                              <div className="flex items-start gap-2">
+                                {getQCIcon(check.type)}
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{check.message}</p>
+                                  <p className="text-xs text-gray-600 mt-1">{check.details}</p>
+                                  {check.confidence && (
+                                    <p className="text-xs text-blue-600 mt-1">
+                                      Confidence: {Math.round(check.confidence * 100)}%
+                                    </p>
+                                  )}
                                 </div>
                               </div>
-                            ))}
+                            </div>
+                          );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* QC Checks - Use top-level computation */}
+                  {(() => {
+                    const panelQcChecks = validationIssues;
+                    
+                    return panelQcChecks.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-orange-600 mb-2 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4" />
+                          QC Checks ({panelQcChecks.length})
+                        </h4>
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {panelQcChecks.map((check: any, index: number) => (
+                            <div key={index} className="p-3 bg-orange-50 border border-orange-200 rounded">
+                              <div className="flex items-start gap-2">
+                                {getQCIcon(check.type)}
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{check.message}</p>
+                                  <p className="text-xs text-gray-600 mt-1">{check.details}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  
+                  {(() => {
+                    const panelAllChecks = [
+                      ...(Array.isArray(manuscript?.qcChecks) ? manuscript.qcChecks : []),
+                      ...(manuscript?.figures || []).flatMap((fig: any) => fig.qcChecks || [])
+                    ];
+                    const panelAiChecks = panelAllChecks.filter(check => check.aiGenerated);
+                    const panelQcChecks = panelAllChecks.filter(check => !check.aiGenerated);
+                    
+                    return panelAiChecks.length === 0 && panelQcChecks.length === 0;
+                  })() && (
+                    <div className="text-center text-gray-500 py-8">
+                      <Cpu className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No checks available</p>
+                    </div>
+                  )}
                 </div>
-                </div>
-                      )}
-                      
-                      {aiChecks.length === 0 && qcChecks.length === 0 && (
-                        <div className="text-center text-gray-500 py-8">
-                          <Cpu className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p>No checks available</p>
-                </div>
-            )}
-          </div>
-                  );
-                })()}
           </div>
                 </div>
               </div>

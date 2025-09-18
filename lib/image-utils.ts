@@ -8,6 +8,7 @@ export interface ImageOptions {
   width?: number;
   height?: number;
   format?: 'png' | 'jpg' | 'webp';
+  apiMode?: boolean;
 }
 
 /**
@@ -18,41 +19,18 @@ export function getFigureImageUrl(
   figureId: string | number,
   options: ImageOptions = {}
 ): string {
-  const { type = 'full', panelId, width, height, format } = options;
+  const queryParams = new URLSearchParams();
   
-  // Convert figureId to string and handle mock IDs
-  const figureIdStr = String(figureId);
+  if (options.type) queryParams.set('type', options.type);
+  if (options.panelId) queryParams.set('panel', options.panelId);
+  if (options.width) queryParams.set('width', options.width.toString());
+  if (options.height) queryParams.set('height', options.height.toString());
+  if (options.format) queryParams.set('format', options.format);
+  if (options.apiMode) queryParams.set('apiMode', 'true');
   
-  // Check if this is a mock/newly created figure
-  if (figureIdStr.startsWith('figure-')) {
-    return getFallbackImageUrl(manuscriptId, figureIdStr, options);
-  }
+  const baseUrl = `/api/v1/manuscripts/${manuscriptId}/figures/${figureId}/image`;
+  const queryString = queryParams.toString();
   
-  // Construct API image URL
-  const baseUrl = `/api/v1/manuscripts/${manuscriptId}/figures/${figureIdStr}/image`;
-  const params = new URLSearchParams();
-  
-  if (type !== 'full') {
-    params.set('type', type);
-  }
-  
-  if (panelId) {
-    params.set('panel', panelId);
-  }
-  
-  if (width) {
-    params.set('width', width.toString());
-  }
-  
-  if (height) {
-    params.set('height', height.toString());
-  }
-  
-  if (format && format !== 'png') {
-    params.set('format', format);
-  }
-  
-  const queryString = params.toString();
   return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 }
 
@@ -139,8 +117,11 @@ export function getImageUrl(
   useApiData: boolean = false
 ): string {
   if (useApiData) {
-    return getFigureImageUrl(manuscriptId, figureId, options);
+    // In API mode, try to get real image URL first
+    const apiUrl = getFigureImageUrl(manuscriptId, figureId, { ...options, apiMode: true });
+    return apiUrl;
   } else {
+    // In mock mode, use fallback images
     return getFallbackImageUrl(manuscriptId, String(figureId), options);
   }
 }
@@ -166,17 +147,19 @@ export async function getImageWithFallback(
   options: ImageOptions = {},
   useApiData: boolean = false
 ): Promise<string> {
-  if (!useApiData) {
-    return getFallbackImageUrl(manuscriptId, String(figureId), options);
+  if (useApiData) {
+    // Try API image first, fall back to placeholder if it fails
+    const apiUrl = getFigureImageUrl(manuscriptId, figureId, options);
+    
+    try {
+      const response = await fetch(apiUrl, { method: 'HEAD' });
+      if (response.ok && response.headers.get('content-type')?.startsWith('image/')) {
+        return apiUrl;
+      }
+    } catch (error) {
+      console.warn(`Image fetch failed for ${figureId}, using fallback`);
+    }
   }
   
-  const apiImageUrl = getFigureImageUrl(manuscriptId, figureId, options);
-  const isAvailable = await preloadImage(apiImageUrl);
-  
-  if (isAvailable) {
-    return apiImageUrl;
-  }
-  
-  // Fallback to placeholder
   return getFallbackImageUrl(manuscriptId, String(figureId), options);
 }

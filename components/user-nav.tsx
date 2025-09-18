@@ -11,8 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { User, LogOut, Settings } from "lucide-react"
+import { User, LogOut } from "lucide-react"
 
 export function UserNav() {
   const { data: session, status } = useSession()
@@ -39,38 +38,25 @@ export function UserNav() {
       .slice(0, 2)
   }
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case "editorial_assistant":
-        return "Editorial Assistant"
-      case "admin":
-        return "Administrator"
-      default:
-        return "User"
-    }
-  }
-
-  const getRoleVariant = (role: string) => {
-    switch (role) {
-      case "editorial_assistant":
-        return "default"
-      case "admin":
-        return "destructive"
-      default:
-        return "secondary"
-    }
-  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={session.user.image || ""} alt={session.user.name || ""} />
-            <AvatarFallback>
-              {getInitials(session.user.name || session.user.email || "U")}
-            </AvatarFallback>
-          </Avatar>
+        <Button variant="ghost" className="relative h-10 rounded-lg px-3 hover:bg-gray-50 border border-gray-200">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8 ring-2 ring-blue-100">
+              <AvatarImage src={session.user.image || ""} alt={session.user.name || ""} />
+              <AvatarFallback className="bg-blue-600 text-white text-sm font-medium">
+                {getInitials(session.user.name || session.user.email || "U")}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col items-start min-w-0">
+              <span className="text-sm font-medium text-gray-900 truncate">
+                {session.user.name || "User"}
+              </span>
+            </div>
+            <div className="w-2 h-2 rounded-full bg-green-500 ring-2 ring-white"></div>
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -82,21 +68,11 @@ export function UserNav() {
             <p className="text-xs leading-none text-muted-foreground">
               {session.user.email}
             </p>
-            <div className="pt-1">
-              <Badge variant={getRoleVariant(session.user.role)} className="text-xs">
-                {getRoleLabel(session.user.role)}
-              </Badge>
-            </div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="text-red-600 focus:text-red-600"
+          className="text-red-600 focus:text-red-600 hover:bg-red-50 focus:bg-red-50 hover:text-red-700 focus:text-red-700"
           onClick={() => signOut({ callbackUrl: "/auth/signin" })}
         >
           <LogOut className="mr-2 h-4 w-4" />

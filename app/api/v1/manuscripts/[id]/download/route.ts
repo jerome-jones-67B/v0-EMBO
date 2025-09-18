@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateApiAuth, createUnauthorizedResponse } from '@/lib/api-auth';
 import { shouldBypassAuth, getDevUser } from '@/lib/dev-bypass-auth';
-import { sendProgressUpdate, sendDownloadComplete, sendDownloadError } from './progress/route';
+import { sendProgressUpdate, sendDownloadComplete, sendDownloadError, sendDownloadCancelled } from './progress/route';
 import JSZip from 'jszip';
 
 // Mark this route as dynamic to avoid static rendering issues
@@ -45,15 +45,19 @@ async function fetchManuscriptDetails(manuscriptId: string) {
 }
 
 // Helper function to download a file from Data4Rev API
-async function downloadFileFromApi(manuscriptId: string, fileId: number): Promise<{ blob: Blob, filename: string, contentType: string }> {
+async function downloadFileFromApi(manuscriptId: string, fileId: number, signal?: AbortSignal): Promise<{ blob: Blob, filename: string, contentType: string }> {
   const apiUrl = `${DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}/files/${fileId}/download`;
   
   console.log('📥 Downloading file from Data4Rev API:', apiUrl);
   
+  // Combine the request signal with a timeout
+  const timeoutSignal = AbortSignal.timeout(30000); // 30 second timeout for file downloads
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+  
   const response = await fetch(apiUrl, {
     method: 'GET',
     headers: getApiHeaders(),
-    signal: AbortSignal.timeout(30000) // 30 second timeout for file downloads
+    signal: combinedSignal
   });
 
   if (!response.ok) {
@@ -119,6 +123,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     console.log(`📥 Download request for manuscript: ${manuscriptId}, format: ${format}, type: ${fileType}`);
 
+    // Check if request was aborted before starting
+    if (request.signal?.aborted) {
+      console.log(`🛑 Download request aborted before starting for manuscript: ${manuscriptId}`);
+      sendDownloadCancelled(manuscriptId, {
+        status: 'Download cancelled',
+        progress: 0,
+        step: 'cancelled',
+        message: 'Download was cancelled before starting'
+      });
+      return NextResponse.json({ error: 'Download cancelled' }, { status: 499 }); // Client Closed Request
+    }
+
     // Send initial progress update
     sendProgressUpdate(manuscriptId, {
       status: 'Initializing download...',
@@ -162,33 +178,105 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     
     if (useApiData && manuscriptDetails?.files) {
       // Use real API data
-      filesToDownload = manuscriptDetails.files;
+      let allFiles = manuscriptDetails.files;
+      
+      // Categorize files for better organization
+      const categorizedFiles = {
+        manuscript: allFiles.filter((file: any) => {
+          const filename = file.name.toLowerCase();
+          const filepath = file.uri?.toLowerCase() || '';
+          return filename.includes('.pdf') || 
+                 filepath.includes('/pdf/') || 
+                 filename.includes('.docx') && filepath.includes('/doc/');
+        }),
+        figures: allFiles.filter((file: any) => {
+          const filename = file.name.toLowerCase();
+          const filepath = file.uri?.toLowerCase() || '';
+          return (filename.includes('.png') || filename.includes('.jpg') || 
+                 filename.includes('.jpeg') || filename.includes('.tiff') || 
+                 filename.includes('.gif') || filename.includes('.svg') ||
+                 filename.includes('.pdf') || filename.includes('.eps')) && 
+                 (filepath.includes('/graphic/') || filepath.includes('/figure'));
+        }),
+        supplementary: allFiles.filter((file: any) => {
+          const filename = file.name.toLowerCase();
+          const filepath = file.uri?.toLowerCase() || '';
+          return filepath.includes('/suppl_data/') || 
+                 filename.includes('supplement') ||
+                 filename.includes('.xlsx') ||
+                 filename.includes('.csv') ||
+                 filename.includes('data') ||
+                 filename.includes('.zip');
+        }),
+        metadata: allFiles.filter((file: any) => {
+          const filename = file.name.toLowerCase();
+          return filename.includes('.xml') || filename.includes('.json');
+        }),
+        thumbnails: allFiles.filter((file: any) => {
+          const filename = file.name.toLowerCase();
+          const filepath = file.uri?.toLowerCase() || '';
+          return filename.includes('thumbnail') || 
+                 filename.includes('preview') ||
+                 filepath.includes('.preview.');
+        })
+      };
+      
+      // Log file categorization for debugging
+      console.log(`📊 File categorization for manuscript ${manuscriptId}:`, {
+        total: allFiles.length,
+        manuscript: categorizedFiles.manuscript.length,
+        figures: categorizedFiles.figures.length,
+        supplementary: categorizedFiles.supplementary.length,
+        metadata: categorizedFiles.metadata.length,
+        thumbnails: categorizedFiles.thumbnails.length
+      });
       
       // Filter files by type if specified
       if (fileType && fileType !== 'all') {
-        filesToDownload = manuscriptDetails.files.filter((file: any) => {
-          const filename = file.name.toLowerCase();
-          const isImage = filename.includes('.png') || filename.includes('.jpg') || 
-                         filename.includes('.jpeg') || filename.includes('.tiff') || 
-                         filename.includes('.gif') || filename.includes('.svg');
-          
-          switch (fileType) {
-            case 'figures':
-              return isImage;
-            case 'supplementary':
-              return filename.includes('supplement') || 
-                     filename.includes('.xlsx') ||
-                     filename.includes('.csv') ||
-                     filename.includes('.r') ||
-                     filename.includes('data');
-            case 'manuscript':
-              return filename.includes('.pdf') && filename.includes('manuscript');
-            case 'metadata':
-              return filename.includes('.json') || filename.includes('.xml');
-            default:
-              return true;
-          }
-        });
+        switch (fileType) {
+          case 'figures':
+            filesToDownload = categorizedFiles.figures;
+            break;
+          case 'supplementary':
+            filesToDownload = categorizedFiles.supplementary;
+            break;
+          case 'manuscript':
+            filesToDownload = categorizedFiles.manuscript;
+            break;
+          case 'metadata':
+            filesToDownload = categorizedFiles.metadata;
+            break;
+          case 'essential':
+            // Essential files: manuscript PDFs, main figures, key data (exclude thumbnails/previews)
+            filesToDownload = [
+              ...categorizedFiles.manuscript,
+              ...categorizedFiles.figures,
+              ...categorizedFiles.supplementary.filter((file: any) => {
+                const filename = file.name.toLowerCase();
+                // Include data files but exclude thumbnails and previews
+                return !filename.includes('thumbnail') && 
+                       !filename.includes('preview') &&
+                       !file.uri?.toLowerCase().includes('.preview.');
+              })
+            ];
+            break;
+          default:
+            filesToDownload = allFiles;
+        }
+      } else {
+        // Default to essential files instead of all files
+        filesToDownload = [
+          ...categorizedFiles.manuscript,
+          ...categorizedFiles.figures,
+          ...categorizedFiles.supplementary.filter((file: any) => {
+            const filename = file.name.toLowerCase();
+            return !filename.includes('thumbnail') && 
+                   !filename.includes('preview') &&
+                   !file.uri?.toLowerCase().includes('.preview.');
+          })
+        ];
+        
+        console.log(`📦 Defaulting to essential files (${filesToDownload.length}/${allFiles.length}). Use type=all for complete archive.`);
       }
     } else {
       // Fallback to mock data
@@ -258,6 +346,20 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     });
 
     for (let i = 0; i < filesToDownload.length; i++) {
+      // Check if request was aborted during file processing
+      if (request.signal?.aborted) {
+        console.log(`🛑 Download request aborted during file processing for manuscript: ${manuscriptId}`);
+        sendDownloadCancelled(manuscriptId, {
+          status: 'Download cancelled',
+          progress: Math.round((i / filesToDownload.length) * 100),
+          step: 'cancelled',
+          totalFiles: filesToDownload.length,
+          downloadedFiles: i,
+          message: `Download was cancelled after processing ${i} of ${filesToDownload.length} files`
+        });
+        return NextResponse.json({ error: 'Download cancelled' }, { status: 499 });
+      }
+
       const file = filesToDownload[i];
       const currentFileNum = i + 1;
       const progressPercent = Math.min(85, 30 + ((currentFileNum / filesToDownload.length) * 55));
@@ -276,7 +378,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           });
 
           // Download file from Data4Rev API
-          const { blob, filename, contentType } = await downloadFileFromApi(manuscriptId, file.id);
+          const { blob, filename, contentType } = await downloadFileFromApi(manuscriptId, file.id, request.signal);
           const fileBuffer = await blob.arrayBuffer();
           const fileSizeMB = (fileBuffer.byteLength / (1024 * 1024)).toFixed(1);
           
@@ -501,8 +603,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     for (const file of filesToPackage) {
       try {
         if (useApiData) {
-          // Download file from Data4Rev API
-          const { blob, filename, contentType } = await downloadFileFromApi(manuscriptId, file.id);
+          // Download file from Data4Rev API  
+          const { blob, filename, contentType } = await downloadFileFromApi(manuscriptId, file.id, request.signal);
           const fileBuffer = await blob.arrayBuffer();
           
           zip.file(filename, fileBuffer);
