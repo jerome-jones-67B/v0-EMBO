@@ -865,6 +865,7 @@ const buildApiUrl = (endpoint: string): string => {
 const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) => {
   const { data: session } = useSession()
   const [selectedView, setSelectedView] = useState<"manuscript" | "list" | "fulltext">("manuscript")
+  const [selectedFigureIndex, setSelectedFigureIndex] = useState(0)
   const [linkedData, setLinkedData] = useState(mockLinkedData)
   const [sourceData, setSourceData] = useState(mockSourceData)
   const [editingLinkedData, setEditingLinkedData] = useState<string | null>(null)
@@ -897,6 +898,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [fullTextContent, setFullTextContent] = useState<string>("")
   const [isLoadingFullText, setIsLoadingFullText] = useState(false)
   const [fullTextError, setFullTextError] = useState<string | null>(null)
+  const [fullTextMetadata, setFullTextMetadata] = useState<any>(null)
   const [isDepositing, setIsDepositing] = useState(false)
   const [depositError, setDepositError] = useState<string | null>(null)
   // Track actual image load status per figure (figureId -> 'api' | 'fallback' | 'loading')
@@ -1289,16 +1291,16 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       
       const data = await response.json()
       
-      if (data.fallback) {
-        setFullTextError(data.content)
-        setFullTextContent("")
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('📄 Full text content fallback:', data.source || 'unknown');
-        }
-      } else {
+      // Always set content if it exists, regardless of fallback status
+      if (data.content) {
         setFullTextContent(typeof data.content === 'string' ? data.content : JSON.stringify(data.content, null, 2))
         setFullTextError(null)
+        setFullTextMetadata({
+          source: data.source,
+          contentType: data.content_type,
+          wordCount: data.word_count,
+          fallback: data.fallback
+        })
         
         if (process.env.NODE_ENV === 'development') {
           console.log('📄 Full text content loaded:', {
@@ -1308,12 +1310,21 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
             fallback: data.fallback
           });
         }
+      } else {
+        setFullTextError(data.error || "No content available")
+        setFullTextContent("")
+        setFullTextMetadata(null)
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('📄 Full text content failed:', data.source || 'unknown');
+        }
       }
       
     } catch (error) {
       console.error('❌ Error fetching full text content:', error)
       setFullTextError("Failed to load full text content. Please try again.")
       setFullTextContent("")
+      setFullTextMetadata(null)
     } finally {
       setIsLoadingFullText(false)
     }
@@ -1907,6 +1918,16 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     }
   }, [selectedView, useApiData, fullTextContent, fullTextError, fetchFullTextContent])
 
+  // Reset selected figure index when manuscript changes or when figures are not available
+  useEffect(() => {
+    const figuresCount = manuscript?.figures?.length || 0
+    if (selectedFigureIndex >= figuresCount && figuresCount > 0) {
+      setSelectedFigureIndex(0)
+    } else if (figuresCount === 0) {
+      setSelectedFigureIndex(0)
+    }
+  }, [manuscript?.figures?.length, selectedFigureIndex])
+
   const getStatusBadge = (status: string, priority: string) => {
     let variant: "default" | "secondary" | "destructive" | "outline" = "default"
     let icon = null
@@ -2415,7 +2436,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   // Memoize ManuscriptReviewView component to prevent unnecessary re-renders
   const ManuscriptReviewView = React.memo(() => {
-    const [selectedFigureIndex, setSelectedFigureIndex] = useState(0)
     // Use manuscript.figures directly instead of local state to avoid render loops
     const figuresData = manuscript?.figures || []
     const selectedFigure = figuresData?.[selectedFigureIndex]
@@ -2473,69 +2493,69 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           {/* Figures Section - Now First and Primary Focus */}
           <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl font-bold">
-              <FileText className="w-6 h-6" />
-              Figures Review
-            </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                <FileText className="w-6 h-6" />
+                Figures Review
+              </CardTitle>
           </CardHeader>
           <CardContent>
 
             {/* AI Checks List */}
             {visibleAiChecks.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="font-semibold text-gray-900">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900">
                   All AI Checks ({visibleAiChecks.length})
-                </h4>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  </h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
                   {visibleAiChecks.map((check, index) => {
                     const isIgnored = ignoredChecks.has(check.checkId);
                     const isApproved = approvedChecks.has(check.checkId);
-                    
-                    return (
-                      <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${
-                        isApproved ? 'bg-green-50 border-green-200' :
-                        isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
-                        check.type === 'error' ? 'bg-red-50 border-red-200' :
-                        check.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
-                        'bg-blue-50 border-blue-200'
-                      }`}>
-                        {getQCIcon(check.type)}
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{check.message}</span>
-                              {isApproved && (
-                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                                  <Check className="w-3 h-3 mr-1" />
-                                  Approved
-                                </Badge>
-                              )}
-                              {isIgnored && (
-                                <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
-                                  <X className="w-3 h-3 mr-1" />
-                                  Ignored
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                {(check as any).figureTitle ? `Figure ${(check as any).figureTitle}` : 'General'}
-                              </span>
+                      
+                      return (
+                        <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${
+                          isApproved ? 'bg-green-50 border-green-200' :
+                          isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
+                          check.type === 'error' ? 'bg-red-50 border-red-200' :
+                          check.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                          'bg-blue-50 border-blue-200'
+                        }`}>
+                          {getQCIcon(check.type)}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{check.message}</span>
+                                {isApproved && (
+                                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                                    <Check className="w-3 h-3 mr-1" />
+                                    Approved
+                                  </Badge>
+                                )}
+                                {isIgnored && (
+                                  <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                                    <X className="w-3 h-3 mr-1" />
+                                    Ignored
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                  {(check as any).figureTitle ? `Figure ${(check as any).figureTitle}` : 'General'}
+                                </span>
                               {renderCheckActions({...check, checkId: check.checkId}, "ai-quality", index)}
+                              </div>
                             </div>
+                            <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
+                            {(check as any).panelId && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                Panel: {(check as any).panelId}
+                              </div>
+                            )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
-                          {(check as any).panelId && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              Panel: {(check as any).panelId}
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
             )}
 
             {/* Figure Tabs Navigation */}
@@ -2545,11 +2565,11 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                 <div className="border-b border-gray-200">
                   <div className="flex space-x-1 overflow-x-auto pb-0">
                     {figuresData.map((figure: any, index: number) => (
-                      <button
-                        key={figure.id}
+                    <button
+                      key={figure.id}
                         onClick={() => handleFigureIndexSelect(index)}
                         className={`px-4 py-3 text-sm font-medium rounded-t-lg border-b-2 transition-all duration-200 whitespace-nowrap min-w-0 flex items-center gap-2 cursor-pointer ${
-                          selectedFigureIndex === index
+                        selectedFigureIndex === index
                             ? 'text-blue-600 border-blue-500 bg-blue-50'
                             : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                         }`}
@@ -2565,8 +2585,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                             </span>
                           )}
                         </div>
-                      </button>
-                    ))}
+                    </button>
+                  ))}
                   </div>
                 </div>
 
@@ -2581,16 +2601,16 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           <p className="text-sm text-gray-500 mt-1">Figure {selectedFigureIndex + 1} of {figuresData.length}</p>
                         </div>
                         <div className="flex items-center gap-3">
-                          <Button
+                        <Button
                             size="default"
-                            variant="outline"
-                            onClick={() => setShowExpandedFigure(showExpandedFigure === selectedFigure.id ? null : selectedFigure.id)}
+                          variant="outline"
+                          onClick={() => setShowExpandedFigure(showExpandedFigure === selectedFigure.id ? null : selectedFigure.id)}
                             className="flex items-center gap-2 hover:bg-gray-100 cursor-pointer transition-colors"
-                          >
+                        >
                             <ZoomIn className="w-4 h-4" />
-                            {showExpandedFigure === selectedFigure.id ? "Collapse" : "Expand"}
-                          </Button>
-                          <Button
+                          {showExpandedFigure === selectedFigure.id ? "Collapse" : "Expand"}
+                        </Button>
+                        <Button
                             size="default"
                             variant="outline"
                             onClick={() => handleEditFigure(selectedFigureIndex)}
@@ -2602,14 +2622,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           <Button
                             size="default"
                             variant="outline"
-                            onClick={() => handleDeleteFigure(selectedFigureIndex)}
+                          onClick={() => handleDeleteFigure(selectedFigureIndex)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center gap-2 cursor-pointer transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
+                        >
+                          <Trash2 className="w-4 h-4" />
                             Delete
-                          </Button>
-                        </div>
+                        </Button>
                       </div>
+                    </div>
 
                       {/* Figure Statistics */}
                       <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
@@ -2651,17 +2671,17 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                         </div>
                       </div>
                       
-                      <div className="relative">
-                        <img
+                        <div className="relative">
+                          <img
                           src={getImageUrl(msid, selectedFigure.id, { type: 'full' }, useApiData)}
-                          alt={selectedFigure.title}
-                          className={`w-full object-contain border rounded-lg ${
+                            alt={selectedFigure.title}
+                            className={`w-full object-contain border rounded-lg ${
                             showExpandedFigure === selectedFigure.id ? "max-h-[600px]" : "max-h-[400px]"
-                          }`}
-                          onLoad={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            const isFromAPI = target.src.includes('/api/v1/manuscripts/') && !target.src.includes('/public/');
-                            const figureId = String(selectedFigure.id);
+                            }`}
+                            onLoad={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              const isFromAPI = target.src.includes('/api/v1/manuscripts/') && !target.src.includes('/public/');
+                              const figureId = String(selectedFigure.id);
                             const newStatus = isFromAPI ? 'api' : 'fallback';
                             
                             // Only update if status has changed to prevent endless loops
@@ -2674,7 +2694,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                 [figureId]: newStatus
                               };
                             });
-                            
+                              
                             // Only log once per image load
                             if (!target.hasAttribute('data-loaded')) {
                               console.log(`🖼️ Figure ${selectedFigure.id} image loaded successfully:`, {
@@ -2689,70 +2709,70 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                               target.setAttribute('data-loaded', 'true');
                               target.setAttribute('data-source', isFromAPI ? 'api' : 'fallback');
                             }
-                          }}
-                          onError={async (e) => {
-                            const target = e.target as HTMLImageElement;
-                            const figureId = String(selectedFigure.id);
-                            const imageKey = `${figureId}-full`;
-                            
-                            if (!target.src.includes('placeholder') && !target.src.includes('/public/') && useApiData) {
-                              // Check if this image is already marked as permanently failed
-                              if (permanentlyFailedImages.has(imageKey)) {
-                                console.log(`⚠️ Skipping retry for permanently failed image: ${imageKey}`);
-                                return;
+                            }}
+                            onError={async (e) => {
+                              const target = e.target as HTMLImageElement;
+                              const figureId = String(selectedFigure.id);
+                              const imageKey = `${figureId}-full`;
+                              
+                              if (!target.src.includes('placeholder') && !target.src.includes('/public/') && useApiData) {
+                                // Check if this image is already marked as permanently failed
+                                if (permanentlyFailedImages.has(imageKey)) {
+                                  console.log(`⚠️ Skipping retry for permanently failed image: ${imageKey}`);
+                                  return;
+                                }
+                                
+                                // Mark as permanently failed (likely unsupported format like EPS)
+                                console.warn(`🚫 Marking image as permanently failed: ${imageKey} (likely unsupported format)`);
+                                setPermanentlyFailedImages(prev => new Set(prev).add(imageKey));
+                                console.warn(`❌ API image failed to load: ${target.src}, falling back to placeholder`);
+                                
+                                // Update status to fallback when API image fails
+                                setImageLoadStatus(prev => ({
+                                  ...prev,
+                                  [figureId]: 'fallback'
+                                }));
+                                
+                                target.src = getImageUrl(msid, selectedFigure.id, { type: 'full' }, false);
+                                target.setAttribute('data-source', 'placeholder-fallback');
                               }
-                              
-                              // Mark as permanently failed (likely unsupported format like EPS)
-                              console.warn(`🚫 Marking image as permanently failed: ${imageKey} (likely unsupported format)`);
-                              setPermanentlyFailedImages(prev => new Set(prev).add(imageKey));
-                              console.warn(`❌ API image failed to load: ${target.src}, falling back to placeholder`);
-                              
-                              // Update status to fallback when API image fails
-                              setImageLoadStatus(prev => ({
-                                ...prev,
-                                [figureId]: 'fallback'
-                              }));
-                              
-                              target.src = getImageUrl(msid, selectedFigure.id, { type: 'full' }, false);
-                              target.setAttribute('data-source', 'placeholder-fallback');
-                            }
-                          }}
-                        />
-                        
-                        {/* Image Source Indicator */}
+                            }}
+                          />
+                          
+                          {/* Image Source Indicator */}
                         <div className="absolute top-3 right-3">
-                          {(() => {
-                            const figureId = String(selectedFigure.id);
-                            const actualLoadStatus = imageLoadStatus[figureId];
-                            
-                            if (actualLoadStatus === 'api') {
-                              return (
+                            {(() => {
+                              const figureId = String(selectedFigure.id);
+                              const actualLoadStatus = imageLoadStatus[figureId];
+                              
+                              if (actualLoadStatus === 'api') {
+                                return (
                                 <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-300 shadow-sm">
-                                  🖼️ API Image
-                                </Badge>
-                              );
-                            } else if (actualLoadStatus === 'fallback' || !useApiData) {
-                              return (
+                                    🖼️ API Image
+                                  </Badge>
+                                );
+                              } else if (actualLoadStatus === 'fallback' || !useApiData) {
+                                return (
                                 <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300 shadow-sm">
-                                  📝 Fallback Mock
-                                </Badge>
-                              );
-                            } else {
-                              return (
+                                    📝 Fallback Mock
+                                  </Badge>
+                                );
+                              } else {
+                                return (
                                 <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300 shadow-sm">
-                                  ⏳ Loading...
-                                </Badge>
-                              );
-                            }
-                          })()}
+                                    ⏳ Loading...
+                                  </Badge>
+                                );
+                              }
+                            })()}
                         </div>
-
+                        
                         {/* Panel Overlays */}
                         {overlayVisibility[selectedFigure.id] && (selectedFigure.panels || []).map((panel: any, panelIndex: number) => (
-                          <div
-                            key={panel.id}
+                            <div
+                              key={panel.id}
                             className="absolute border-2 border-blue-500 bg-blue-500/10 rounded cursor-pointer hover:bg-blue-500/20 transition-colors"
-                            style={{
+                              style={{
                               left: `${5 + (panelIndex % 3) * 30}%`,
                               top: `${5 + Math.floor(panelIndex / 3) * 25}%`,
                               width: "25%",
@@ -2762,11 +2782,11 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           >
                             <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded shadow-sm">
                               Panel {panel.id || panel.label}
+                              </div>
                             </div>
-                          </div>
                         ))}
                       </div>
-                    </div>
+                      </div>
 
                     {/* Figure Content Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -2783,8 +2803,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                           <p className="text-sm leading-relaxed text-gray-700">
                             {selectedFigure.legend || "No caption available for this figure."}
                           </p>
+                          </div>
                         </div>
-                      </div>
 
                       {/* Panels Management Section */}
                       <div className="bg-white border rounded-lg p-6">
@@ -2809,27 +2829,27 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                         
                         {selectedFigure.panels && selectedFigure.panels.length > 0 ? (
                           <div className="space-y-3 max-h-64 overflow-y-auto">
-                            {selectedFigure.panels.map((panel: any, panelIndex: number) => {
-                              const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
+                              {selectedFigure.panels.map((panel: any, panelIndex: number) => {
+                                const panelChecks = (selectedFigure.qcChecks as any)?.filter((check: any) => 
                                 check.panelId === panel.id || check.panelId === panel.label
-                              ) || []
-                              
-                              return (
+                                ) || []
+                                
+                                return (
                                 <div 
                                   key={panel.id} 
                                   className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                                   onClick={() => handlePanelClick(panel.id)}
-                                  onMouseEnter={() => setHoveredPanel(panel.id)}
-                                  onMouseLeave={() => setHoveredPanel(null)}
-                                >
+                                        onMouseEnter={() => setHoveredPanel(panel.id)}
+                                        onMouseLeave={() => setHoveredPanel(null)}
+                                      >
                                   <div className="w-10 h-10 bg-blue-100 rounded-lg border flex items-center justify-center flex-shrink-0">
                                     <span className="text-sm font-bold text-blue-700">{panel.id || panel.label}</span>
-                                  </div>
+                                        </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="text-sm font-medium text-gray-900 truncate">
                                       {panel.description || `Panel ${panel.id || panel.label}`}
                                     </div>
-                                    {panelChecks.length > 0 && (
+                                        {panelChecks.length > 0 && (
                                       <div className="flex items-center gap-1 mt-1">
                                         <Badge variant="secondary" className="text-xs">
                                           {panelChecks.length} checks
@@ -2837,7 +2857,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                         {panelChecks.some((c: any) => c.type === 'error') && (
                                           <Badge variant="destructive" className="text-xs">Issues</Badge>
                                         )}
-                                      </div>
+                                            </div>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-1">
@@ -2861,11 +2881,11 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                             <Plus className="w-8 h-8 mx-auto mb-2 opacity-50" />
                             <p className="text-sm">No panels added yet</p>
                             <p className="text-xs mt-1">Click "Add Panel" to create the first panel</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
                     {/* Additional Sections Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Figure QC Checks Section */}
@@ -2876,7 +2896,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                               <AlertTriangle className="w-5 h-5 text-orange-500" />
                               QC Checks ({selectedFigure.qcChecks.length})
                             </h4>
-                          </div>
+                                        </div>
                           
                           <div className="space-y-3 max-h-64 overflow-y-auto">
                             {selectedFigure.qcChecks.map((check: any, checkIndex: number) => (
@@ -2917,7 +2937,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                             <Plus className="w-4 h-4 mr-1" />
                             Add Data Link
                           </Button>
-                        </div>
+                                      </div>
                         
                         {selectedFigure.linkedData && selectedFigure.linkedData.length > 0 ? (
                           <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -2940,7 +2960,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                                     <Button size="sm" variant="ghost">
                                       <Edit className="w-3 h-3" />
                                     </Button>
-                                  </div>
+                            </div>
                                 </div>
                               </div>
                             ))}
@@ -3452,7 +3472,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm truncate">{figure.title || figure.label}</h4>
                   <div className="flex items-center justify-between text-xs text-gray-500">
@@ -3467,13 +3487,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       {figure.qcChecks.some((c: any) => c.type === 'warning') && (
                         <Badge variant="outline" className="text-xs">Warnings</Badge>
                       )}
+                          </div>
+                        )}
+                      </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            ))}
-          </div>
+                  ))}
+                  </div>
         </CardContent>
       </Card>
 
@@ -3858,7 +3878,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                   
                   {/* Status Indicators */}
                   <div className="flex items-center gap-1">
-                    {session?.user && (
+              {session?.user && (
                       <div className="w-2 h-2 bg-green-500 rounded-full" title="Logged in" />
                     )}
                     {manuscript.workflowState === 'deposited-to-biostudies' && (
@@ -3866,7 +3886,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                         Deposited
                       </Badge>
                     )}
-                  </div>
+                </div>
                 </div>
               </div>
               
@@ -3878,8 +3898,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                   <ChevronUp className="w-4 h-4 text-gray-500" />
                 ) : (
                   <ChevronDown className="w-4 h-4 text-gray-500" />
-                )}
-              </div>
+              )}
+            </div>
             </button>
 
             {/* Accordion Content - Expandable */}
@@ -3887,38 +3907,38 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
               <div className="px-4 pb-4 border-t border-gray-200">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4">
                   {/* Left Column - Assignment Details */}
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 block mb-1">Current Assignee</label>
-                      <div className="flex items-center gap-2 p-2 bg-white rounded border">
-                        {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
-                          <>
-                            {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
-                              <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" title="Assigned to you" />
-                            )}
-                            <span className="text-sm font-medium text-gray-900 flex-1">{manuscript.assignedTo}</span>
-                            {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
-                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
-                                You
-                              </Badge>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-sm text-gray-400 italic">Unassigned</span>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Current Assignee</label>
+                  <div className="flex items-center gap-2 p-2 bg-white rounded border">
+                    {manuscript.assignedTo && manuscript.assignedTo !== "" ? (
+                      <>
+                        {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                          <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" title="Assigned to you" />
                         )}
-                      </div>
-                    </div>
-                    
-                    {manuscript.lastModified && (
-                      <div>
-                        <label className="text-xs font-medium text-gray-600 block mb-1">Last Change</label>
-                        <div className="p-2 bg-white rounded border">
-                          <span className="text-xs text-gray-500">
-                            {new Date(manuscript.lastModified).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
+                        <span className="text-sm font-medium text-gray-900 flex-1">{manuscript.assignedTo}</span>
+                        {session?.user && (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
+                            You
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-sm text-gray-400 italic">Unassigned</span>
                     )}
+                  </div>
+                </div>
+                
+                {manuscript.lastModified && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 block mb-1">Last Change</label>
+                    <div className="p-2 bg-white rounded border">
+                      <span className="text-xs text-gray-500">
+                        {new Date(manuscript.lastModified).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                     {session?.user && (
                       <div>
@@ -3930,60 +3950,60 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                         </div>
                       </div>
                     )}
-                  </div>
-                  
-                  {/* Right Column - Actions */}
-                  <div className="space-y-3">
-                    <div>
+              </div>
+              
+              {/* Right Column - Actions */}
+              <div className="space-y-3">
+                <div>
                       <label className="text-xs font-medium text-gray-600 block mb-1">Assignment Actions</label>
-                      <div className="space-y-2">
-                        {session?.user ? (
-                          <>
-                            {manuscript.assignedTo && 
-                             manuscript.assignedTo !== "" && 
-                             (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
-                              <Button
-                                variant="outline"
-                                size="default"
-                                onClick={() => {
-                                  setManuscript((prev: any) => ({
-                                    ...prev,
-                                    assignedTo: "",
-                                    lastModified: new Date().toISOString()
-                                  }))
-                                  setTimeout(() => {
-                                    alert(`Manuscript unassigned from you.`)
-                                  }, 100)
-                                }}
-                                className="w-full flex items-center justify-center gap-2"
-                              >
-                                <UserMinus className="w-4 h-4" />
-                                Unassign from me
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="default"
-                                onClick={() => {
-                                  const userName = session.user.name || session.user.email || 'Unknown User'
-                                  setManuscript((prev: any) => ({
-                                    ...prev,
-                                    assignedTo: userName,
-                                    lastModified: new Date().toISOString()
-                                  }))
-                                  setTimeout(() => {
-                                    alert(`Manuscript assigned to you.`)
-                                  }, 100)
-                                }}
-                                className="w-full flex items-center justify-center gap-2"
-                              >
-                                <UserPlus className="w-4 h-4" />
-                                Assign to me
-                              </Button>
-                            )}
-                            <p className="text-xs text-gray-400 text-center">
-                              Changes reflected immediately
-                            </p>
+                  <div className="space-y-2">
+                    {session?.user ? (
+                      <>
+                        {manuscript.assignedTo && 
+                         manuscript.assignedTo !== "" && 
+                         (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
+                          <Button
+                            variant="outline"
+                            size="default"
+                            onClick={() => {
+                              setManuscript((prev: any) => ({
+                                ...prev,
+                                assignedTo: "",
+                                lastModified: new Date().toISOString()
+                              }))
+                              setTimeout(() => {
+                                alert(`Manuscript unassigned from you.`)
+                              }, 100)
+                            }}
+                            className="w-full flex items-center justify-center gap-2"
+                          >
+                            <UserMinus className="w-4 h-4" />
+                            Unassign from me
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="default"
+                            onClick={() => {
+                              const userName = session.user.name || session.user.email || 'Unknown User'
+                              setManuscript((prev: any) => ({
+                                ...prev,
+                                assignedTo: userName,
+                                lastModified: new Date().toISOString()
+                              }))
+                              setTimeout(() => {
+                                alert(`Manuscript assigned to you.`)
+                              }, 100)
+                            }}
+                            className="w-full flex items-center justify-center gap-2"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                            Assign to me
+                          </Button>
+                        )}
+                        <p className="text-xs text-gray-400 text-center">
+                          Changes reflected immediately
+                        </p>
                           </>
                         ) : (
                           <div className="p-2 bg-white rounded border text-center">
@@ -4019,16 +4039,16 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                               {depositError}
                             </p>
                           )}
-                        </>
-                      ) : (
-                        <div className="p-2 bg-white rounded border text-center">
+                      </>
+                    ) : (
+                      <div className="p-2 bg-white rounded border text-center">
                           <span className="text-xs text-gray-400">Login required for workflow actions</span>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+            </div>
             )}
           </div>
 
@@ -4199,6 +4219,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                   isLoadingFullText={isLoadingFullText}
                   fullTextError={fullTextError}
                   fullTextContent={fullTextContent}
+                  fullTextMetadata={fullTextMetadata}
                   fetchFullTextContent={fetchFullTextContent}
                 />
               </TabsContent>
@@ -4315,46 +4336,46 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                 {/* Use pre-computed AI/QC checks to avoid duplicate calculations */}
                 <div className="space-y-4">
                   {/* AI Checks - Use top-level computation */}
-                  {(() => {
+                {(() => {
                     const panelAiChecks = aiChecks;
                     
                     return panelAiChecks.length > 0 && (
-                      <div>
-                        <h4 className="font-medium text-blue-600 mb-2 flex items-center gap-2">
-                          <Cpu className="w-4 h-4" />
+                        <div>
+                          <h4 className="font-medium text-blue-600 mb-2 flex items-center gap-2">
+                            <Cpu className="w-4 h-4" />
                           AI Checks ({panelAiChecks.length})
-                        </h4>
-                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          </h4>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
                           {panelAiChecks.map((check: any, index: number) => {
-                          const checkId = getCheckId(check, "ai-quality", index);
-                          const isIgnored = ignoredChecks.has(checkId);
-                          const isApproved = approvedChecks.has(checkId);
-                          
-                          if (isIgnored && !showIgnoredChecks) return null;
-                          
-                          return (
-                            <div key={index} className={`p-3 rounded-lg border ${
-                              isApproved ? 'bg-green-50 border-green-200' :
-                              isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
-                              'bg-blue-50 border-blue-200'
-                            }`}>
-                              <div className="flex items-start gap-2">
-                                {getQCIcon(check.type)}
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium">{check.message}</p>
-                                  <p className="text-xs text-gray-600 mt-1">{check.details}</p>
-                                  {check.confidence && (
-                                    <p className="text-xs text-blue-600 mt-1">
-                                      Confidence: {Math.round(check.confidence * 100)}%
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                          })}
-                        </div>
-                      </div>
+                              const checkId = getCheckId(check, "ai-quality", index);
+                              const isIgnored = ignoredChecks.has(checkId);
+                              const isApproved = approvedChecks.has(checkId);
+                              
+                              if (isIgnored && !showIgnoredChecks) return null;
+                              
+                              return (
+                                <div key={index} className={`p-3 rounded-lg border ${
+                                  isApproved ? 'bg-green-50 border-green-200' :
+                                  isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
+                                  'bg-blue-50 border-blue-200'
+                                }`}>
+                                  <div className="flex items-start gap-2">
+                                    {getQCIcon(check.type)}
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium">{check.message}</p>
+                                      <p className="text-xs text-gray-600 mt-1">{check.details}</p>
+                                      {check.confidence && (
+                                        <p className="text-xs text-blue-600 mt-1">
+                                          Confidence: {Math.round(check.confidence * 100)}%
+                                        </p>
+            )}
+          </div>
+            </div>
+            </div>
+                              );
+                            })}
+            </div>
+              </div>
                     );
                   })()}
 
@@ -4363,25 +4384,25 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                     const panelQcChecks = validationIssues;
                     
                     return panelQcChecks.length > 0 && (
-                      <div>
-                        <h4 className="font-medium text-orange-600 mb-2 flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4" />
+                        <div>
+                          <h4 className="font-medium text-orange-600 mb-2 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4" />
                           QC Checks ({panelQcChecks.length})
-                        </h4>
-                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          </h4>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
                           {panelQcChecks.map((check: any, index: number) => (
-                            <div key={index} className="p-3 bg-orange-50 border border-orange-200 rounded">
-                              <div className="flex items-start gap-2">
-                                {getQCIcon(check.type)}
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium">{check.message}</p>
-                                  <p className="text-xs text-gray-600 mt-1">{check.details}</p>
+                              <div key={index} className="p-3 bg-orange-50 border border-orange-200 rounded">
+                                <div className="flex items-start gap-2">
+                                  {getQCIcon(check.type)}
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium">{check.message}</p>
+                                    <p className="text-xs text-gray-600 mt-1">{check.details}</p>
+              </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                            ))}
+                </div>
+                </div>
                     );
                   })()}
                   
@@ -4395,12 +4416,12 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                     
                     return panelAiChecks.length === 0 && panelQcChecks.length === 0;
                   })() && (
-                    <div className="text-center text-gray-500 py-8">
-                      <Cpu className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>No checks available</p>
-                    </div>
-                  )}
+                        <div className="text-center text-gray-500 py-8">
+                          <Cpu className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p>No checks available</p>
                 </div>
+            )}
+          </div>
           </div>
                 </div>
               </div>

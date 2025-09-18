@@ -975,27 +975,48 @@ export default function ManuscriptDashboard() {
       const workflowState = manuscript.workflowState || 'no-pipeline-results'
       if (workflowState !== activeTab) return false
 
-      // Use displayStatus for status filtering
+      // Use displayStatus for status filtering (consistent with statusCounts)
       const displayStatus = manuscript.displayStatus || manuscript.status
-      if (statusFilter !== "all" && displayStatus !== statusFilter) return false
-
-      if (priorityFilter !== "all") {
-        if (priorityFilter === "urgent" && manuscript.priority !== "urgent") return false
-        if (priorityFilter === "normal" && manuscript.priority === "urgent") return false
+      if (statusFilter !== "all" && displayStatus !== statusFilter) {
+        // Debug logging to track filtering behavior
+        if (process.env.NODE_ENV === 'development' && statusFilter === "New submission") {
+          console.log(`❌ Filtered out ${manuscript.msid}: displayStatus="${displayStatus}", status="${manuscript.status}", statusFilter="${statusFilter}"`)
+        }
+        return false
       }
 
-      if (assigneeFilter !== "all" && manuscript.assignedTo !== assigneeFilter) return false
+      // Debug logging for manuscripts that pass status filter
+      if (process.env.NODE_ENV === 'development' && statusFilter === "New submission") {
+        console.log(`✅ Included ${manuscript.msid}: displayStatus="${displayStatus}", status="${manuscript.status}", statusFilter="${statusFilter}"`)
+      }
 
+      // Fixed priority filtering logic
+      if (priorityFilter !== "all") {
+        if (priorityFilter === "urgent" && manuscript.priority !== "urgent") return false
+        if (priorityFilter === "normal" && manuscript.priority !== "normal") return false
+      }
+
+      // Improved assignee filtering to handle null/undefined values
+      if (assigneeFilter !== "all") {
+        const assignedTo = manuscript.assignedTo || ""
+        if (assignedTo !== assigneeFilter) return false
+      }
+
+      // Enhanced search functionality
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase()
-        return (
-          manuscript.msid.toLowerCase().includes(searchLower) ||
-          manuscript.title.toLowerCase().includes(searchLower) ||
-          manuscript.authors.toLowerCase().includes(searchLower) ||
-          manuscript.doi.toLowerCase().includes(searchLower) ||
-          manuscript.accessionNumber.toLowerCase().includes(searchLower) ||
-          manuscript.notes.toLowerCase().includes(searchLower) ||
-          manuscript.assignedTo.toLowerCase().includes(searchLower)
+        const fieldsToSearch = [
+          manuscript.msid || "",
+          manuscript.title || "",
+          manuscript.authors || "",
+          manuscript.doi || "",
+          manuscript.accessionNumber || "",
+          manuscript.notes || "",
+          manuscript.assignedTo || ""
+        ]
+        
+        return fieldsToSearch.some(field => 
+          field.toLowerCase().includes(searchLower)
         )
       }
 
@@ -1021,7 +1042,7 @@ export default function ManuscriptDashboard() {
       return 0
     })
 
-    return filtered.sort((a, b) => {
+    const finalResults = filtered.sort((a, b) => {
       if (a.priority === "urgent" && b.priority !== "urgent") return -1
       if (b.priority === "urgent" && a.priority !== "urgent") return 1
 
@@ -1033,6 +1054,18 @@ export default function ManuscriptDashboard() {
 
       return 0
     })
+
+    // Debug logging for final results when filtering by "New submission"
+    if (process.env.NODE_ENV === 'development' && statusFilter === "New submission") {
+      console.log(`📊 Final results for "${statusFilter}" filter:`, finalResults.map(m => ({
+        msid: m.msid,
+        status: m.status,
+        displayStatus: m.displayStatus,
+        workflowState: m.workflowState
+      })))
+    }
+
+    return finalResults
   }, [searchTerm, statusFilter, priorityFilter, assigneeFilter, sortField, sortDirection, activeTab, mockManuscripts, apiManuscripts, useApiData])
 
   const handleSort = (field: SortField) => {
@@ -1350,10 +1383,62 @@ export default function ManuscriptDashboard() {
       "Waiting for data": 0,
     }
 
-    currentManuscripts.forEach((manuscript) => {
-      const status = manuscript.status as keyof typeof counts
-      counts[status] = (counts[status] || 0) + 1
-    })
+    // Filter manuscripts for current tab first, then count statuses
+    currentManuscripts
+      .filter(manuscript => {
+        const workflowState = manuscript.workflowState || 'no-pipeline-results'
+        return workflowState === activeTab
+      })
+      .forEach((manuscript) => {
+        // Use displayStatus consistently with filtering logic
+        const status = (manuscript.displayStatus || manuscript.status) as keyof typeof counts
+        if (status && counts.hasOwnProperty(status)) {
+          counts[status] = (counts[status] || 0) + 1
+        }
+      })
+
+    return counts
+  }
+
+  const getPriorityCounts = () => {
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    const counts = {
+      urgent: 0,
+      normal: 0,
+    }
+
+    // Filter manuscripts for current tab first, then count priorities
+    currentManuscripts
+      .filter(manuscript => {
+        const workflowState = manuscript.workflowState || 'no-pipeline-results'
+        return workflowState === activeTab
+      })
+      .forEach((manuscript) => {
+        const priority = manuscript.priority || "normal"
+        if (priority === "urgent") {
+          counts.urgent++
+        } else {
+          counts.normal++
+        }
+      })
+
+    return counts
+  }
+
+  const getAssigneeCounts = () => {
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    const counts: Record<string, number> = {}
+
+    // Filter manuscripts for current tab first, then count assignees
+    currentManuscripts
+      .filter(manuscript => {
+        const workflowState = manuscript.workflowState || 'no-pipeline-results'
+        return workflowState === activeTab
+      })
+      .forEach((manuscript) => {
+        const assignee = manuscript.assignedTo || "Unassigned"
+        counts[assignee] = (counts[assignee] || 0) + 1
+      })
 
     return counts
   }
@@ -1440,6 +1525,26 @@ export default function ManuscriptDashboard() {
   }
 
   const statusCounts = getStatusCounts()
+  const priorityCounts = getPriorityCounts()
+  const assigneeCounts = getAssigneeCounts()
+
+  // Debug: Log status distribution when in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+      const manuscriptsInCurrentTab = currentManuscripts.filter(manuscript => {
+        const workflowState = manuscript.workflowState || 'no-pipeline-results'
+        return workflowState === activeTab
+      })
+      
+      console.log(`📋 Manuscripts in "${activeTab}" tab:`, manuscriptsInCurrentTab.map(m => ({
+        msid: m.msid,
+        status: m.status,
+        displayStatus: m.displayStatus,
+        workflowState: m.workflowState
+      })))
+    }
+  }, [activeTab, useApiData, apiManuscripts, mockManuscripts])
 
   // Loading screen component
   const LoadingScreen = () => (
@@ -1614,8 +1719,8 @@ export default function ManuscriptDashboard() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Priorities</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="urgent">Urgent ({priorityCounts.urgent})</SelectItem>
+                        <SelectItem value="normal">Normal ({priorityCounts.normal})</SelectItem>
                       </SelectContent>
                     </Select>
 
@@ -1628,7 +1733,10 @@ export default function ManuscriptDashboard() {
                         <SelectItem value="all">All Assignees</SelectItem>
                         {uniqueAssignees.map((assignee) => (
                           <SelectItem key={assignee} value={assignee}>
-                            {assignee === currentUser ? `${assignee} (me)` : assignee}
+                            {assignee === currentUser 
+                              ? `${assignee} (me) (${assigneeCounts[assignee] || 0})` 
+                              : `${assignee} (${assigneeCounts[assignee] || 0})`
+                            }
                           </SelectItem>
                         ))}
                       </SelectContent>

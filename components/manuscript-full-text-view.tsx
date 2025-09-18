@@ -13,6 +13,7 @@ interface FullTextViewProps {
   isLoadingFullText: boolean
   fullTextError: string | null
   fullTextContent: string
+  fullTextMetadata: any
   fetchFullTextContent: () => void
 }
 
@@ -21,6 +22,7 @@ export const FullTextView: React.FC<FullTextViewProps> = ({
   isLoadingFullText,
   fullTextError,
   fullTextContent,
+  fullTextMetadata,
   fetchFullTextContent,
 }) => {
   return (
@@ -28,9 +30,28 @@ export const FullTextView: React.FC<FullTextViewProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Full Text Content</h3>
-          <p className="text-sm text-muted-foreground">
-            Complete manuscript text from the Data4Rev API
-          </p>
+          <div className="flex items-center gap-4 mt-1">
+            <p className="text-sm text-muted-foreground">
+              Complete manuscript text and content
+            </p>
+            {fullTextMetadata && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2 py-1 rounded-full border bg-gray-50">
+                  {fullTextMetadata.fallback ? '📄 Demo Content' : '🔗 Live API'}
+                </span>
+                {fullTextMetadata.wordCount && (
+                  <span className="text-xs text-muted-foreground">
+                    {fullTextMetadata.wordCount.toLocaleString()} words
+                  </span>
+                )}
+                {fullTextMetadata.contentType && (
+                  <span className="text-xs text-muted-foreground">
+                    {fullTextMetadata.contentType}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {useApiData && (
@@ -92,26 +113,55 @@ export const FullTextView: React.FC<FullTextViewProps> = ({
             </div>
           ) : fullTextContent ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Content length: {fullTextContent.length.toLocaleString()} characters
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigator.clipboard.writeText(fullTextContent)}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Copy to Clipboard
-                </Button>
+              {/* Content Info Bar */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-gray-700">
+                    Content Statistics
+                  </span>
+                  <div className="flex items-center gap-3 text-xs text-gray-600">
+                    <span>{fullTextContent.length.toLocaleString()} characters</span>
+                    {fullTextMetadata?.wordCount && (
+                      <span>{fullTextMetadata.wordCount.toLocaleString()} words</span>
+                    )}
+                    {fullTextMetadata?.source && (
+                      <span>Source: {fullTextMetadata.source}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {fullTextMetadata?.fallback && (
+                    <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full border border-yellow-200">
+                      ⚠️ Demo Content
+                    </span>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigator.clipboard.writeText(fullTextContent)}
+                    className="hover:bg-gray-100 cursor-pointer transition-colors"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Copy to Clipboard
+                  </Button>
+                </div>
               </div>
+
+              {/* Content Display Area */}
               <div className="relative">
                 <div 
-                  className="max-h-[600px] overflow-y-auto p-4 bg-gray-50 rounded-lg border font-mono text-sm whitespace-pre-wrap"
+                  className="max-h-[600px] overflow-y-auto p-4 bg-white rounded-lg border font-mono text-sm whitespace-pre-wrap"
                   style={{ lineHeight: '1.6' }}
                 >
                   {fullTextContent}
                 </div>
+                {fullTextContent.length > 5000 && (
+                  <div className="absolute bottom-2 right-2">
+                    <span className="text-xs bg-white/90 text-gray-500 px-2 py-1 rounded border shadow-sm">
+                      Scroll to read more...
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
