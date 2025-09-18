@@ -26,6 +26,9 @@ export const config = {
     maxFileSize: parseInt(process.env.NEXT_PUBLIC_MAX_FILE_SIZE || '52428800'), // 50MB default
     allowedTypes: ['pdf', 'docx', 'xlsx', 'csv', 'zip', 'png', 'jpg', 'tiff', 'fcs', 'mzML'],
   },
+  
+  // Data4Rev API Configuration
+  DATA4REV_API_BASE: process.env.DATA4REV_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api',
 } as const;
 
 // API Endpoints - paths relative to base URL (no /api prefix needed)

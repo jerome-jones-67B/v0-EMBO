@@ -60,13 +60,13 @@ export async function GET(request: NextRequest) {
       return createUnauthorizedResponse();
     }
   }
-console.log('🔍 Debug  user:', user);
+  
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '0');
   const pagesize = parseInt(searchParams.get('pagesize') || '10');
   const states = searchParams.getAll('states');
   const sort = searchParams.get('sort') || 'received_at';
-  const ascending = searchParams.get('ascending') === 'true';
+  const ascending = (searchParams.get('ascending') ?? 'true') === 'true';
 
   try {
     // Build query parameters for Data4Rev API
@@ -84,31 +84,24 @@ console.log('🔍 Debug  user:', user);
 
   // Call Data4Rev API
   const apiUrl = `${DATA4REV_API_BASE}/v1/manuscripts?${apiParams.toString()}`;
-  console.log('Calling Data4Rev API:', apiUrl);
 
   // Prepare headers with authentication
   const headers: Record<string, string> = {
-    
     'Accept': 'application/json'
   };
 
   // Add authentication if available
   const authToken = process.env.DATA4REV_AUTH_TOKEN || '';
-  console.log('🔍 Debug auth token:', {
-    DATA4REV_AUTH_TOKEN: process.env.DATA4REV_AUTH_TOKEN ? 'exists' : 'missing',
-    tokenUsed: authToken ? authToken.substring(0, 20) + '...' : 'none'
-  });
-  
+
   if (authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;
     console.log('🔐 Adding authentication header to Data4Rev API call');
-    console.log(headers)
   } else {
     console.warn('⚠️ No authentication token found - API call may fail');
   }
   
   // Try to call the Data4Rev API
-
+  console.log('Calling Data4Rev API:', apiUrl);
   const apiResponse = await fetch(apiUrl, {
     method: 'GET',
     headers,
@@ -116,25 +109,22 @@ console.log('🔍 Debug  user:', user);
     signal: AbortSignal.timeout(10000) // 10 second timeout
   });
   
-  // if (!apiResponse.ok) {
-  //   // If authentication fails, fall back to mock data
-  //   if (apiResponse.status === 403 || apiResponse.status === 401) {
-  //     if (apiResponse.status === 401) {
-  //       console.warn('🔑 Data4Rev API authentication failed (401) - likely expired token');
-  //       console.log('💡 This is expected in development - using mock data instead');
-  //     } else {
-  //       console.warn('🔒 Data4Rev API access denied (403) - falling back to mock data');
-  //     }
-  //     return handleMockDataFallback(page, pagesize, states, sort, ascending);
-  //   }
-  //   throw new Error(`Data4Rev API responded with status: ${apiResponse.status} ${apiResponse.statusText}`);
-  // }
+  if (!apiResponse.ok) {
+    // If authentication fails, fall back to mock data
+    if (apiResponse.status === 403 || apiResponse.status === 401) {
+      if (apiResponse.status === 401) {
+        console.warn('🔑 Data4Rev API authentication failed (401) - likely expired token');
+        console.log('💡 This is expected in development - using mock data instead');
+      } else {
+        console.warn('🔒 Data4Rev API access denied (403) - falling back to mock data');
+      }
+      return handleMockDataFallback(page, pagesize, states, sort, ascending);
+    }
+    throw new Error(`Data4Rev API responded with status: ${apiResponse.status} ${apiResponse.statusText}`);
+  }
 
   const apiData = await apiResponse.json();
-  console.log('Data4Rev API response:', { 
-    manuscriptCount: apiData.manuscripts?.length || 0, 
-    total: apiData.total 
-  });
+
 
   // Return the data in the expected format
   return NextResponse.json(apiData);
