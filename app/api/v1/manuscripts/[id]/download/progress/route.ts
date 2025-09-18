@@ -184,3 +184,31 @@ export function sendDownloadError(manuscriptId: string, errorData: any) {
     }
   });
 }
+
+// Helper function to send cancellation message
+export function sendDownloadCancelled(manuscriptId: string, cancellationData: any) {
+  const encoder = new TextEncoder();
+  const message = `data: ${JSON.stringify({
+    type: 'cancelled',
+    manuscriptId,
+    ...cancellationData,
+    timestamp: new Date().toISOString()
+  })}\n\n`;
+
+  // Send to all connections for this manuscript
+  activeConnections.forEach((writer, connectionId) => {
+    if (connectionId.startsWith(`${manuscriptId}-`)) {
+      try {
+        writer.write(encoder.encode(message));
+        // Close the connection after cancellation
+        setTimeout(() => {
+          writer.close();
+          activeConnections.delete(connectionId);
+        }, 2000); // Keep open for 2 seconds after cancellation
+      } catch (error) {
+        console.log(`❌ Failed to send cancellation to ${connectionId}:`, error);
+        activeConnections.delete(connectionId);
+      }
+    }
+  });
+}

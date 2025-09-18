@@ -83,6 +83,24 @@ export const STATUS_MAPPINGS: Record<string, StatusMapping> = {
     qcStatus: 'validated',
     badgeVariant: 'destructive',
     isMapped: true
+  },
+  'deposited': {
+    apiStatus: 'deposited',
+    displayStatus: 'Deposited',
+    workflowState: 'deposited-to-biostudies',
+    priority: 'low',
+    qcStatus: 'validated',
+    badgeVariant: 'outline',
+    isMapped: true
+  },
+  'api-error': {
+    apiStatus: 'api-error',
+    displayStatus: 'API Error',
+    workflowState: 'no-pipeline-results',
+    priority: 'high',
+    qcStatus: 'needs-validation',
+    badgeVariant: 'destructive',
+    isMapped: true
   }
 };
 

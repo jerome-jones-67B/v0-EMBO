@@ -387,6 +387,8 @@ export async function GET(
   }
 
   const manuscriptId = params.id;
+  const { searchParams } = new URL(request.url);
+  const apiMode = searchParams.get('apiMode') === 'true'; // Check if we're in strict API mode
   
   try {
     // Try to fetch from Data4Rev API first
@@ -418,6 +420,29 @@ export async function GET(
     });
 
     if (!apiResponse.ok) {
+      const errorText = await apiResponse.text().catch(() => 'Unknown error');
+      
+      // If in API mode, return error information instead of fallback
+      if (apiMode) {
+        console.error(`❌ Data4Rev manuscript API failed in API mode: ${apiResponse.status} ${apiResponse.statusText}`, errorText);
+        
+        return NextResponse.json({
+          error: 'Manuscript fetch failed from Data4Rev API',
+          status: apiResponse.status,
+          statusText: apiResponse.statusText,
+          details: errorText,
+          manuscriptId,
+          timestamp: new Date().toISOString(),
+          isApiMode: true
+        }, { 
+          status: apiResponse.status,
+          headers: {
+            'X-Data-Source': 'api-error',
+            'X-Manuscript-ID': manuscriptId
+          }
+        });
+      }
+      
       // If authentication fails or manuscript not found, fall back to mock data
       if (apiResponse.status === 403) {
         console.warn('🔒 Authentication failed - falling back to mock data');
@@ -441,6 +466,23 @@ export async function GET(
     return NextResponse.json(apiData);
   } catch (error) {
     console.error('❌ Error fetching manuscript details from Data4Rev API:', error);
+    
+    // If in API mode, return error information instead of fallback
+    if (apiMode) {
+      return NextResponse.json({
+        error: 'Manuscript fetch failed due to internal error',
+        details: error instanceof Error ? error.message : String(error),
+        manuscriptId,
+        timestamp: new Date().toISOString(),
+        isApiMode: true
+      }, { 
+        status: 500,
+        headers: {
+          'X-Data-Source': 'internal-error',
+          'X-Manuscript-ID': manuscriptId
+        }
+      });
+    }
     
     // For network errors or API unavailability, fall back to mock data
     console.warn('🔄 API error - falling back to mock data');

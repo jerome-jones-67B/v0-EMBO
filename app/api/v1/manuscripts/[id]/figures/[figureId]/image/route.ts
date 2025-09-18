@@ -18,85 +18,126 @@ export async function GET(
 
     const { id: manuscriptId, figureId } = params;
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') || 'full'; // 'full', 'thumbnail', 'panel'
-    const panelId = searchParams.get('panel'); // for panel-specific images
+    const type = searchParams.get('type') || 'full';
+    const panelId = searchParams.get('panel');
+    const apiMode = searchParams.get('apiMode') === 'true';
 
-    // Try to get image from Data4Rev API
-    let imageUrl;
-    
-    if (type === 'panel' && panelId) {
-      // Panel-specific image
-      imageUrl = `${config.DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}/figures/${figureId}/panels/${panelId}/image`;
-    } else if (type === 'thumbnail') {
-      // Thumbnail image
-      imageUrl = `${config.DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}/figures/${figureId}/thumbnail`;
-    } else {
-      // Full figure image
-      imageUrl = `${config.DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}/figures/${figureId}/image`;
-    }
-
-    console.log(`🖼️ Attempting to fetch image from: ${imageUrl}`);
-
-    const imageResponse = await fetch(imageUrl, {
-      method: 'GET',
-      headers: {
-        // Add authentication headers if needed
-        // 'Authorization': `Bearer ${process.env.DATA4REV_API_TOKEN}`
-      }
-    });
-
-    if (imageResponse.ok) {
-      const contentType = imageResponse.headers.get('content-type') || 'image/png';
-      const imageBuffer = await imageResponse.arrayBuffer();
-      
-      console.log(`✅ Image served from API: ${imageUrl}, type: ${contentType}, size: ${imageBuffer.byteLength}`);
-      
-      return new NextResponse(imageBuffer, {
-        headers: {
-          'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-          'X-Image-Source': 'data4rev-api',
-          'X-Manuscript-ID': manuscriptId,
-          'X-Figure-ID': figureId
+    // Try to get image from Data4Rev API first
+    if (apiMode) {
+      try {
+        const imageFromApi = await getImageFromData4Rev(manuscriptId, figureId, type);
+        if (imageFromApi) {
+          return imageFromApi;
         }
-      });
+      } catch (error) {
+        console.warn(`Failed to get image from Data4Rev API for figure ${figureId}:`, error);
+      }
     }
-
-    console.warn(`❌ Data4Rev image API failed: ${imageResponse.status}, falling back to placeholder`);
     
     // Fallback to placeholder image
+    console.log(`📋 Serving placeholder image for figure ${figureId}`);
     return await servePlaceholderImage(manuscriptId, figureId, type, panelId);
 
   } catch (error) {
-    console.error('Image serving error:', error);
+    console.error(`❌ Error in image API route:`, error);
     
-    // Fallback to placeholder image
-    return await servePlaceholderImage(params.id, params.figureId, 
-      new URL(request.url).searchParams.get('type') || 'full',
-      new URL(request.url).searchParams.get('panel')
-    );
+    // Extract params for fallback
+    const { id: fallbackManuscriptId, figureId: fallbackFigureId } = params;
+    const { searchParams: fallbackSearchParams } = new URL(request.url);
+    const fallbackType = fallbackSearchParams.get('type') || 'full';
+    const fallbackPanelId = fallbackSearchParams.get('panel');
+    
+    return await servePlaceholderImage(fallbackManuscriptId, fallbackFigureId, fallbackType, fallbackPanelId);
   }
 }
 
-async function servePlaceholderImage(
+// Function to get image from Data4Rev API
+async function getImageFromData4Rev(
   manuscriptId: string, 
   figureId: string, 
-  type: string, 
-  panelId: string | null
-): Promise<NextResponse> {
+  type: string
+): Promise<NextResponse | null> {
   try {
-    // Define placeholder images based on type
-    const placeholderMap: Record<string, string> = {
-      'full': '/protein-structures.png',
-      'thumbnail': '/protein-structure-control.png', 
-      'panel': '/molecular-interactions.png'
-    };
+    // Get manuscript details to find image_file_id
+    const manuscriptResponse = await fetch(
+      `${config.DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(process.env.DATA4REV_AUTH_TOKEN && {
+            'Authorization': `Bearer ${process.env.DATA4REV_AUTH_TOKEN}`
+          })
+        }
+      }
+    );
 
-    // Generate deterministic placeholder based on IDs
-    const seed = `${manuscriptId}-${figureId}-${panelId || 'main'}`;
+    if (!manuscriptResponse.ok) {
+      console.warn(`Failed to get manuscript details: ${manuscriptResponse.status}`);
+      return null;
+    }
+
+    const manuscriptData = await manuscriptResponse.json();
+    const figure = manuscriptData.figures?.find((f: any) => f.id.toString() === figureId);
+    
+    if (!figure || !figure.image_file_id) {
+      console.warn(`Figure ${figureId} not found or has no image_file_id`);
+      return null;
+    }
+
+    // Get image using file endpoint
+    const imageEndpoint = type === 'thumbnail' ? 'preview' : 'download';
+    const imageResponse = await fetch(
+      `${config.DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}/files/${figure.image_file_id}/${imageEndpoint}`,
+      {
+        method: 'GET',
+        headers: {
+          ...(process.env.DATA4REV_AUTH_TOKEN && {
+            'Authorization': `Bearer ${process.env.DATA4REV_AUTH_TOKEN}`
+          })
+        }
+      }
+    );
+
+    if (!imageResponse.ok) {
+      console.warn(`Failed to get image file: ${imageResponse.status}`);
+      return null;
+    }
+
+    const contentType = imageResponse.headers.get('content-type');
+    
+    // Check if it's a supported image format
+    if (!contentType || !contentType.startsWith('image/')) {
+      console.warn(`Unsupported content type: ${contentType}`);
+      return null;
+    }
+
+    const imageBuffer = await imageResponse.arrayBuffer();
+    
+    return new NextResponse(imageBuffer, {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=86400',
+        'X-Image-Source': 'data4rev-api',
+        'X-Manuscript-ID': manuscriptId,
+        'X-Figure-ID': figureId,
+        'X-Image-Type': type
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching image from Data4Rev API:', error);
+    return null;
+  }
+}
+
+// Helper function to serve placeholder images with consistent hashing
+async function servePlaceholderImage(manuscriptId: string, figureId: string, type: string, panelId?: string | null) {
+  try {
+    // All available scientific images for consistent assignment
     const placeholderImages = [
       '/protein-structures.png',
-      '/protein-structure-control.png',
+      '/protein-structure-control.png', 
       '/molecular-interactions.png',
       '/hsp70-binding.png',
       '/co-chaperone-recruitment.png',
@@ -104,10 +145,14 @@ async function servePlaceholderImage(
       '/microscopy-0-hours.png',
       '/microscopy-two-hours.png',
       '/microscopy-6-hours.png',
-      '/microscopy-24-hours.png'
+      '/microscopy-24-hours.png',
+      '/quantitative-analysis-graph.png',
+      '/quantitative-aggregation-graph.png',
+      '/protein-aggregation-time-course.png'
     ];
-
-    // Simple hash function for deterministic selection
+    
+    // Create deterministic selection based on manuscript + figure ID
+    const seed = `${manuscriptId}-${figureId}-${type}${panelId ? `-${panelId}` : ''}`;
     let hash = 0;
     for (let i = 0; i < seed.length; i++) {
       const char = seed.charCodeAt(i);
@@ -141,7 +186,7 @@ async function servePlaceholderImage(
     // Final fallback - redirect to a default placeholder
     console.warn(`🔄 All image sources failed for ${manuscriptId}/${figureId}, using default placeholder`);
     
-    return NextResponse.redirect(new URL('/placeholder-e9mgd.png', request.url), 302);
+    return NextResponse.redirect(new URL('/placeholder-e9mgd.png', 'http://localhost:3000'), 302);
 
   } catch (error) {
     console.error('Placeholder image serving error:', error);
@@ -149,6 +194,6 @@ async function servePlaceholderImage(
     // On error, redirect to placeholder
     console.error(`🔄 Error serving image for ${manuscriptId}/${figureId}, redirecting to placeholder`);
     
-    return NextResponse.redirect(new URL('/placeholder-e9mgd.png', request.url), 302);
+    return NextResponse.redirect(new URL('/placeholder-e9mgd.png', 'http://localhost:3000'), 302);
   }
 }
