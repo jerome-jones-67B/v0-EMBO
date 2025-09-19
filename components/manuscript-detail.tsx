@@ -940,7 +940,11 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setIsFetching(true)
     setIsLoadingApi(true)
     
-    if (!session) {
+    // In demo/development mode, allow API calls without session
+    const isDemoMode = process.env.NODE_ENV === "development" || 
+                       process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
+    
+    if (!session && !isDemoMode) {
       console.error('❌ No session available for API call')
       setIsLoadingApi(false)
       setIsFetching(false)
@@ -1268,7 +1272,11 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       return
     }
 
-    if (!session) {
+    // In demo/development mode, allow API calls without session
+    const isDemoMode = process.env.NODE_ENV === "development" || 
+                       process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
+    
+    if (!session && !isDemoMode) {
       setFullTextError("Authentication required to fetch full text content")
       return
     }

@@ -21,10 +21,11 @@ export function AuthGuard({
   const router = useRouter()
 
   // Check if we should bypass authentication (demo mode)
-  const bypassAuth = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true" || 
-                     process.env.NODE_ENV === "development"
+  // Always bypass in development, or if mock data is enabled
+  const bypassAuth = process.env.NODE_ENV === "development" || 
+                     process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
 
-  // In demo mode, render content directly without authentication
+  // In demo/development mode, render content directly without authentication
   if (bypassAuth) {
     return <>{children}</>
   }
