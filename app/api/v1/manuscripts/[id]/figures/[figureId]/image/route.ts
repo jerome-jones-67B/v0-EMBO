@@ -8,9 +8,13 @@ export async function GET(
   { params }: { params: { id: string; figureId: string } }
 ) {
   try {
-    // Authentication
-    if (!shouldBypassAuth()) {
-      const user = await validateApiAuth(request);
+    // Authentication (with development bypass)
+    let user;
+    if (shouldBypassAuth()) {
+      console.log("🔧 Development mode - bypassing authentication");
+      user = getDevUser();
+    } else {
+      user = await validateApiAuth(request);
       if (!user) {
         return createUnauthorizedResponse();
       }

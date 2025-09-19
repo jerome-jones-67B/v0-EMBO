@@ -8,9 +8,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Authentication
-    if (!shouldBypassAuth()) {
-      const user = await validateApiAuth(request);
+    // Authentication (with development bypass)
+    let user;
+    if (shouldBypassAuth()) {
+      console.log("🔧 Development mode - bypassing authentication");
+      user = getDevUser();
+    } else {
+      user = await validateApiAuth(request);
       if (!user) {
         return createUnauthorizedResponse();
       }
@@ -19,21 +23,36 @@ export async function GET(
     const manuscriptId = params.id;
     
     // Call Data4Rev API for validation
-    const data4revResponse = await fetch(
-      `${config.DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}/validation`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(process.env.DATA4REV_AUTH_TOKEN && {
-            'Authorization': `Bearer ${process.env.DATA4REV_AUTH_TOKEN}`
-          })
-        }
-      }
-    );
+    console.log('🔍 Fetching manuscript validation from Data4Rev API for ID:', manuscriptId);
+    
+    // Prepare headers with authentication
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+
+    // Add authentication if available
+    const authToken = process.env.DATA4REV_AUTH_TOKEN || process.env.AUTH_TOKEN;
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+      console.log('🔐 Adding authentication header to Data4Rev API call');
+    } else {
+      console.warn('⚠️ No authentication token found - API call may fail');
+    }
+
+    const apiUrl = `${config.DATA4REV_API_BASE}/v1/manuscripts/${manuscriptId}/validation`;
+    console.log('Calling Data4Rev API:', apiUrl);
+
+    const data4revResponse = await fetch(apiUrl, {
+      method: 'GET',
+      headers,
+      // Add timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    });
 
     if (!data4revResponse.ok) {
-      console.error(`Data4Rev validation API error: ${data4revResponse.status}`);
+      const errorText = await data4revResponse.text().catch(() => 'Unknown error');
+      console.error(`Data4Rev validation API error: ${data4revResponse.status} - ${errorText}`);
       
       // Fallback to mock validation data if API fails
       const mockValidation = {
