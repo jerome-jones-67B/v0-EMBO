@@ -10,9 +10,9 @@ export async function GET(
   try {
     // Authentication
     if (!shouldBypassAuth()) {
-      const authResponse = validateApiAuth(request);
-      if (authResponse) {
-        return authResponse;
+      const user = await validateApiAuth(request);
+      if (!user) {
+        return createUnauthorizedResponse();
       }
     }
 
@@ -25,8 +25,9 @@ export async function GET(
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          // Add authentication headers if needed
-          // 'Authorization': `Bearer ${process.env.DATA4REV_API_TOKEN}`
+          ...(process.env.DATA4REV_AUTH_TOKEN && {
+            'Authorization': `Bearer ${process.env.DATA4REV_AUTH_TOKEN}`
+          })
         }
       }
     );

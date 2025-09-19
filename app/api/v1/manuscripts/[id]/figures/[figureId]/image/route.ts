@@ -10,9 +10,9 @@ export async function GET(
   try {
     // Authentication
     if (!shouldBypassAuth()) {
-      const authResponse = validateApiAuth(request);
-      if (authResponse) {
-        return authResponse;
+      const user = await validateApiAuth(request);
+      if (!user) {
+        return createUnauthorizedResponse();
       }
     }
 
