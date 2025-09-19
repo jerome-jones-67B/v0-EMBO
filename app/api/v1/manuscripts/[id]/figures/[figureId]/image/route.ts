@@ -36,7 +36,7 @@ export async function GET(
     
     // Fallback to placeholder image
     console.log(`📋 Serving placeholder image for figure ${figureId}`);
-    return await servePlaceholderImage(manuscriptId, figureId, type, panelId);
+    return await servePlaceholderImage(request, manuscriptId, figureId, type, panelId);
 
   } catch (error) {
     console.error(`❌ Error in image API route:`, error);
@@ -47,7 +47,7 @@ export async function GET(
     const fallbackType = fallbackSearchParams.get('type') || 'full';
     const fallbackPanelId = fallbackSearchParams.get('panel');
     
-    return await servePlaceholderImage(fallbackManuscriptId, fallbackFigureId, fallbackType, fallbackPanelId);
+    return await servePlaceholderImage(request, fallbackManuscriptId, fallbackFigureId, fallbackType, fallbackPanelId);
   }
 }
 
@@ -132,7 +132,7 @@ async function getImageFromData4Rev(
 }
 
 // Helper function to serve placeholder images with consistent hashing
-async function servePlaceholderImage(manuscriptId: string, figureId: string, type: string, panelId?: string | null) {
+async function servePlaceholderImage(request: NextRequest, manuscriptId: string, figureId: string, type: string, panelId?: string | null) {
   try {
     // All available scientific images for consistent assignment
     const placeholderImages = [
@@ -161,7 +161,10 @@ async function servePlaceholderImage(manuscriptId: string, figureId: string, typ
     }
     
     const selectedImage = placeholderImages[Math.abs(hash) % placeholderImages.length];
-    const imageUrl = new URL(selectedImage, 'http://localhost:3000');
+    
+    // Get the current request origin for proper URL construction
+    const origin = new URL(request.url).origin;
+    const imageUrl = new URL(selectedImage, origin);
     
     // Fetch the placeholder image from public directory
     const placeholderResponse = await fetch(imageUrl);
@@ -186,7 +189,8 @@ async function servePlaceholderImage(manuscriptId: string, figureId: string, typ
     // Final fallback - redirect to a default placeholder
     console.warn(`🔄 All image sources failed for ${manuscriptId}/${figureId}, using default placeholder`);
     
-    return NextResponse.redirect(new URL('/placeholder-e9mgd.png', 'http://localhost:3000'), 302);
+    const fallbackOrigin = new URL(request.url).origin;
+    return NextResponse.redirect(new URL('/placeholder-e9mgd.png', fallbackOrigin), 302);
 
   } catch (error) {
     console.error('Placeholder image serving error:', error);
@@ -194,6 +198,7 @@ async function servePlaceholderImage(manuscriptId: string, figureId: string, typ
     // On error, redirect to placeholder
     console.error(`🔄 Error serving image for ${manuscriptId}/${figureId}, redirecting to placeholder`);
     
-    return NextResponse.redirect(new URL('/placeholder-e9mgd.png', 'http://localhost:3000'), 302);
+    const errorOrigin = new URL(request.url).origin;
+    return NextResponse.redirect(new URL('/placeholder-e9mgd.png', errorOrigin), 302);
   }
 }
