@@ -1,10 +1,12 @@
 import { ManuscriptDashboard } from "@/components/manuscript-dashboard"
+import { AuthGuard } from "@/components/auth-guard"
 
 export default function Home() {
-  // Skip AuthGuard in demo mode - let users access directly
   return (
-    <main className="min-h-screen bg-background">
-      <ManuscriptDashboard />
-    </main>
+    <AuthGuard>
+      <main className="min-h-screen bg-background">
+        <ManuscriptDashboard />
+      </main>
+    </AuthGuard>
   )
 }
