@@ -5,9 +5,10 @@
     "DATA4REV_API_BASE_URL": "https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api",
     "NEXT_PUBLIC_API_TIMEOUT": "10000",
     "NEXT_PUBLIC_API_RETRIES": "3",
-    "NEXT_PUBLIC_USE_MOCK_DATA": "true",
+    "NEXT_PUBLIC_USE_MOCK_DATA": "false",
     "NEXT_PUBLIC_ENABLE_REALTIME": "false",
     "NEXT_PUBLIC_ENABLE_ANALYTICS": "false",
     "NEXT_PUBLIC_MAX_FILE_SIZE": "52428800",
-    "BYPASS_AUTH": "true"
+    "BYPASS_AUTH": "true",
+    "NEXT_PUBLIC_BYPASS_AUTH": "true"
   }}

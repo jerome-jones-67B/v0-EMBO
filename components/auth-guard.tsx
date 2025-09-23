@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, ReactNode } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { shouldBypassAuthClient } from "@/lib/auth-bypass"
 
 interface AuthGuardProps {
   children: ReactNode
@@ -21,8 +22,8 @@ export function AuthGuard({
   const router = useRouter()
 
   // Check if we should bypass authentication (demo mode)
-  const bypassAuth = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true" || 
-                     process.env.NODE_ENV === "development"
+  const bypassAuth = shouldBypassAuthClient()
+  
 
   // In demo mode, render content directly without authentication
   if (bypassAuth) {

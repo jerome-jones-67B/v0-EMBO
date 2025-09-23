@@ -9,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Switch } from "@/components/ui/switch"
 import { Settings2, Database, Zap } from "lucide-react"
 import { ManuscriptDetail } from "./manuscript-detail" // Import the new manuscript detail component
 import { AuthorList } from "./author-list"
@@ -20,410 +20,9 @@ import { useSession } from "next-auth/react"
 import { endpoints, config } from "@/lib/config"
 import { dataService } from "@/lib/data-service"
 import { getValidStatusesForTab as getValidStatuses, getStatusMapping } from "@/lib/status-mapping"
-import { Eye, Download, MoreHorizontal, Pause, Play, Flag, ChevronRight, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, Check, AlertTriangle, Users, Info, Edit2, UserPlus, UserMinus, Clock, X, FileText, Archive, Image } from "lucide-react"
+import { Info, ArrowUpDown, ArrowUp, ArrowDown, Search, Filter, AlertTriangle, Users, Check, X, Clock, Eye, Download, MoreHorizontal, ChevronRight, FileText, Archive, Image, Play, Pause, UserMinus, UserPlus, Flag, Edit2 } from "lucide-react"
+import { initialMockManuscripts } from "@/lib/mock-dashboard-manuscripts"
 
-const initialMockManuscripts = [
-  {
-    msid: "EMBO-2024-001",
-    receivedDate: "2024-12-14",
-    title: "Novel mechanisms of protein folding in cellular stress responses under oxidative conditions",
-    authors: "Smith, J., Johnson, A., Williams, R., Chen, L., Rodriguez, M.",
-    doi: "10.1038/s41586-024-07123-4",
-    accessionNumber: "EMBO-2024-001-ACC",
-    assignedTo: "Dr. Sarah Chen",
-    status: "On hold",
-    workflowState: "ready-for-curation",
-    priority: "high",
-    hasErrors: false,
-    hasWarnings: true,
-    notes: "Waiting for additional experimental data from authors",
-    lastModified: "2024-12-30T10:30:00Z",
-    aiChecks: {
-      total: 8,
-      errors: 2,
-      warnings: 4,
-      info: 2,
-      dismissed: 1
-    },
-  },
-  {
-    msid: "EMBO-2024-002",
-    receivedDate: "2024-12-25",
-    title: "CRISPR-Cas9 mediated genome editing in pluripotent stem cells",
-    authors: "Brown, K., Davis, M., Wilson, P., Thompson, S.",
-    doi: "10.1016/j.cell.2024.02.015",
-    accessionNumber: "EMBO-2024-002-ACC",
-    assignedTo: "Dr. Michael Rodriguez",
-    status: "In Progress",
-    workflowState: "ready-for-curation",
-    priority: "normal",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Initial review completed, awaiting final validation",
-    lastModified: "2024-12-30T14:20:00Z",
-    aiChecks: {
-      total: 12,
-      errors: 1,
-      warnings: 6,
-      info: 5,
-      dismissed: 0
-    },
-  },
-  {
-    msid: "EMBO-2024-003",
-    receivedDate: "2024-12-28",
-    title: "Mitochondrial dynamics in neurodegeneration",
-    authors: "Garcia, L., Martinez, A., Lopez, C.",
-    doi: "10.1038/s41593-024-01567-8",
-    accessionNumber: "EMBO-2024-003-ACC",
-    assignedTo: "Dr. Emily Watson",
-    status: "New submission",
-    workflowState: "ready-for-curation",
-    priority: "urgent",
-    hasErrors: true,
-    hasWarnings: false,
-    notes: "Missing required metadata files",
-    lastModified: "2024-12-30T09:15:00Z",
-    aiChecks: {
-      total: 15,
-      errors: 5,
-      warnings: 7,
-      info: 3,
-      dismissed: 2
-    },
-  },
-  {
-    msid: "EMBO-2024-004",
-    receivedDate: "2024-12-26",
-    title: "Single-cell RNA sequencing reveals novel cell types in the developing brain",
-    authors: "Anderson, R., Taylor, J., White, M., Jackson, K., Harris, D.",
-    doi: "10.1126/science.abcd1234",
-    accessionNumber: "EMBO-2024-004-ACC",
-    assignedTo: "Dr. Sarah Chen",
-    status: "Deposited",
-    workflowState: "deposited-to-biostudies",
-    priority: "normal",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Successfully deposited to BioStudies",
-    lastModified: "2024-12-29T16:45:00Z",
-    aiChecks: {
-      total: 5,
-      errors: 0,
-      warnings: 2,
-      info: 3,
-      dismissed: 0
-    },
-  },
-  {
-    msid: "EMBO-2024-005",
-    receivedDate: "2024-12-27",
-    title: "Epigenetic regulation of gene expression in cancer stem cells",
-    authors: "Miller, S., Moore, T., Clark, L.",
-    doi: "10.1038/s41588-024-01678-9",
-    accessionNumber: "EMBO-2024-005-ACC",
-    assignedTo: "Dr. Michael Rodriguez",
-    status: "Failed to deposit",
-    workflowState: "deposited-to-biostudies",
-    priority: "high",
-    hasErrors: true,
-    hasWarnings: true,
-    notes: "Deposition failed due to file format issues",
-    lastModified: "2024-12-29T11:30:00Z",
-    aiChecks: {
-      total: 9,
-      errors: 3,
-      warnings: 4,
-      info: 2,
-      dismissed: 1
-    },
-  },
-  {
-    msid: "EMBO-2024-006",
-    receivedDate: "2024-12-24",
-    title: "Proteomics analysis of synaptic plasticity mechanisms",
-    authors: "Lee, H., Kim, J., Park, S., Choi, M.",
-    doi: "10.1016/j.neuron.2024.03.012",
-    accessionNumber: "EMBO-2024-006-ACC",
-    assignedTo: "Dr. Emily Watson",
-    status: "Waiting for data",
-    workflowState: "no-pipeline-results",
-    priority: "normal",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Manuscript processed, awaiting pipeline analysis",
-    lastModified: "2024-12-28T13:20:00Z",
-    aiChecks: {
-      total: 7,
-      errors: 1,
-      warnings: 3,
-      info: 3,
-      dismissed: 0
-    },
-  },
-  {
-    msid: "EMBO-2024-007",
-    receivedDate: "2024-12-29",
-    title: "Metabolic reprogramming in T cell activation and differentiation",
-    authors: "Wang, X., Liu, Y., Zhang, Z., Chen, W.",
-    doi: "10.1038/s41590-024-01789-0",
-    accessionNumber: "EMBO-2024-007-ACC",
-    assignedTo: "Dr. Sarah Chen",
-    status: "New submission",
-    workflowState: "ready-for-curation",
-    priority: "normal",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Recently submitted, pending initial review",
-    lastModified: "2024-12-30T08:45:00Z",
-    aiChecks: {
-      total: 4,
-      errors: 0,
-      warnings: 1,
-      info: 3,
-      dismissed: 0
-    },
-  },
-  {
-    msid: "EMBO-2024-008",
-    receivedDate: "2024-12-23",
-    title: "Chromatin remodeling complexes in embryonic development",
-    authors: "Johnson, P., Williams, R., Brown, A., Davis, K.",
-    doi: "10.1016/j.devcel.2024.04.008",
-    accessionNumber: "EMBO-2024-008-ACC",
-    assignedTo: "Dr. Michael Rodriguez",
-    status: "In Progress",
-    workflowState: "ready-for-curation",
-    priority: "high",
-    hasErrors: false,
-    hasWarnings: true,
-    notes: "Under review, minor formatting issues identified",
-    lastModified: "2024-12-29T15:10:00Z",
-    aiChecks: {
-      total: 6,
-      errors: 0,
-      warnings: 4,
-      info: 2,
-      dismissed: 1
-    },
-  },
-  {
-    msid: "EMBO-2024-009",
-    receivedDate: "2024-12-30",
-    title: "Autophagy regulation in aging and longevity",
-    authors: "Martinez, C., Garcia, L., Rodriguez, M.",
-    doi: "10.1038/s43587-024-00567-8",
-    accessionNumber: "EMBO-2024-009-ACC",
-    assignedTo: "Dr. Emily Watson",
-    status: "Deposited",
-    workflowState: "deposited-to-biostudies",
-    priority: "normal",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Successfully processed and deposited",
-    lastModified: "2024-12-30T17:30:00Z",
-    aiChecks: {
-      total: 3,
-      errors: 0,
-      warnings: 1,
-      info: 2,
-      dismissed: 0
-    },
-  },
-  {
-    msid: "EMBO-2024-010",
-    receivedDate: "2024-12-22",
-    title: "Immune checkpoint inhibitors in cancer immunotherapy",
-    authors: "Thompson, D., Anderson, S., Wilson, J., Taylor, M., Clark, R.",
-    doi: "10.1126/scitranslmed.abc4567",
-    accessionNumber: "EMBO-2024-010-ACC",
-    assignedTo: "Dr. Sarah Chen",
-    status: "Waiting for data",
-    workflowState: "no-pipeline-results",
-    priority: "urgent",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "High priority manuscript awaiting computational analysis",
-    lastModified: "2024-12-28T12:00:00Z",
-    aiChecks: {
-      total: 11,
-      errors: 2,
-      warnings: 5,
-      info: 4,
-      dismissed: 1
-    },
-  },
-  {
-    msid: "EMBO-2024-011",
-    receivedDate: "2024-12-17",
-    title: "Molecular mechanisms of DNA repair in cancer cells",
-    authors: "Harris, K., Moore, L., Jackson, P., White, S.",
-    doi: "10.1038/s41467-024-45678-9",
-    accessionNumber: "EMBO-2024-011-ACC",
-    assignedTo: "Dr. Michael Rodriguez",
-    status: "On hold",
-    workflowState: "ready-for-curation",
-    priority: "high",
-    hasErrors: false,
-    hasWarnings: true,
-    notes: "Pending author response to reviewer comments",
-    lastModified: "2024-12-29T10:45:00Z",
-    aiChecks: {
-      total: 6,
-      errors: 0,
-      warnings: 3,
-      info: 3,
-      dismissed: 1
-    },
-  },
-  {
-    msid: "EMBO-2024-012",
-    receivedDate: "2024-12-21",
-    title: "Stem cell niche dynamics in tissue regeneration",
-    authors: "Lee, S., Kim, H., Park, J., Choi, Y.",
-    doi: "10.1016/j.stem.2024.05.012",
-    accessionNumber: "EMBO-2024-012-ACC",
-    assignedTo: "Dr. Emily Watson",
-    status: "Failed to deposit",
-    workflowState: "deposited-to-biostudies",
-    priority: "normal",
-    hasErrors: true,
-    hasWarnings: false,
-    notes: "Technical issues during BioStudies submission",
-    lastModified: "2024-12-28T14:15:00Z",
-    aiChecks: {
-      total: 20,
-      errors: 8,
-      warnings: 9,
-      info: 3,
-      dismissed: 4
-    },
-  },
-  {
-    msid: "EMBO-2024-013",
-    receivedDate: "2024-12-31",
-    title: "Circadian rhythm regulation of metabolic pathways",
-    authors: "Zhang, L., Wang, M., Liu, X., Chen, H.",
-    doi: "10.1038/s41586-024-07890-1",
-    accessionNumber: "EMBO-2024-013-ACC",
-    assignedTo: "Dr. Sarah Chen",
-    status: "New submission",
-    workflowState: "ready-for-curation",
-    priority: "normal",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Just received, awaiting assignment",
-    lastModified: "2024-12-31T09:00:00Z",
-    aiChecks: {
-      total: 2,
-      errors: 0,
-      warnings: 0,
-      info: 2,
-      dismissed: 0
-    },
-  },
-  {
-    msid: "EMBO-2024-014",
-    receivedDate: "2024-12-20",
-    title: "Neuroplasticity mechanisms in learning and memory",
-    authors: "Brown, M., Davis, R., Wilson, K., Johnson, L.",
-    doi: "10.1016/j.neuron.2024.06.015",
-    accessionNumber: "EMBO-2024-014-ACC",
-    assignedTo: "Dr. Michael Rodriguez",
-    status: "In Progress",
-    workflowState: "ready-for-curation",
-    priority: "high",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Comprehensive review in progress",
-    lastModified: "2024-12-30T11:20:00Z",
-    aiChecks: {
-      total: 8,
-      errors: 1,
-      warnings: 4,
-      info: 3,
-      dismissed: 0
-    },
-  },
-  {
-    msid: "EMBO-2024-015",
-    receivedDate: "2024-12-19",
-    title: "Tumor microenvironment and cancer progression",
-    authors: "Garcia, P., Martinez, R., Lopez, A., Rodriguez, C.",
-    doi: "10.1038/s41568-024-00678-2",
-    accessionNumber: "EMBO-2024-015-ACC",
-    assignedTo: "Dr. Emily Watson",
-    status: "Waiting for data",
-    workflowState: "no-pipeline-results",
-    priority: "normal",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Awaiting bioinformatics pipeline completion",
-    lastModified: "2024-12-27T16:30:00Z",
-    aiChecks: {
-      total: 6,
-      errors: 1,
-      warnings: 2,
-      info: 3,
-      dismissed: 0
-    },
-  },
-  {
-    msid: "EMBO-2024-016",
-    receivedDate: "2024-12-18",
-    title: "Epigenetic inheritance across generations",
-    authors: "Taylor, J., Anderson, M., White, P., Harris, L.",
-    doi: "10.1126/science.def7890",
-    accessionNumber: "EMBO-2024-016-ACC",
-    assignedTo: "Dr. Sarah Chen",
-    status: "Deposited",
-    workflowState: "deposited-to-biostudies",
-    priority: "urgent",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Priority manuscript successfully deposited",
-    lastModified: "2024-12-29T13:45:00Z",
-    aiChecks: {
-      total: 4,
-      errors: 0,
-      warnings: 1,
-      info: 3,
-      dismissed: 0
-    },
-  },
-  {
-    msid: "EMBO-2024-017",
-    receivedDate: "2024-12-16",
-    title: "Microbiome-host interactions in health and disease",
-    authors: "Miller, K., Moore, S., Clark, J., Thompson, A.",
-    doi: "10.1038/s41579-024-00890-3",
-    accessionNumber: "EMBO-2024-017-ACC",
-    assignedTo: "Dr. Michael Rodriguez",
-    status: "In Progress",
-    workflowState: "ready-for-curation",
-    priority: "normal",
-    hasErrors: false,
-    hasWarnings: true,
-    notes: "Minor metadata corrections needed",
-    lastModified: "2024-12-28T10:15:00Z",
-  },
-  {
-    msid: "EMBO-2024-018",
-    receivedDate: "2024-12-15",
-    title: "Gene therapy approaches for inherited diseases",
-    authors: "Lee, R., Kim, S., Park, H., Choi, K., Wang, L.",
-    doi: "10.1016/j.ymthe.2024.07.020",
-    accessionNumber: "EMBO-2024-018-ACC",
-    assignedTo: "Dr. Emily Watson",
-    status: "In Progress",
-    workflowState: "ready-for-curation",
-    priority: "high",
-    hasErrors: false,
-    hasWarnings: false,
-    notes: "Awaiting regulatory approval documentation",
-    lastModified: "2024-12-27T14:30:00Z",
-  },
-]
 
 type SortField = "msid" | "receivedDate" | "title" | "authors" | "status" | "priority" | "lastModified"
 type SortDirection = "asc" | "desc"
@@ -556,7 +155,6 @@ export default function ManuscriptDashboard() {
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
             const newStatus = manuscript.status === "On hold" ? "New submission" : "On hold"
-            console.log(`📝 Toggling manuscript ${msid} status: ${manuscript.status} → ${newStatus}`)
             return { 
               ...manuscript, 
               status: newStatus,
@@ -584,7 +182,6 @@ export default function ManuscriptDashboard() {
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
             const newStatus = manuscript.status === "On hold" ? "New submission" : "On hold"
-            console.log(`📝 Toggling manuscript ${msid} status: ${manuscript.status} → ${newStatus}`)
             return { 
               ...manuscript, 
               status: newStatus,
@@ -611,7 +208,6 @@ export default function ManuscriptDashboard() {
       setApiManuscripts((prev) =>
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
-            console.log(`📝 Changing manuscript ${msid} priority: ${manuscript.priority} → ${newPriority}`)
             return { 
               ...manuscript, 
               priority: newPriority,
@@ -634,7 +230,6 @@ export default function ManuscriptDashboard() {
       setMockManuscripts((prev) =>
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
-            console.log(`📝 Changing manuscript ${msid} priority: ${manuscript.priority} → ${newPriority}`)
             return { 
               ...manuscript, 
               priority: newPriority,
@@ -850,15 +445,13 @@ export default function ManuscriptDashboard() {
             }
           }));
           
-          console.log(`🛑 Download cancelled for ${msid}: ${data.message}`);
         }
       } catch (parseError) {
-        console.error('❌ Failed to parse SSE message:', parseError);
       }
     };
     
     eventSource.onerror = (error) => {
-      console.error(`❌ SSE connection error for ${msid}:`, error);
+      // SSE connection error
       eventSource.close();
       setDownloadConnections(prev => ({...prev, [msid]: null}));
     };
@@ -1211,11 +804,14 @@ export default function ManuscriptDashboard() {
   const fetchApiData = async () => {
     setIsLoadingApi(true)
     
-    if (!session) {
-      console.error('❌ No session available for API call')
+    // Check if we should bypass auth or if we have a session
+    const shouldBypass = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" || process.env.NODE_ENV === "development"
+    if (!session && !shouldBypass) {
       setIsLoadingApi(false)
+      setIsInitialLoadComplete(true)
       return
     }
+    
     
     try {
       // Build URL with explicit pagination parameters to ensure first page
@@ -1275,7 +871,12 @@ export default function ManuscriptDashboard() {
         }
       })
       
-      setApiManuscripts(transformedManuscripts)
+      // Remove duplicates based on msid
+      const uniqueManuscripts = transformedManuscripts.filter((manuscript: any, index: number, self: any[]) => 
+        index === self.findIndex((m: any) => m.msid === manuscript.msid)
+      )
+      
+      setApiManuscripts(uniqueManuscripts)
     } catch (error) {
       console.error('❌ Failed to fetch API data:', error)
       if (error instanceof Error && error.name === 'AbortError') {
@@ -1301,7 +902,7 @@ export default function ManuscriptDashboard() {
     }
 
     initializeData()
-  }, []) // Only run on mount
+  }, [useApiData]) // Re-run when useApiData changes
 
   // Switch between API and mock data
   const handleDataSourceSwitch = async (useApi: boolean) => {
@@ -1538,23 +1139,6 @@ export default function ManuscriptDashboard() {
   const priorityCounts = getPriorityCounts()
   const assigneeCounts = getAssigneeCounts()
 
-  // Debug: Log status distribution when in development
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
-      const manuscriptsInCurrentTab = currentManuscripts.filter(manuscript => {
-        const workflowState = manuscript.workflowState || 'no-pipeline-results'
-        return workflowState === activeTab
-      })
-      
-      console.log(`📋 Manuscripts in "${activeTab}" tab:`, manuscriptsInCurrentTab.map(m => ({
-        msid: m.msid,
-        status: m.status,
-        displayStatus: m.displayStatus,
-        workflowState: m.workflowState
-      })))
-    }
-  }, [activeTab, useApiData, apiManuscripts, mockManuscripts])
 
   // Loading screen component
   const LoadingScreen = () => (
