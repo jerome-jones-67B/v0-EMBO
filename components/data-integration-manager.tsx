@@ -87,7 +87,14 @@ export default function DataIntegrationManager({ onDataUpdate }: DataIntegration
       ]
       
       setCheck4VizData(mockCheckData)
-      setFigureData(exampleData)
+      const exampleDataWithChecks = {
+        ...exampleData,
+        panels: exampleData.panels.map(panel => ({
+          ...panel,
+          checks: [] as any[]
+        }))
+      }
+      setFigureData(exampleDataWithChecks)
       
       // Process the data
       const processedData = workflow.processFigure(mockCheckData, exampleData)

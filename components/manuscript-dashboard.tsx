@@ -1225,13 +1225,19 @@ export default function ManuscriptDashboard() {
       url.searchParams.set('sort', 'received_at')
       url.searchParams.set('ascending', 'true')
       
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
       const response = await fetch(url.toString(), {
         headers: {
           'Content-Type': 'application/json',
           'Cookie': document.cookie, // Include session cookies
         },
         credentials: 'include', // Include cookies in the request
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
       
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`)
@@ -1272,8 +1278,12 @@ export default function ManuscriptDashboard() {
       setApiManuscripts(transformedManuscripts)
     } catch (error) {
       console.error('❌ Failed to fetch API data:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('❌ API request timed out')
+      }
       // Keep using mock data on error
       setUseApiData(false)
+      dataService.setUseMockData(true)
     } finally {
       setIsLoadingApi(false)
       setIsInitialLoadComplete(true)
@@ -1561,7 +1571,7 @@ export default function ManuscriptDashboard() {
           <h2 className="text-xl font-semibold text-gray-900">Loading EMBO Dashboard</h2>
           <p className="text-gray-600">
             {useApiData 
-              ? "Fetching manuscript data from Data4Rev API..."
+              ? "Fetching manuscript data from Data4Rev API... (This may take up to 10 seconds)"
               : "Preparing dashboard interface..."
             }
           </p>
@@ -1571,6 +1581,14 @@ export default function ManuscriptDashboard() {
           <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
             <Zap className="w-4 h-4 text-green-600" />
             <span>Connected to live API</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleDataSourceSwitch(false)}
+              className="ml-2"
+            >
+              Switch to Mock Data
+            </Button>
           </div>
         )}
       </div>

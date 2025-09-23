@@ -82,25 +82,25 @@ export class DataService {
     try {
       console.log('🔧 Adding real figures to manuscript:', manuscript.id)
       console.log('📊 Real figures available:', realFigures.length)
-      
+
       // Add real figures to specific manuscripts
       if (manuscript.id === 'EMBO-2024-001') {
         // Add your real figures to this manuscript
         console.log('✅ Adding real figures to EMBO-2024-001')
         console.log('📋 Real figures data:', realFigures)
-        
+
         const result = {
           ...manuscript,
           figures: realFigures,
           figureCount: realFigures.length
         };
-        
+
         console.log('🎯 Final manuscript with figures:', result)
         console.log('📊 Final figures count:', result.figures?.length || 0)
-        
+
         return result;
       }
-      
+
       // For other manuscripts, add some mock figures
       console.log('⚠️ Not EMBO-2024-001, using mock figures for:', manuscript.id)
       const mockFiguresForManuscript = mockFigures.slice(0, manuscript.figureCount || 2);
@@ -121,7 +121,7 @@ export class DataService {
   private transformManuscript(manuscript: ManuscriptOverview): Manuscript {
     const statusMapping = getStatusMapping(manuscript.status);
     const unmappedFields = getUnmappedFields(manuscript);
-    
+
     return {
       // Data4Rev API fields (keep as-is)
       msid: manuscript.msid,
@@ -134,7 +134,7 @@ export class DataService {
       received_at: manuscript.received_at,
       status: manuscript.status,
       note: manuscript.note,
-      
+
       // Backward compatibility fields (mapped with proper status mapping)
       received: manuscript.received_at,
       lastModified: manuscript.received_at,
@@ -142,7 +142,7 @@ export class DataService {
       priority: statusMapping.priority,
       figureCount: 0, // Will be populated when we have figure data
       qcStatus: statusMapping.qcStatus,
-      
+
       // UI-specific fields for dashboard
       displayStatus: statusMapping.displayStatus,
       workflowState: statusMapping.workflowState,
@@ -187,14 +187,14 @@ export class DataService {
       doi: mockManuscript.doi || `10.1038/s41586-${Date.now()}`,
       accession_number: mockManuscript.accessionNumber || `ACC-${mockManuscript.id}`,
       title: mockManuscript.title,
-      authors: Array.isArray(mockManuscript.authors) 
-        ? mockManuscript.authors.join(', ') 
+      authors: Array.isArray(mockManuscript.authors)
+        ? mockManuscript.authors.join(', ')
         : mockManuscript.authors || 'Unknown Author',
       id: parseInt(mockManuscript.id.replace(/\D/g, '')) || Date.now(),
       received_at: mockManuscript.received ? `${mockManuscript.received}T08:00:00Z` : new Date().toISOString(),
       status: mockManuscript.status?.toLowerCase().replace(' ', '_') || 'submitted',
       note: mockManuscript.abstract || null,
-      
+
       // Backward compatibility fields
       received: mockManuscript.received || new Date().toISOString().split('T')[0],
       lastModified: mockManuscript.lastModified || new Date().toISOString().split('T')[0],
@@ -250,10 +250,10 @@ export class DataService {
     };
 
     const response = await api.manuscripts.getAll(data4revParams);
-    
+
     // Transform the response to match our format
     const transformedManuscripts = response.data.manuscripts.map((m: any) => this.transformManuscript(m));
-    
+
     return {
       data: transformedManuscripts,
       pagination: {
@@ -273,7 +273,7 @@ export class DataService {
       if (!manuscript) {
         throw new Error(`Manuscript ${id} not found`);
       }
-      
+
       // Add real figures to specific manuscripts
       const manuscriptWithFigures = await this.addRealFiguresToManuscript(manuscript);
       return createMockResponse(this.transformMockManuscript(manuscriptWithFigures));
@@ -281,7 +281,7 @@ export class DataService {
 
     // Call Data4Rev API
     const response = await api.manuscripts.getById(id);
-    
+
     // Transform the detailed manuscript data
     const transformedManuscript: Manuscript = {
       ...this.transformManuscript(response.data),
@@ -311,7 +311,7 @@ export class DataService {
         received_at: new Date().toISOString(),
         status: data.status || 'submitted',
         note: null,
-        
+
         // Backward compatibility fields
         received: new Date().toISOString().split('T')[0],
         lastModified: new Date().toISOString().split('T')[0],
@@ -408,7 +408,7 @@ export class DataService {
         details: c.details,
         id: Date.now()
       })) || [],
-      
+
       // Backward compatibility fields
       title: mockFigure.title,
       legend: mockFigure.legend,
@@ -428,7 +428,7 @@ export class DataService {
       links: figure.links,
       source_data: figure.source_data,
       check_results: figure.check_results,
-      
+
       // Backward compatibility fields
       title: figure.label,
       legend: figure.caption,
@@ -531,7 +531,7 @@ export class DataService {
         m.authors.toLowerCase().includes(query.toLowerCase()) ||
         m.msid.toLowerCase().includes(query.toLowerCase())
       );
-    
+
     return createMockPaginatedResponse(filteredData);
   }
 
@@ -559,7 +559,7 @@ export class DataService {
     // Get statistics from Data4Rev API
     const response = await api.manuscripts.getAll();
     const manuscripts = response.data.manuscripts.map((m: any) => this.transformManuscript(m));
-    
+
     const stats = {
       totalManuscripts: response.data.total,
       manuscriptsByStatus: manuscripts.reduce((acc: any, m: any) => {
@@ -575,7 +575,7 @@ export class DataService {
       pendingTasks: 0, // Not available in Data4Rev API
       unreadNotifications: 0, // Not available in Data4Rev API
     };
-    
+
     return createMockResponse(stats);
   }
 }

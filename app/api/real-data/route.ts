@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ figures })
   } catch (error) {
     console.error('Error loading real data:', error)
-    return NextResponse.json({ error: 'Failed to load real data', details: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to load real data', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
   }
 }
 
