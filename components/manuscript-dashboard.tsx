@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Settings2, Database, Zap } from "lucide-react"
-import { ManuscriptDetail } from "./manuscript-detail" // Import the new manuscript detail component
+import { ManuscriptDetailRefactored } from "./manuscript/manuscript-detail-refactored" // Import the refactored manuscript detail component
 import { AuthorList } from "./author-list"
 import { UserNav } from "./user-nav"
 import { useSession } from "next-auth/react"
@@ -1188,7 +1188,7 @@ export default function ManuscriptDashboard() {
     <TooltipProvider>
       <div className="container mx-auto p-6 space-y-6">
         {selectedManuscript ? (
-          <ManuscriptDetail 
+          <ManuscriptDetailRefactored 
             msid={selectedManuscript} 
             onBack={() => setSelectedManuscript(null)} 
             useApiData={useApiData}

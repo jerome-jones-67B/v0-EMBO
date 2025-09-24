@@ -9,17 +9,25 @@ import { LoadingSpinner } from "@/components/shared/loading-spinner"
 import { ErrorBoundary } from "@/components/shared/error-boundary"
 import { ManuscriptHeader } from "./manuscript-header"
 import { FigureViewer } from "./figure-viewer"
+import { SourceFilesTreeview } from "./source-files-treeview"
 import { useManuscriptDetailState } from "@/hooks/useManuscriptDetailState"
 import { useManuscriptDetailApi } from "@/hooks/useManuscriptDetailApi"
-import { mockManuscriptDetails } from "@/lib/mock-manuscript-details"
+import { mockManuscriptDetails, mockSourceData } from "@/lib/mock-manuscript-details"
 import { ManuscriptLoadingScreen } from '@/components/manuscript-loading-screen'
 import { FullTextView } from '@/components/manuscript-full-text-view'
 import { dataService } from '@/lib/data-service'
 
-export function ManuscriptDetailRefactored() {
+interface ManuscriptDetailProps {
+  msid?: string
+  onBack?: () => void
+  useApiData?: boolean
+}
+
+export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }: ManuscriptDetailProps = {}) {
   const params = useParams()
   const { data: session } = useSession()
-  const manuscriptId = params?.id as string
+  // Use msid prop if provided, otherwise fall back to route params
+  const manuscriptId = msid || (params?.id as string)
 
   const {
     state,
@@ -99,6 +107,17 @@ export function ManuscriptDetailRefactored() {
     }
   }
 
+  // Handle notes change
+  const handleNotesChange = (newNotes: string) => {
+    setNotes(newNotes)
+    if (state.manuscript) {
+      setManuscript({
+        ...state.manuscript,
+        notes: newNotes
+      })
+    }
+  }
+
   // Handle figure navigation
   const handleFigureChange = (index: number) => {
     setSelectedFigureIndex(index)
@@ -150,13 +169,15 @@ export function ManuscriptDetailRefactored() {
         <ManuscriptHeader
           manuscript={state.manuscript}
           onDownload={handleDownload}
+          onBack={onBack}
+          onNotesChange={handleNotesChange}
         />
 
         {/* Main Content */}
         <Tabs value={state.selectedView} onValueChange={handleViewChange}>
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="manuscript">Manuscript</TabsTrigger>
-            <TabsTrigger value="list">List View</TabsTrigger>
+            <TabsTrigger value="manuscript">Manuscript Review</TabsTrigger>
+            <TabsTrigger value="list">List Review</TabsTrigger>
             <TabsTrigger value="fulltext">Full Text</TabsTrigger>
           </TabsList>
 
@@ -201,57 +222,104 @@ export function ManuscriptDetailRefactored() {
             )}
           </TabsContent>
 
-          <TabsContent value="list">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Manuscript Overview</h3>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium">Basic Information</h4>
-                    <div className="mt-2 space-y-1 text-sm">
-                      <div><strong>Title:</strong> {state.manuscript.title}</div>
-                      <div><strong>Authors:</strong> {state.manuscript.authors}</div>
-                      <div><strong>DOI:</strong> {state.manuscript.doi || 'Not assigned'}</div>
-                      <div><strong>Status:</strong> {state.manuscript.status}</div>
-                      <div><strong>Priority:</strong> {state.manuscript.priority}</div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium">Figures ({state.manuscript.figures?.length || 0})</h4>
-                    <div className="mt-2 space-y-1 text-sm">
-                      {state.manuscript.figures?.map((figure, index) => (
-                        <div key={figure.id}>
-                          <strong>Figure {index + 1}:</strong> {figure.title}
+          <TabsContent value="list" className="space-y-6">
+            {/* Source Files Treeview at the top */}
+            <SourceFilesTreeview sourceFiles={mockSourceData} />
+            
+            {/* Additional Information Sections */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Figures Summary */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold mb-4">Figures ({state.manuscript.figures?.length || 0})</h3>
+                  <div className="space-y-3">
+                    {state.manuscript.figures?.map((figure, index) => (
+                      <div key={figure.id} className="border-l-2 border-blue-200 pl-3">
+                        <div className="font-medium text-sm">Figure {index + 1}</div>
+                        <div className="text-sm text-muted-foreground">{figure.title}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {figure.panels.length} panels
                         </div>
-                      )) || <div>No figures available</div>}
-                    </div>
+                      </div>
+                    )) || <div className="text-sm text-muted-foreground">No figures available</div>}
                   </div>
+                </CardContent>
+              </Card>
 
-                  <div>
-                    <h4 className="font-medium">Linked Data ({state.linkedData.length})</h4>
-                    <div className="mt-2 space-y-1 text-sm">
-                      {state.linkedData.map((item) => (
-                        <div key={item.id}>
-                          <strong>{item.type}:</strong> {item.identifier} - {item.description}
-                        </div>
-                      ))}
-                    </div>
+              {/* Linked Data Summary */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold mb-4">Linked Data ({state.linkedData.length})</h3>
+                  <div className="space-y-3">
+                    {state.linkedData.map((item) => (
+                      <div key={item.id} className="border-l-2 border-green-200 pl-3">
+                        <div className="font-medium text-sm">{item.type}</div>
+                        <div className="text-sm">{item.identifier}</div>
+                        <div className="text-xs text-muted-foreground">{item.description}</div>
+                      </div>
+                    ))}
+                    {state.linkedData.length === 0 && (
+                      <div className="text-sm text-muted-foreground">No linked data available</div>
+                    )}
                   </div>
+                </CardContent>
+              </Card>
 
-                  <div>
-                    <h4 className="font-medium">Source Data ({state.sourceData.length})</h4>
-                    <div className="mt-2 space-y-1 text-sm">
-                      {state.sourceData.map((file) => (
-                        <div key={file.id}>
-                          <strong>{file.name}</strong> ({file.size}) - {file.description}
+              {/* Quality Checks Summary */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold mb-4">Quality Checks ({state.manuscript.qcChecks?.length || 0})</h3>
+                  <div className="space-y-2">
+                    {state.manuscript.qcChecks?.map((check) => (
+                      <div key={check.id} className="flex items-start gap-2">
+                        <div className={`w-2 h-2 rounded-full mt-2 ${
+                          check.type === 'success' ? 'bg-green-500' :
+                          check.type === 'warning' ? 'bg-yellow-500' :
+                          check.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                        }`} />
+                        <div className="flex-1">
+                          <div className="text-sm">{check.message}</div>
+                          <div className="text-xs text-muted-foreground">{check.category}</div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )) || <div className="text-sm text-muted-foreground">No quality checks available</div>}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Manuscript Metadata */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold mb-4">Manuscript Details</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-sm font-medium">Status</div>
+                      <div className="text-sm text-muted-foreground">{state.manuscript.status}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Priority</div>
+                      <div className="text-sm text-muted-foreground">{state.manuscript.priority}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Assignee</div>
+                      <div className="text-sm text-muted-foreground">{state.manuscript.assignedTo || 'Unassigned'}</div>
+                    </div>
+                    {state.manuscript.doi && (
+                      <div>
+                        <div className="text-sm font-medium">DOI</div>
+                        <div className="text-sm text-muted-foreground">{state.manuscript.doi}</div>
+                      </div>
+                    )}
+                    {state.manuscript.accessionNumber && (
+                      <div>
+                        <div className="text-sm font-medium">Accession Number</div>
+                        <div className="text-sm text-muted-foreground">{state.manuscript.accessionNumber}</div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="fulltext">
