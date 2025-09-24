@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { endpoints, config } from "@/lib/config"
 import { getImageUrl } from "@/lib/image-utils"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -940,8 +941,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setIsFetching(true)
     setIsLoadingApi(true)
     
-    if (!session) {
-      console.error('❌ No session available for API call')
+    // Check if we should bypass auth or if we have a session
+    const shouldBypass = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" || process.env.NODE_ENV === "development"
+    if (!session && !shouldBypass) {
       setIsLoadingApi(false)
       setIsFetching(false)
       return
@@ -1268,7 +1270,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       return
     }
 
-    if (!session) {
+    // Check if we should bypass auth or if we have a session
+    const shouldBypass = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" || process.env.NODE_ENV === "development"
+    if (!session && !shouldBypass) {
       setFullTextError("Authentication required to fetch full text content")
       return
     }
@@ -2500,63 +2504,58 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </CardHeader>
           <CardContent>
 
-            {/* AI Checks List */}
-            {visibleAiChecks.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-900">
-                  All AI Checks ({visibleAiChecks.length})
-                  </h4>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {visibleAiChecks.map((check, index) => {
-                    const isIgnored = ignoredChecks.has(check.checkId);
-                    const isApproved = approvedChecks.has(check.checkId);
-                      
-                      return (
-                        <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${
-                          isApproved ? 'bg-green-50 border-green-200' :
-                          isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
-                          check.type === 'error' ? 'bg-red-50 border-red-200' :
-                          check.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
-                          'bg-blue-50 border-blue-200'
-                        }`}>
-                          {getQCIcon(check.type)}
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm">{check.message}</span>
-                                {isApproved && (
-                                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                                    <Check className="w-3 h-3 mr-1" />
-                                    Approved
-                                  </Badge>
-                                )}
-                                {isIgnored && (
-                                  <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
-                                    <X className="w-3 h-3 mr-1" />
-                                    Ignored
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">
-                                  {(check as any).figureTitle ? `Figure ${(check as any).figureTitle}` : 'General'}
-                                </span>
-                              {renderCheckActions({...check, checkId: check.checkId}, "ai-quality", index)}
-                              </div>
+            {/* Source Data Accordion - Moved to Top */}
+            <Accordion type="single" collapsible className="w-full mb-8">
+              <AccordionItem value="source-data">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <Upload className="w-5 h-5" />
+                      <span className="font-semibold">Source Data ({sourceDataFiles.length} files)</span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pt-4">
+                    <div className="flex justify-end">
+                      <Button variant="outline" size="sm" onClick={handleAddSourceData}>
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add File
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {sourceDataFiles.map((file) => (
+                        <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-4 h-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium">{file.name}</div>
+                              <div className="text-sm text-muted-foreground">{file.size}</div>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
-                            {(check as any).panelId && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                Panel: {(check as any).panelId}
-                              </div>
-                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => handleDownloadFile(file.name)}>
+                              <Download className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleEditSourceData(sourceDataFiles.indexOf(file))}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleDeleteFile(file.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-            )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             {/* Figure Tabs Navigation */}
             {figuresData.length > 0 && (
@@ -3175,146 +3174,68 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                 </CardContent>
               </Card>
             )}
-          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Upload className="w-5 h-5" />
-                  Source Data
-                </div>
-                <Button variant="outline" size="sm" onClick={handleAddSourceData}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add File
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {sourceDataFiles.map((file) => (
-                  <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <div className="font-medium">{file.name}</div>
-                        <div className="text-sm text-muted-foreground">{file.size}</div>
+            {/* AI Checks Section - Moved to Bottom */}
+            {visibleAiChecks.length > 0 && (
+              <div className="space-y-3 mt-8 pt-8 border-t">
+                <h4 className="font-semibold text-gray-900">
+                  All AI Checks ({visibleAiChecks.length})
+                </h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {visibleAiChecks.map((check, index) => {
+                    const isIgnored = ignoredChecks.has(check.checkId);
+                    const isApproved = approvedChecks.has(check.checkId);
+                      
+                    return (
+                      <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${
+                        isApproved ? 'bg-green-50 border-green-200' :
+                        isIgnored ? 'bg-gray-50 border-gray-200 opacity-60' :
+                        check.type === 'error' ? 'bg-red-50 border-red-200' :
+                        check.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                        'bg-blue-50 border-blue-200'
+                      }`}>
+                        {getQCIcon(check.type)}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">{check.message}</span>
+                              {isApproved && (
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Approved
+                                </Badge>
+                              )}
+                              {isIgnored && (
+                                <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                                  <X className="w-3 h-3 mr-1" />
+                                  Ignored
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {(check as any).figureTitle ? `Figure ${(check as any).figureTitle}` : 'General'}
+                              </span>
+                              {renderCheckActions({...check, checkId: check.checkId}, "ai-quality", index)}
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{check.details}</p>
+                          {(check as any).panelId && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Panel: {(check as any).panelId}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => handleDownloadFile(file.name)}>
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleEditSourceData(sourceDataFiles.indexOf(file))}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteFile(file.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
-            </CardContent>
+            )}
+          </div>
+          </CardContent>
           </Card>
 
-          {isEditingSourceData && (
-            <Card className="border-2 border-blue-200 bg-blue-50/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">
-                  {editingSourceDataIndex !== null ? "Edit" : "Add"} Source Data
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">File Name</Label>
-                  <Input
-                    value={sourceDataForm.filename}
-                    onChange={(e) => setSourceDataForm(prev => ({ ...prev, filename: e.target.value }))}
-                    placeholder="Enter filename"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">File Type</Label>
-                  <Select
-                    value={sourceDataForm.type}
-                    onValueChange={(value) => setSourceDataForm(prev => ({ ...prev, type: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select file type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="xlsx">Excel (.xlsx)</SelectItem>
-                      <SelectItem value="csv">CSV (.csv)</SelectItem>
-                      <SelectItem value="txt">Text (.txt)</SelectItem>
-                      <SelectItem value="pdf">PDF (.pdf)</SelectItem>
-                      <SelectItem value="zip">ZIP (.zip)</SelectItem>
-                      <SelectItem value="pdb">PDB (.pdb)</SelectItem>
-                      <SelectItem value="fastq">FASTQ (.fastq)</SelectItem>
-                      <SelectItem value="fcs">FCS (.fcs)</SelectItem>
-                      <SelectItem value="bed">BED (.bed)</SelectItem>
-                      <SelectItem value="bw">BigWig (.bw)</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">File Size</Label>
-                  <Input
-                    value={sourceDataForm.size}
-                    onChange={(e) => setSourceDataForm(prev => ({ ...prev, size: e.target.value }))}
-                    placeholder="e.g., 2.3 MB"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Upload File (Optional)</Label>
-                  <Input
-                    type="file"
-                    onChange={(e) => setSourceDataForm(prev => ({ ...prev, file: e.target.files?.[0] || null }))}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleSourceDataSubmit}
-                    disabled={!sourceDataForm.filename}
-                  >
-                    {editingSourceDataIndex !== null ? "Update" : "Add"} File
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditingSourceData(false)
-                      setEditingSourceDataIndex(null)
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Database className="w-4 h-4" />
-                Data Availability Statement
-              </h3>
-            </div>
-
-            <p className="text-sm leading-relaxed">{dataAvailability}</p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* General Manuscript Issues */}
       {(manuscript?.qcChecks?.length || 0) > 0 && (
