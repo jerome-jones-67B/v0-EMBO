@@ -2215,6 +2215,50 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
 
   const [selectedSourceFiles, setSelectedSourceFiles] = useState<Set<string>>(new Set())
   const [sourceFileLinks, setSourceFileLinks] = useState<Record<string, string[]>>({})
+  const [sourceDataFiles, setSourceDataFiles] = useState<any[]>([])
+  const [isLoadingSourceData, setIsLoadingSourceData] = useState(false)
+  const [sourceDataError, setSourceDataError] = useState<string | null>(null)
+
+  // Fetch source data files from download API
+  const fetchSourceDataFiles = useCallback(async () => {
+    if (!msid) return
+    
+    setIsLoadingSourceData(true)
+    setSourceDataError(null)
+    
+    try {
+      const response = await fetch(`/api/v1/manuscripts/${msid}/download?format=list`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': document.cookie,
+        },
+        credentials: 'include',
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch source data: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setSourceDataFiles(data.files || [])
+      
+    } catch (error) {
+      console.error('Error fetching source data:', error)
+      setSourceDataError(error instanceof Error ? error.message : 'Unknown error')
+      // Fallback to mock data on error
+      setSourceDataFiles([])
+    } finally {
+      setIsLoadingSourceData(false)
+    }
+  }, [msid])
+
+  // Fetch source data when List Review tab is selected
+  useEffect(() => {
+    if (useApiData && selectedView === "list" && sourceDataFiles.length === 0 && !isLoadingSourceData) {
+      console.log('🔍 List Review tab selected - fetching source data files for:', msid)
+      fetchSourceDataFiles()
+    }
+  }, [fetchSourceDataFiles, useApiData, selectedView, sourceDataFiles.length, isLoadingSourceData, msid])
 
   const allSubmittedFiles = [
     {
@@ -2376,11 +2420,6 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     return options
   }
 
-  const [sourceDataFiles, setSourceDataFiles] = useState([
-    { id: 1, name: "supplementary_data.xlsx", type: "xlsx", size: "2.3 MB" },
-    { id: 2, name: "raw_data.csv", type: "csv", size: "1.8 MB" },
-    { id: 3, name: "analysis_scripts.zip", type: "zip", size: "5.2 MB" },
-  ])
   const [editFileDialog, setEditFileDialog] = useState(false)
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null)
   const [availableFiles] = useState([
@@ -3439,6 +3478,67 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       location: check.figureId ? `Figure ${check.figureId}` : "General Manuscript"
     }))
 
+    // Categorize source data files
+    const categorizeFiles = (files: any[]) => {
+      if (!files || files.length === 0) return {
+        manuscript: [],
+        figures: [],
+        supplementary: [],
+        metadata: [],
+        other: []
+      }
+
+      return {
+        manuscript: files.filter((file: any) => {
+          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
+          const uri = file.uri?.toLowerCase() || ''
+          return filename.includes('.pdf') || 
+                 uri.includes('/pdf/') || 
+                 (filename.includes('.docx') && uri.includes('/doc/'))
+        }),
+        figures: files.filter((file: any) => {
+          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
+          const uri = file.uri?.toLowerCase() || ''
+          return (filename.includes('.png') || filename.includes('.jpg') || 
+                 filename.includes('.jpeg') || filename.includes('.tiff') || 
+                 filename.includes('.gif') || filename.includes('.svg') ||
+                 filename.includes('.pdf') || filename.includes('.eps')) && 
+                 (uri.includes('/graphic/') || uri.includes('/figure') || filename.includes('fig'))
+        }),
+        supplementary: files.filter((file: any) => {
+          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
+          const uri = file.uri?.toLowerCase() || ''
+          return uri.includes('/suppl_data/') || 
+                 filename.includes('supplement') ||
+                 filename.includes('.xlsx') ||
+                 filename.includes('.csv') ||
+                 filename.includes('data') ||
+                 filename.includes('.zip')
+        }),
+        metadata: files.filter((file: any) => {
+          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
+          return filename.includes('.xml') || filename.includes('.json')
+        }),
+        other: files.filter((file: any) => {
+          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
+          const uri = file.uri?.toLowerCase() || ''
+          // Files that don't fit into other categories
+          return !filename.includes('.pdf') && 
+                 !uri.includes('/pdf/') && 
+                 !uri.includes('/graphic/') && 
+                 !uri.includes('/figure') && 
+                 !uri.includes('/suppl_data/') && 
+                 !filename.includes('supplement') &&
+                 !filename.includes('.xml') && 
+                 !filename.includes('.json') &&
+                 !filename.includes('fig') &&
+                 !(filename.includes('.docx') && uri.includes('/doc/'))
+        })
+      }
+    }
+
+    const categorizedFiles = categorizeFiles(sourceDataFiles)
+
     return (
       <div className="space-y-6">
           {/* QC Summary */}
@@ -3510,87 +3610,252 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
         {/* Source Files Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="w-5 h-5" />
-              Source Files
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                Source Data Files
+                {isLoadingSourceData && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 ml-2"></div>
+                )}
+              </CardTitle>
+              {!isLoadingSourceData && !sourceDataError && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchSourceDataFiles}
+                  title="Refresh source data"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+            {sourceDataFiles.length > 0 && (
+              <CardDescription>
+                {sourceDataFiles.length} files available for download
+              </CardDescription>
+            )}
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2 font-medium">File Name</th>
-                    <th className="text-left p-2 font-medium">Type</th>
-                    <th className="text-left p-2 font-medium">Size</th>
-                    <th className="text-left p-2 font-medium">Linked To</th>
-                    <th className="text-left p-2 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allSubmittedFiles.map((file) => (
-                    <tr key={file.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-blue-500" />
-                          <span className="font-medium">{file.filename}</span>
-                        </div>
-                      </td>
-                      <td className="p-2">
-                        <Badge variant="outline" className="text-xs">
-                          {file.type}
-                        </Badge>
-                      </td>
-                      <td className="p-2 text-sm text-muted-foreground">
-                        {file.size}
-                      </td>
-                      <td className="p-2">
-                        {file.linkedTo.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {file.linkedTo.map((link, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                {link}
-                              </Badge>
-                            ))}
+            {sourceDataError ? (
+              <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+                <span className="text-red-800">Error loading source data: {sourceDataError}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchSourceDataFiles}
+                  className="ml-auto"
+                >
+                  <RotateCcw className="w-4 h-4 mr-1" />
+                  Retry
+                </Button>
+              </div>
+            ) : isLoadingSourceData ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading source data files...</p>
+                </div>
+              </div>
+            ) : sourceDataFiles.length === 0 ? (
+              <div className="text-center py-8">
+                <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-muted-foreground">No source data files available</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Manuscript Files */}
+                {categorizedFiles.manuscript.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Manuscript Files ({categorizedFiles.manuscript.length})
+                    </h4>
+                    <div className="grid gap-2">
+                      {categorizedFiles.manuscript.map((file: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-red-600" />
+                            <div>
+                              <p className="font-medium">{file.filename || file.name}</p>
+                              {file.uri && (
+                                <p className="text-xs text-gray-500">{file.uri}</p>
+                              )}
+                            </div>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">Not linked</span>
-                        )}
-                      </td>
-                      <td className="p-2">
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {}}
-                            title="View file"
-                          >
-                            <LucideEye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditFile(Number(file.id))}
-                            title="Edit file"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteFile(Number(file.id))}
-                            className="text-red-600 hover:text-red-700"
-                            title="Delete file"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              title="Download file"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Figure Files */}
+                {categorizedFiles.figures.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                      <Database className="w-4 h-4" />
+                      Figure Files ({categorizedFiles.figures.length})
+                    </h4>
+                    <div className="grid gap-2">
+                      {categorizedFiles.figures.map((file: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-blue-600" />
+                            <div>
+                              <p className="font-medium">{file.filename || file.name}</p>
+                              {file.uri && (
+                                <p className="text-xs text-gray-500">{file.uri}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              title="Download file"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Supplementary Files */}
+                {categorizedFiles.supplementary.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                      <Database className="w-4 h-4" />
+                      Supplementary Data ({categorizedFiles.supplementary.length})
+                    </h4>
+                    <div className="grid gap-2">
+                      {categorizedFiles.supplementary.map((file: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-green-600" />
+                            <div>
+                              <p className="font-medium">{file.filename || file.name}</p>
+                              {file.uri && (
+                                <p className="text-xs text-gray-500">{file.uri}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              title="Download file"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Metadata Files */}
+                {categorizedFiles.metadata.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Metadata Files ({categorizedFiles.metadata.length})
+                    </h4>
+                    <div className="grid gap-2">
+                      {categorizedFiles.metadata.map((file: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-purple-600" />
+                            <div>
+                              <p className="font-medium">{file.filename || file.name}</p>
+                              {file.uri && (
+                                <p className="text-xs text-gray-500">{file.uri}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              title="Download file"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other Files */}
+                {categorizedFiles.other.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Other Files ({categorizedFiles.other.length})
+                    </h4>
+                    <div className="grid gap-2">
+                      {categorizedFiles.other.map((file: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-gray-600" />
+                            <div>
+                              <p className="font-medium">{file.filename || file.name}</p>
+                              {file.uri && (
+                                <p className="text-xs text-gray-500">{file.uri}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              title="Download file"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Download All Button */}
+                <div className="pt-4 border-t">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-gray-600">
+                      Total: {sourceDataFiles.length} files
+                    </p>
+                    <Button
+                      onClick={() => window.open(`/api/v1/manuscripts/${msid}/download`, '_blank')}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download All Files
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

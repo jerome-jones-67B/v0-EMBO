@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -28,6 +28,82 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
   const { data: session } = useSession()
   // Use msid prop if provided, otherwise fall back to route params
   const manuscriptId = msid || (params?.id as string)
+
+  // Source data state for real API data
+  const [sourceDataFiles, setSourceDataFiles] = useState<any[]>([])
+  const [isLoadingSourceData, setIsLoadingSourceData] = useState(false)
+  const [sourceDataError, setSourceDataError] = useState<string | null>(null)
+
+  // Fetch source data files from download API
+  const fetchSourceDataFiles = useCallback(async () => {
+    if (!manuscriptId) return
+    
+    setIsLoadingSourceData(true)
+    setSourceDataError(null)
+    
+    try {
+      console.log('🔍 List Review tab selected - fetching source data files for:', manuscriptId)
+      const response = await fetch(`/api/v1/manuscripts/${manuscriptId}/download?format=list`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': document.cookie,
+        },
+        credentials: 'include',
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch source data: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      console.log('✅ Source data fetched:', data)
+      console.log('📁 Sample file structure:', data.files?.[0])
+      
+      // Transform API data to match SourceFilesTreeview expected format
+      const transformedFiles = (data.files || []).map((file: any, index: number) => ({
+        id: file.id?.toString() || index.toString(),
+        type: categorizeFileType(file.filename || file.name || ''),
+        name: file.filename || file.name || `file_${file.id || index}`,
+        size: file.size || null, // Don't show size if not available
+        url: file.uri || file.preview_uri || `/api/v1/manuscripts/${manuscriptId}/files/${file.id}/download`,
+        originalUri: file.uri, // Preserve original URI for path parsing
+        description: file.source || file.uploaded_by || 'Source data file'
+      }))
+      
+      setSourceDataFiles(transformedFiles)
+      
+    } catch (error) {
+      console.error('Error fetching source data:', error)
+      setSourceDataError(error instanceof Error ? error.message : 'Unknown error')
+      // Fallback to mock data on error
+      setSourceDataFiles([])
+    } finally {
+      setIsLoadingSourceData(false)
+    }
+  }, [manuscriptId])
+
+  // Helper function to categorize file types based on filename
+  const categorizeFileType = (filename: string): string => {
+    const name = filename.toLowerCase()
+    const uri = filename.toLowerCase()
+    
+    if (name.includes('.pdf') || uri.includes('/pdf/') || (name.includes('.docx') && uri.includes('/doc/'))) {
+      return 'Manuscript'
+    } else if ((name.includes('.png') || name.includes('.jpg') || name.includes('.jpeg') || 
+               name.includes('.tiff') || name.includes('.gif') || name.includes('.svg') ||
+               name.includes('.pdf') || name.includes('.eps')) && 
+               (uri.includes('/graphic/') || uri.includes('/figure') || name.includes('fig'))) {
+      return 'Figure'
+    } else if (uri.includes('/suppl_data/') || name.includes('supplement') ||
+               name.includes('.xlsx') || name.includes('.csv') || 
+               name.includes('data') || name.includes('.zip')) {
+      return 'Supplementary Data'
+    } else if (name.includes('.xml') || name.includes('.json')) {
+      return 'Metadata'
+    } else {
+      return 'Raw Data'
+    }
+  }
 
   const {
     state,
@@ -84,6 +160,13 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
 
     initializeData()
   }, [manuscriptId, useApiData, fetchApiManuscriptDetail, setManuscript, setIsLoading])
+
+  // Fetch source data when List Review tab is selected
+  useEffect(() => {
+    if (useApiData && state.selectedView === "list" && sourceDataFiles.length === 0 && !isLoadingSourceData) {
+      fetchSourceDataFiles()
+    }
+  }, [fetchSourceDataFiles, useApiData, state.selectedView, sourceDataFiles.length, isLoadingSourceData])
 
   // Handle view change
   const handleViewChange = (view: string) => {
@@ -242,7 +325,12 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
 
           <TabsContent value="list" className="space-y-6">
             {/* Source Files Treeview at the top */}
-            <SourceFilesTreeview sourceFiles={mockSourceData} />
+            <SourceFilesTreeview 
+              sourceFiles={sourceDataFiles.length > 0 ? sourceDataFiles : mockSourceData}
+              isLoading={isLoadingSourceData}
+              error={sourceDataError}
+              onRefresh={fetchSourceDataFiles}
+            />
             
             {/* Additional Information Sections */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
