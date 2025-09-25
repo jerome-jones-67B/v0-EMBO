@@ -6,6 +6,7 @@ export const config = {
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
     timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '10000'),
     retries: parseInt(process.env.NEXT_PUBLIC_API_RETRIES || '3'),
+    token: process.env.API_TOKEN,
   },
   
   // Feature flags

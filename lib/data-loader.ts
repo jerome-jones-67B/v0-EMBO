@@ -1,6 +1,6 @@
 // Data loader for processing check4viz.json files and integrating real figure data
 
-import { RealFigureData, integrateRealFigureData, convertCheck4VizToQCCheck } from './data-integration';
+import { RealFigureData, integrateRealFigureData, convertCheck4VizToQCCheck, Check4VizData } from './data-integration';
 
 // Load and process check4viz.json data
 export async function loadCheck4VizData(filePath: string): Promise<Check4VizData[]> {

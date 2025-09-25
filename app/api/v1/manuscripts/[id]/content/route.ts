@@ -105,21 +105,25 @@ Additional experimental details and extended data figures are available in the s
       return NextResponse.json(mockContent);
     }
 
-    const contentData = await data4revResponse.json();
+    // Check content type to determine how to handle the response
+    const contentType = data4revResponse.headers.get('content-type') || '';
     
-    // Handle different response formats from the API
     let processedContent;
-    if (typeof contentData === 'string') {
+    if (contentType.includes('application/json')) {
+      // Handle JSON response
+      const contentData = await data4revResponse.json();
       processedContent = {
-        content: contentData,
-        content_type: 'text/plain',
-        word_count: contentData.split(/\s+/).length,
+        ...contentData,
         fallback: false,
         source: 'data4rev-api'
       };
     } else {
+      // Handle text/HTML response from Data4Rev API
+      const textContent = await data4revResponse.text();
       processedContent = {
-        ...contentData,
+        content: textContent,
+        content_type: contentType.includes('text/html') ? 'text/html' : 'text/plain',
+        word_count: textContent.split(/\s+/).filter(word => word.length > 0).length,
         fallback: false,
         source: 'data4rev-api'
       };

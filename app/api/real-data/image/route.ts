@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const ext = path.extname(imagePath).toLowerCase()
     const contentType = ext === '.png' ? 'image/png' : 'image/jpeg'
     
-    return new NextResponse(imageBuffer, {
+    return new NextResponse(imageBuffer as BodyInit, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000',
