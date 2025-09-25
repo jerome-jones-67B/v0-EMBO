@@ -23,7 +23,7 @@ interface ManuscriptDetailProps {
   useApiData?: boolean
 }
 
-export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }: ManuscriptDetailProps = {}) {
+export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: ManuscriptDetailProps = {}) {
   const params = useParams()
   const { data: session } = useSession()
   // Use msid prop if provided, otherwise fall back to route params
@@ -62,24 +62,28 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }:
     const initializeData = async () => {
       if (!manuscriptId) return
 
-      const useMockData = dataService.getUseMockData()
+      // Prioritize useApiData prop, then check global setting
+      const shouldUseApi = useApiData || !dataService.getUseMockData()
       
-      if (useMockData) {
-        // Use mock data
-        setManuscript(mockManuscriptDetails)
-        setIsLoading(false)
-      } else if (session) {
-        // Fetch from API
-        await fetchApiManuscriptDetail(manuscriptId)
+      if (shouldUseApi) {
+        // Always try API first - the backend will handle authentication
+        try {
+          await fetchApiManuscriptDetail(manuscriptId)
+        } catch (error) {
+          console.warn('API call failed, falling back to mock data:', error)
+          // Fallback to mock data if API fails
+          setManuscript(mockManuscriptDetails)
+          setIsLoading(false)
+        }
       } else {
-        // No session, fallback to mock
+        // Use mock data when explicitly configured
         setManuscript(mockManuscriptDetails)
         setIsLoading(false)
       }
     }
 
     initializeData()
-  }, [manuscriptId, session, fetchApiManuscriptDetail, setManuscript, setIsLoading])
+  }, [manuscriptId, useApiData, fetchApiManuscriptDetail, setManuscript, setIsLoading])
 
   // Handle view change
   const handleViewChange = (view: string) => {
@@ -93,13 +97,13 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }:
     if (!state.manuscript) return
 
     try {
-      const useMockData = dataService.getUseMockData()
+      const shouldUseApi = useApiData || !dataService.getUseMockData()
       
-      if (useMockData) {
+      if (shouldUseApi) {
+        await downloadFile(state.manuscript.id, 'pdf')
+      } else {
         // Simulate download for mock data
         alert(`Downloading ${state.manuscript.msid}.pdf...`)
-      } else {
-        await downloadFile(state.manuscript.id, 'pdf')
       }
     } catch (error) {
       console.error('Download failed:', error)
@@ -127,7 +131,7 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }:
   if (state.isLoading) {
     return (
       <ManuscriptLoadingScreen 
-        useApiData={false}
+        useApiData={useApiData}
         onBack={() => window.history.back()}
       />
     )
@@ -165,6 +169,20 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }:
   return (
     <ErrorBoundary>
       <div className="container mx-auto py-8 space-y-6">
+        {/* API Status Notice - only show if we're using mock data fallback */}
+        {useApiData && state.manuscript?.notes?.includes('mock') && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm text-blue-800">
+                  Using demo data. The Data4Rev API may be unavailable.
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         {/* Header */}
         <ManuscriptHeader
           manuscript={state.manuscript}
@@ -200,7 +218,7 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }:
             )}
 
             {/* Quality Checks Summary */}
-            {state.manuscript.qcChecks && state.manuscript.qcChecks.length > 0 && (
+            {Array.isArray(state.manuscript.qcChecks) && state.manuscript.qcChecks.length > 0 && (
               <Card>
                 <CardContent className="p-6">
                   <h3 className="font-semibold mb-4">Quality Assurance Summary</h3>
@@ -268,9 +286,9 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }:
               {/* Quality Checks Summary */}
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="font-semibold mb-4">Quality Checks ({state.manuscript.qcChecks?.length || 0})</h3>
+                  <h3 className="font-semibold mb-4">Quality Checks ({Array.isArray(state.manuscript.qcChecks) ? state.manuscript.qcChecks.length : 0})</h3>
                   <div className="space-y-2">
-                    {state.manuscript.qcChecks?.map((check) => (
+                    {Array.isArray(state.manuscript.qcChecks) ? state.manuscript.qcChecks.map((check) => (
                       <div key={check.id} className="flex items-start gap-2">
                         <div className={`w-2 h-2 rounded-full mt-2 ${
                           check.type === 'success' ? 'bg-green-500' :
@@ -282,7 +300,7 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }:
                           <div className="text-xs text-muted-foreground">{check.category}</div>
                         </div>
                       </div>
-                    )) || <div className="text-sm text-muted-foreground">No quality checks available</div>}
+                    )) : <div className="text-sm text-muted-foreground">No quality checks available</div>}
                   </div>
                 </CardContent>
               </Card>
@@ -324,13 +342,17 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = false }:
 
           <TabsContent value="fulltext">
             <FullTextView
-              useApiData={false}
+              useApiData={useApiData}
               isLoadingFullText={false}
               fullTextError={null}
-              fullTextContent="This is a mock full-text view of the manuscript. In a real implementation, this would contain the actual manuscript content, formatted for easy reading."
+              fullTextContent={useApiData ? "Full text content would be loaded from API..." : "This is a mock full-text view of the manuscript. In a real implementation, this would contain the actual manuscript content, formatted for easy reading."}
               fullTextMetadata={state.manuscript}
               fetchFullTextContent={async () => {
-                // Mock load function
+                // TODO: Implement API call to fetch full text content
+                if (useApiData && state.manuscript) {
+                  // This would make an API call to fetch the full text
+                  console.log('Fetching full text from API for manuscript:', state.manuscript.id)
+                }
               }}
             />
           </TabsContent>
