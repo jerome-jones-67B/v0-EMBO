@@ -59,7 +59,7 @@ export interface SourceDataFile {
 }
 
 export interface ManuscriptDetailState {
-  selectedView: 'manuscript' | 'list' | 'fulltext'
+  selectedView: 'manuscript' | 'list'
   selectedFigureIndex: number
   linkedData: LinkedDataItem[]
   sourceData: SourceDataFile[]

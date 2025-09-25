@@ -62,7 +62,7 @@ const initialSourceData: SourceDataFile[] = [
 
 export function useManuscriptDetailState() {
   // Core state
-  const [selectedView, setSelectedView] = useState<'manuscript' | 'list' | 'fulltext'>('manuscript')
+  const [selectedView, setSelectedView] = useState<'manuscript' | 'list'>('manuscript')
   const [selectedFigureIndex, setSelectedFigureIndex] = useState(0)
   const [manuscript, setManuscript] = useState<ManuscriptDetailData | null>(null)
   const [notes, setNotes] = useState('')

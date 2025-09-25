@@ -31,6 +31,8 @@ interface TreeNode {
 }
 
 export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = null, onRefresh }: SourceFilesTreeviewProps) {
+  // Show loading state if we're loading or if we have no files and no error (initial state)
+  const shouldShowLoading = isLoading || (sourceFiles.length === 0 && !error)
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
   const [mappingTarget, setMappingTarget] = useState<Record<string, string>>({})
@@ -332,7 +334,7 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
                 type="checkbox"
                 checked={isSelected}
                 onChange={() => toggleFileSelection(node.id)}
-                className="h-4 w-4"
+                className="h-4 w-4 cursor-pointer"
               />
             )}
             
@@ -341,11 +343,11 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
               className="flex items-center gap-1 flex-1"
               style={{ paddingLeft: `${indent}px` }}
             >
-              {/* Expand/collapse button */}
-              <button
-                onClick={() => toggleFolder(node.id)}
-                className="flex items-center gap-1 hover:bg-muted rounded p-1"
-              >
+            {/* Expand/collapse button */}
+            <button
+              onClick={() => toggleFolder(node.id)}
+              className="flex items-center gap-1 hover:bg-muted rounded p-1 cursor-pointer"
+            >
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 ) : (
@@ -399,7 +401,7 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
           type="checkbox"
           checked={isSelected}
           onChange={() => toggleFileSelection(node.id)}
-          className="h-4 w-4"
+          className="h-4 w-4 cursor-pointer"
         />
         
         {/* File structure with indentation */}
@@ -427,7 +429,7 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 cursor-pointer">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -462,7 +464,7 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             Source Files
-            {isLoading && (
+            {shouldShowLoading && (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
             )}
           </CardTitle>
@@ -473,38 +475,46 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
                   variant="ghost"
                   size="sm"
                   onClick={expandAll}
-                  title="Expand all folders"
+                  className="gap-2 cursor-pointer"
+                  disabled={shouldShowLoading}
                 >
                   <FolderOpen className="w-4 h-4" />
+                  Expand All
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={collapseAll}
-                  title="Collapse all folders"
+                  className="gap-2 cursor-pointer"
+                  disabled={shouldShowLoading}
                 >
                   <FolderClosed className="w-4 h-4" />
+                  Collapse All
                 </Button>
               </>
             )}
-            {onRefresh && !isLoading && (
+            {onRefresh && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onRefresh}
-                title="Refresh source data"
+                className="gap-2 cursor-pointer"
+                disabled={shouldShowLoading}
               >
                 <RotateCcw className="w-4 h-4" />
+                Refresh
               </Button>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>Files: {sourceFiles.length}</span>
-          <span>Folders: {folderCount}</span>
-          <span>Selectable: {selectableItemCount}</span>
-          <span>Selected: {selectedFiles.size}</span>
-        </div>
+        {!shouldShowLoading && sourceFiles.length > 0 && (
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>Files: {sourceFiles.length}</span>
+            <span>Folders: {folderCount}</span>
+            <span>Selectable: {selectableItemCount}</span>
+            <span>Selected: {selectedFiles.size}</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         {error ? (
@@ -516,14 +526,14 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
                 variant="outline"
                 size="sm"
                 onClick={onRefresh}
-                className="ml-auto"
+                className="ml-auto gap-2 cursor-pointer"
               >
-                <RotateCcw className="w-4 h-4 mr-1" />
+                <RotateCcw className="w-4 h-4" />
                 Retry
               </Button>
             )}
           </div>
-        ) : isLoading ? (
+        ) : shouldShowLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -548,13 +558,13 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
                 {selectedFiles.size} items selected
               </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="cursor-pointer">
                   Bulk Download
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="cursor-pointer">
                   Bulk Map
                 </Button>
-                <Button variant="destructive" size="sm">
+                <Button variant="destructive" size="sm" className="cursor-pointer">
                   Remove Selected
                 </Button>
               </div>

@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/shared/loading-spinner"
 import { ErrorBoundary } from "@/components/shared/error-boundary"
@@ -14,7 +13,6 @@ import { useManuscriptDetailState } from "@/hooks/useManuscriptDetailState"
 import { useManuscriptDetailApi } from "@/hooks/useManuscriptDetailApi"
 import { mockManuscriptDetails, mockSourceData } from "@/lib/mock-manuscript-details"
 import { ManuscriptLoadingScreen } from '@/components/manuscript-loading-screen'
-import { FullTextView } from '@/components/manuscript-full-text-view'
 import { dataService } from '@/lib/data-service'
 
 interface ManuscriptDetailProps {
@@ -42,7 +40,7 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
     setSourceDataError(null)
     
     try {
-      console.log('🔍 List Review tab selected - fetching source data files for:', manuscriptId)
+      console.log('📁 Fetching source data files for manuscript:', manuscriptId)
       const response = await fetch(`/api/v1/manuscripts/${manuscriptId}/download?format=list`, {
         headers: {
           'Content-Type': 'application/json',
@@ -161,19 +159,14 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
     initializeData()
   }, [manuscriptId, useApiData, fetchApiManuscriptDetail, setManuscript, setIsLoading])
 
-  // Fetch source data when List Review tab is selected
+  // Prefetch source data when component mounts
   useEffect(() => {
-    if (useApiData && state.selectedView === "list" && sourceDataFiles.length === 0 && !isLoadingSourceData) {
+    if (useApiData && manuscriptId && sourceDataFiles.length === 0 && !isLoadingSourceData) {
+      console.log('🚀 Prefetching source data for manuscript:', manuscriptId)
       fetchSourceDataFiles()
     }
-  }, [fetchSourceDataFiles, useApiData, state.selectedView, sourceDataFiles.length, isLoadingSourceData])
+  }, [fetchSourceDataFiles, useApiData, manuscriptId, sourceDataFiles.length, isLoadingSourceData])
 
-  // Handle view change
-  const handleViewChange = (view: string) => {
-    if (view === 'manuscript' || view === 'list' || view === 'fulltext') {
-      setSelectedView(view)
-    }
-  }
 
   // Handle download
   const handleDownload = async () => {
@@ -275,14 +268,34 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
         />
 
         {/* Main Content */}
-        <Tabs value={state.selectedView} onValueChange={handleViewChange}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="manuscript">Manuscript Review</TabsTrigger>
-            <TabsTrigger value="list">List Review</TabsTrigger>
-            <TabsTrigger value="fulltext">Full Text</TabsTrigger>
-          </TabsList>
+        <div className="space-y-6">
+          {/* View Selection Buttons */}
+          <div className="inline-flex h-10 items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground w-auto">
+            <button
+              onClick={() => setSelectedView('manuscript')}
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all hover:bg-background/60 cursor-pointer ${
+                state.selectedView === 'manuscript' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : ''
+              }`}
+            >
+              📊 Manuscript Review
+            </button>
+            <button
+              onClick={() => setSelectedView('list')}
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all hover:bg-background/60 cursor-pointer ${
+                state.selectedView === 'list' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : ''
+              }`}
+            >
+              📋 List Review
+            </button>
+          </div>
 
-          <TabsContent value="manuscript" className="space-y-6">
+          {/* Manuscript Review Content */}
+          {state.selectedView === 'manuscript' && (
+            <div className="space-y-6">
             {/* Figures */}
             {state.manuscript.figures && state.manuscript.figures.length > 0 ? (
               <FigureViewer
@@ -321,9 +334,12 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="list" className="space-y-6">
+          {/* List Review Content */}
+          {state.selectedView === 'list' && (
+            <div className="space-y-6">
             {/* Source Files Treeview at the top */}
             <SourceFilesTreeview 
               sourceFiles={sourceDataFiles.length > 0 ? sourceDataFiles : mockSourceData}
@@ -426,25 +442,9 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-
-          <TabsContent value="fulltext">
-            <FullTextView
-              useApiData={useApiData}
-              isLoadingFullText={false}
-              fullTextError={null}
-              fullTextContent={useApiData ? "Full text content would be loaded from API..." : "This is a mock full-text view of the manuscript. In a real implementation, this would contain the actual manuscript content, formatted for easy reading."}
-              fullTextMetadata={state.manuscript}
-              fetchFullTextContent={async () => {
-                // TODO: Implement API call to fetch full text content
-                if (useApiData && state.manuscript) {
-                  // This would make an API call to fetch the full text
-                  console.log('Fetching full text from API for manuscript:', state.manuscript.id)
-                }
-              }}
-            />
-          </TabsContent>
-        </Tabs>
+            </div>
+          )}
+        </div>
       </div>
     </ErrorBoundary>
   )
