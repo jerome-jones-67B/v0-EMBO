@@ -142,15 +142,35 @@ export function FigureViewer({
                     <div className="space-y-2">
                       <h4 className="font-medium text-sm">Panel Quality Checks</h4>
                       <div className="space-y-1">
-                        {currentPanel.qualityChecks.map((check, index) => (
-                          <div key={getCheckId(check, 'panel', index)} className="flex items-center gap-2 text-sm">
-                            {getCheckIcon(check)}
-                            <span>{check.message}</span>
-                            <Badge variant="outline" className="text-xs">
-                              {check.category}
-                            </Badge>
-                          </div>
-                        ))}
+                        {currentPanel.qualityChecks.map((check: any, index) => {
+                          
+                          // Defensive check: ensure check is properly formatted
+                          const safeCheck = typeof check === 'object' && check !== null ? {
+                            id: check.id || `panel-check-${index}`,
+                            type: check.type || 'info',
+                            message: String(check.message || check.name || 'Check result'),
+                            category: typeof check.category === 'object' 
+                              ? (check.category?.name || check.category?.type || 'Quality Check')
+                              : String(check.category || 'Quality Check'),
+                            severity: (['high', 'low', 'medium'].includes(check.severity) ? check.severity : 'medium') as 'high' | 'low' | 'medium'
+                          } : {
+                            id: `panel-check-${index}`,
+                            type: 'info',
+                            message: String(check) || 'Check result',
+                            category: 'Quality Check',
+                            severity: 'medium' as const
+                          }
+                          
+                          return (
+                            <div key={getCheckId(safeCheck, 'panel', index)} className="flex items-center gap-2 text-sm">
+                              {getCheckIcon(safeCheck)}
+                              <span>{safeCheck.message}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {safeCheck.category}
+                              </Badge>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
@@ -229,23 +249,43 @@ export function FigureViewer({
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {currentFigure.qualityChecks.map((check, index) => (
-                    <TooltipProvider key={getCheckId(check, 'figure', index)}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 p-2 rounded border">
-                            {getCheckIcon(check)}
-                            <span className="text-sm flex-1">{check.message}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Category: {check.category}</p>
-                          <p>Severity: {check.severity}</p>
-                          {check.details && <p>{check.details}</p>}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
+                  {currentFigure.qualityChecks.map((check: any, index) => {
+                    
+                    // Defensive check: ensure check is properly formatted
+                    const safeCheck = typeof check === 'object' && check !== null ? {
+                      id: check.id || `figure-check-${index}`,
+                      type: check.type || 'info',
+                      message: String(check.message || check.name || 'Check result'),
+                      category: String(check.category || 'Quality Check'),
+                      severity: (['high', 'low', 'medium'].includes(check.severity) ? check.severity : 'medium') as 'high' | 'low' | 'medium',
+                      details: String(check.details || 'No details available')
+                    } : {
+                      id: `figure-check-${index}`,
+                      type: 'info',
+                      message: String(check) || 'Check result',
+                      category: 'Quality Check',
+                      severity: 'medium' as const,
+                      details: 'No details available'
+                    }
+                    
+                    return (
+                      <TooltipProvider key={getCheckId(safeCheck, 'figure', index)}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-2 p-2 rounded border">
+                              {getCheckIcon(safeCheck)}
+                              <span className="text-sm flex-1">{safeCheck.message}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Category: {safeCheck.category}</p>
+                            <p>Severity: {safeCheck.severity}</p>
+                            {safeCheck.details && <p>{safeCheck.details}</p>}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>

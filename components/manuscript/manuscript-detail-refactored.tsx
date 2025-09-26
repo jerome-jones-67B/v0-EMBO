@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { Card, CardContent } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/shared/loading-spinner"
 import { ErrorBoundary } from "@/components/shared/error-boundary"
+import { SafeRender, SafeString } from "@/components/shared/safe-render"
 import { ManuscriptHeader } from "./manuscript-header"
 import { FigureViewer } from "./figure-viewer"
 import { SourceFilesTreeview } from "./source-files-treeview"
@@ -14,6 +15,38 @@ import { useManuscriptDetailApi } from "@/hooks/useManuscriptDetailApi"
 import { mockManuscriptDetails, mockSourceData } from "@/lib/mock-manuscript-details"
 import { ManuscriptLoadingScreen } from '@/components/manuscript-loading-screen'
 import { dataService } from '@/lib/data-service'
+import type { ManuscriptDetailData } from '@/types/manuscript-detail'
+
+// Helper function to generate available elements for mapping based on manuscript data
+const generateAvailableElements = (manuscript: ManuscriptDetailData | null) => {
+  const elements = [{ value: 'manuscript', label: 'Manuscript' }]
+  
+  if (manuscript?.figures) {
+    manuscript.figures.forEach((figure, figIndex) => {
+      // Add main figure
+      elements.push({ 
+        value: figure.id, 
+        label: `Figure ${figIndex + 1}` 
+      })
+      
+      // Add figure panels
+      figure.panels.forEach((panel, panelIndex) => {
+        const panelLetter = String.fromCharCode(65 + panelIndex) // A, B, C, etc.
+        elements.push({ 
+          value: panel.id, 
+          label: `Figure ${figIndex + 1}${panelLetter}` 
+        })
+      })
+    })
+  }
+  
+  // Add common supplementary options
+  elements.push({ value: 'supplement', label: 'Supplementary' })
+  elements.push({ value: 'methods', label: 'Methods' })
+  elements.push({ value: 'appendix', label: 'Appendix' })
+  
+  return elements
+}
 
 interface ManuscriptDetailProps {
   msid?: string
@@ -165,7 +198,7 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
       console.log('🚀 Prefetching source data for manuscript:', manuscriptId)
       fetchSourceDataFiles()
     }
-  }, [fetchSourceDataFiles, useApiData, manuscriptId, sourceDataFiles.length, isLoadingSourceData])
+  }, [useApiData, manuscriptId]) // Remove fetchSourceDataFiles from deps to prevent duplicate calls
 
 
   // Handle download
@@ -319,17 +352,32 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
                 <CardContent className="p-6">
                   <h3 className="font-semibold mb-4">Quality Assurance Summary</h3>
                   <div className="space-y-2">
-                    {state.manuscript.qcChecks.map((check, index) => (
-                      <div key={check.id || `qc-${index}`} className="flex items-center gap-2 text-sm">
-                        <div className={`w-2 h-2 rounded-full ${
-                          check.type === 'success' ? 'bg-green-500' :
-                          check.type === 'warning' ? 'bg-yellow-500' :
-                          check.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-                        }`} />
-                        <span>{check.message}</span>
-                        <span className="text-muted-foreground">({check.category})</span>
-                      </div>
-                    ))}
+                    {state.manuscript.qcChecks.map((check: any, index) => {
+                      // Defensive check: ensure check is properly formatted
+                      const safeCheck = typeof check === 'object' && check !== null ? {
+                        id: check.id || `qc-${index}`,
+                        type: check.type || 'info',
+                        message: String(check.message || (check as any).name || 'Check result'),
+                        category: String(check.category || 'Quality Check')
+                      } : {
+                        id: `qc-${index}`,
+                        type: 'info',
+                        message: String(check) || 'Check result',
+                        category: 'Quality Check'
+                      }
+                      
+                      return (
+                        <div key={safeCheck.id} className="flex items-center gap-2 text-sm">
+                          <div className={`w-2 h-2 rounded-full ${
+                            safeCheck.type === 'success' ? 'bg-green-500' :
+                            safeCheck.type === 'warning' ? 'bg-yellow-500' :
+                            safeCheck.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                          }`} />
+                          <SafeString value={safeCheck.message} />
+                          <span className="text-muted-foreground">(<SafeString value={safeCheck.category} />)</span>
+                        </div>
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -346,6 +394,7 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
               isLoading={isLoadingSourceData}
               error={sourceDataError}
               onRefresh={fetchSourceDataFiles}
+              availableElements={generateAvailableElements(state.manuscript)}
             />
             
             {/* Additional Information Sections */}
@@ -392,19 +441,34 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
                 <CardContent className="p-6">
                   <h3 className="font-semibold mb-4">Quality Checks ({Array.isArray(state.manuscript.qcChecks) ? state.manuscript.qcChecks.length : 0})</h3>
                   <div className="space-y-2">
-                    {Array.isArray(state.manuscript.qcChecks) ? state.manuscript.qcChecks.map((check) => (
-                      <div key={check.id} className="flex items-start gap-2">
-                        <div className={`w-2 h-2 rounded-full mt-2 ${
-                          check.type === 'success' ? 'bg-green-500' :
-                          check.type === 'warning' ? 'bg-yellow-500' :
-                          check.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-                        }`} />
-                        <div className="flex-1">
-                          <div className="text-sm">{check.message}</div>
-                          <div className="text-xs text-muted-foreground">{check.category}</div>
+                    {Array.isArray(state.manuscript.qcChecks) ? state.manuscript.qcChecks.map((check: any, index) => {
+                      // Defensive check: ensure check is properly formatted
+                      const safeCheck = typeof check === 'object' && check !== null ? {
+                        id: check.id || `qc-${index}`,
+                        type: check.type || 'info',
+                        message: String(check.message || (check as any).name || 'Check result'),
+                        category: String(check.category || 'Quality Check')
+                      } : {
+                        id: `qc-${index}`,
+                        type: 'info',
+                        message: String(check) || 'Check result',
+                        category: 'Quality Check'
+                      }
+                      
+                      return (
+                        <div key={safeCheck.id} className="flex items-start gap-2">
+                          <div className={`w-2 h-2 rounded-full mt-2 ${
+                            safeCheck.type === 'success' ? 'bg-green-500' :
+                            safeCheck.type === 'warning' ? 'bg-yellow-500' :
+                            safeCheck.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                          }`} />
+                          <div className="flex-1">
+                            <div className="text-sm"><SafeString value={safeCheck.message} /></div>
+                            <div className="text-xs text-muted-foreground"><SafeString value={safeCheck.category} /></div>
+                          </div>
                         </div>
-                      </div>
-                    )) : <div className="text-sm text-muted-foreground">No quality checks available</div>}
+                      )
+                    }) : <div className="text-sm text-muted-foreground">No quality checks available</div>}
                   </div>
                 </CardContent>
               </Card>

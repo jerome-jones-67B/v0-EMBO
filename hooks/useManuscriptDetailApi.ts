@@ -60,9 +60,51 @@ export function useManuscriptDetailApi({
             description: panel.label || panel.description || `Panel ${String.fromCharCode(65 + panelIndex)}`,
             legend: panel.caption || panel.legend || 'No panel legend',
             imagePath: getImageUrl(manuscriptId, figure.id || `figure-${index}`, { type: 'full' }),
-            qualityChecks: Array.isArray(panel.check_results) ? panel.check_results : []
+            qualityChecks: Array.isArray(panel.check_results) ? panel.check_results.map((check: any) => {
+              // Ensure we transform any object to proper format
+              if (typeof check === 'object' && check !== null) {
+                return {
+                  id: check.id || `check-${panelIndex}`,
+                  type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+                  message: String(check.message || check.name || check.check_name || 'Check result'),
+                  category: String(check.category || 'Quality Check'),
+                  severity: String(check.severity || 'medium'),
+                  details: String(check.details || check.message || check.name || check.check_name || 'No details available')
+                }
+              }
+              // If it's not an object, return a default structure
+              return {
+                id: `check-${panelIndex}`,
+                type: 'info',
+                message: String(check) || 'Check result',
+                category: 'Quality Check',
+                severity: 'medium',
+                details: 'No details available'
+              }
+            }) : []
           })) : [],
-          qualityChecks: Array.isArray(figure.check_results) ? figure.check_results : []
+          qualityChecks: Array.isArray(figure.check_results) ? figure.check_results.map((check: any) => {
+            // Ensure we transform any object to proper format
+            if (typeof check === 'object' && check !== null) {
+              return {
+                id: check.id || `figure-check-${index}`,
+                type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+                message: check.message || check.name || check.check_name || 'Check result',
+                category: check.category || 'Quality Check',
+                severity: check.severity || 'medium',
+                details: check.details || check.message || check.name || check.check_name || 'No details available'
+              }
+            }
+            // If it's not an object, return a default structure
+            return {
+              id: `figure-check-${index}`,
+              type: 'info',
+              message: String(check) || 'Check result',
+              category: 'Quality Check',
+              severity: 'medium',
+              details: 'No details available'
+            }
+          }) : []
         }))
       }
 
@@ -81,8 +123,30 @@ export function useManuscriptDetailApi({
         notes: apiData.notes || '',
         lastModified: apiData.last_modified || apiData.received_at || new Date().toISOString(),
         figures: processedFigures,
-        qcChecks: Array.isArray(apiData.check_results) ? apiData.check_results : []
+        qcChecks: Array.isArray(apiData.check_results) ? apiData.check_results.map((check: any) => {
+          // Ensure we transform any object to proper format
+          if (typeof check === 'object' && check !== null) {
+            return {
+              id: check.id || `manuscript-check-${Math.random()}`,
+              type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
+              message: check.message || check.name || check.check_name || 'Check result',
+              category: check.category || 'Quality Check',
+              severity: check.severity || 'medium',
+              details: check.details || check.message || check.name || check.check_name || 'No details available'
+            }
+          }
+          // If it's not an object, return a default structure
+          return {
+            id: `manuscript-check-${Math.random()}`,
+            type: 'info',
+            message: String(check) || 'Check result',
+            category: 'Quality Check',
+            severity: 'medium',
+            details: 'No details available'
+          }
+        }) : []
       }
+
 
       setManuscript(transformedManuscript)
 
