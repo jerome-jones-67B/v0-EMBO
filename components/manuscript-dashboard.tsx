@@ -97,9 +97,6 @@ export default function ManuscriptDashboard() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [useApiData, setUseApiData] = useState(() => {
     const useMock = dataService.getUseMockData()
-    console.log('🔍 Initial data service useMockData:', useMock)
-    console.log('🔍 Environment NEXT_PUBLIC_USE_MOCK_DATA:', process.env.NEXT_PUBLIC_USE_MOCK_DATA)
-    console.log('🔍 Calculated useApiData:', !useMock)
     return !useMock
   })
   const [apiManuscripts, setApiManuscripts] = useState<any[]>([])
@@ -545,13 +542,7 @@ export default function ManuscriptDashboard() {
     const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
     
     // 🔍 Debug: Enhanced logging for API mode debugging
-    console.log('🔍 useApiData:', useApiData)
-    console.log('🔍 apiManuscripts.length:', apiManuscripts.length) 
-    console.log('🔍 mockManuscripts.length:', mockManuscripts.length)
-    console.log('🔍 Current manuscripts count:', currentManuscripts.length)
-    console.log('🔍 Active tab:', activeTab)
     if (currentManuscripts.length > 0) {
-      console.log('🔍 First manuscript structure:', currentManuscripts[0])
     }
     
     // Enhance manuscripts with computed aiChecks if they don't have them
@@ -573,7 +564,6 @@ export default function ManuscriptDashboard() {
       
       // 🔍 Debug: Log filtering decisions
       if (useApiData) {
-        console.log(`🔍 API Manuscript ${manuscript.msid}: workflowState="${workflowState}", activeTab="${activeTab}", matches="${workflowState === activeTab}"`)
       }
       
       if (workflowState !== activeTab) return false
@@ -658,15 +648,6 @@ export default function ManuscriptDashboard() {
       return 0
     })
 
-    // Debug logging for final results when filtering by "New submission"
-    if (process.env.NODE_ENV === 'development' && statusFilter === "New submission") {
-      console.log(`📊 Final results for "${statusFilter}" filter:`, finalResults.map(m => ({
-        msid: m.msid,
-        status: m.status,
-        displayStatus: m.displayStatus,
-        workflowState: m.workflowState
-      })))
-    }
 
     return finalResults
   }, [searchTerm, statusFilter, priorityFilter, assigneeFilter, sortField, sortDirection, activeTab, mockManuscripts, apiManuscripts, useApiData])
@@ -815,11 +796,6 @@ export default function ManuscriptDashboard() {
     setIsLoadingApi(true)
     
     try {
-      console.log('🔄 Starting API call to fetch manuscripts...')
-      console.log('🔄 Auth token present:', !!process.env.NEXT_PUBLIC_DATA4REV_AUTH_TOKEN)
-      console.log('🔄 API base URL:', process.env.NEXT_PUBLIC_DATA4REV_API_BASE_URL)
-      console.log('🔄 Use mock data setting:', process.env.NEXT_PUBLIC_USE_MOCK_DATA)
-      
       const response = await api.manuscripts.getAll({
         page: 0,
         pagesize: 100,
@@ -827,26 +803,13 @@ export default function ManuscriptDashboard() {
         ascending: true
       })
       
-      console.log('🔄 Raw API response:', response)
-      console.log('🔄 Response type:', typeof response)
-      console.log('🔄 Response keys:', Object.keys(response || {}))
-      
       // ✅ The API client returns the data directly (not wrapped in .data)
       const data = response
-      
-      // 🔍 Debug: Log the actual response structure
-      console.log('📊 Data object:', data)
-      console.log('📊 Data.manuscripts:', data?.manuscripts)
-      console.log('📊 Data.total:', data?.total)
       
       // ✅ Extract manuscripts array from API response
       const manuscripts = data?.manuscripts || []
       
-      console.log('📊 Extracted manuscripts:', manuscripts)
-      console.log('📊 Manuscripts count:', manuscripts.length)
       if (manuscripts.length > 0) {
-        console.log('📊 First manuscript:', manuscripts[0])
-        console.log('📊 Sample manuscript keys:', Object.keys(manuscripts[0]))
       }
       
       if (!Array.isArray(manuscripts)) {
@@ -855,10 +818,8 @@ export default function ManuscriptDashboard() {
       }
       
       // Transform API data to match our mock data structure using proper status mapping
-      console.log('📊 Transforming manuscripts...')
       const transformedManuscripts = manuscripts.map((manuscript: any, index: number) => {
         const statusMapping = getStatusMapping(manuscript.status)
-        console.log(`📊 Manuscript ${index + 1}: "${manuscript.msid}" status="${manuscript.status}" -> workflowState="${statusMapping.workflowState}"`)
         return {
           id: manuscript.id, // ✅ Include the integer ID for API calls
           msid: manuscript.msid,
@@ -891,14 +852,10 @@ export default function ManuscriptDashboard() {
         index === self.findIndex((m: any) => m.msid === manuscript.msid)
       )
       
-      console.log('📊 Unique manuscripts after deduplication:', uniqueManuscripts.length)
-      console.log('📊 Setting API manuscripts state...')
       setApiManuscripts(uniqueManuscripts)
       
       // ✅ FIX: Update UI state to show API data is being used
-      console.log('📊 Setting useApiData to true...')
       setUseApiData(true)
-      console.log('📊 Setting dataService.setUseMockData to false...')
       dataService.setUseMockData(false)
       
     } catch (error) {
@@ -930,8 +887,6 @@ export default function ManuscriptDashboard() {
 
   // Switch between API and mock data
   const handleDataSourceSwitch = async (useApi: boolean) => {
-    console.log('🔄 handleDataSourceSwitch called with useApi:', useApi)
-    console.log('🔄 Current apiManuscripts.length:', apiManuscripts.length)
     
     setUseApiData(useApi)
     setIsInitialLoadComplete(false) // Reset load state when switching
@@ -940,11 +895,9 @@ export default function ManuscriptDashboard() {
     dataService.setUseMockData(!useApi)
     
     if (useApi && apiManuscripts.length === 0) {
-      console.log('🔄 Calling fetchApiData() because API manuscripts are empty')
       await fetchApiData()
     } else {
       // For mock data, mark as loaded immediately
-      console.log('🔄 Using existing data or mock data')
       setIsInitialLoadComplete(true)
     }
   }

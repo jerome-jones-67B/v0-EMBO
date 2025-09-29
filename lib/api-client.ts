@@ -79,15 +79,6 @@ class ApiClient {
 
       // Get auth token from config (for Data4Rev API)
       const authToken = config.api.token;
-      
-      // Debug logging for environment variables
-      console.log('🔧 Debug - Environment check:', {
-        configToken: config.api.token,
-        baseUrl: config.api.baseUrl,
-        useMockData: config.features.useMockData,
-        hasToken: !!authToken,
-        tokenLength: authToken?.length
-      });
 
       try {
         const response = await fetch(url, {
