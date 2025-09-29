@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useSession } from 'next-auth/react'
+import { api } from '@/lib/api-client'
 import { getImageUrl, type ImageOptions } from '@/lib/image-utils'
 import type { ManuscriptDetailData } from '@/types/manuscript-detail'
 
@@ -20,37 +20,27 @@ export function useManuscriptDetailApi({
   setError,
   setDataAvailability
 }: UseManuscriptDetailApiProps) {
-  const { data: session } = useSession()
 
   const fetchApiManuscriptDetail = useCallback(async (manuscriptId: string) => {
     setIsLoading(true)
     setError(null)
 
     try {
-      // Use the same successful API call pattern as the old manuscript view
-      const response = await fetch(`/api/v1/manuscripts/${manuscriptId}?apiMode=true`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': document.cookie,
-        },
-        credentials: 'include'
-      })
+      // Use the new API client to fetch manuscript details directly from Data4Rev API
+      const response = await api.manuscripts.getById(manuscriptId)
+      const apiData = response // API client returns data directly, not wrapped in .data
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(`API request failed: ${response.status} - ${errorData.error || response.statusText}`)
-      }
+      console.log('🔍 Manuscript detail API response:', apiData)
+      console.log('🔍 Response keys:', Object.keys(apiData || {}))
+      console.log('🔍 Figures data:', apiData?.figures)
 
-      const apiData = await response.json()
-
-      // Check if this is an error response from API mode
-      if (apiData.error && apiData.isApiMode) {
-        throw new Error(`Data4Rev API Error: ${apiData.error} - ${apiData.details}`)
+      if (!apiData) {
+        throw new Error('No data received from API')
       }
 
       // Process figures from the API response
       let processedFigures = []
-      if (Array.isArray(apiData.figures)) {
+      if (apiData && Array.isArray(apiData.figures)) {
         processedFigures = apiData.figures.map((figure: any, index: number) => ({
           id: figure.id || `figure-${index}`,
           title: figure.label || figure.title || `Figure ${index + 1}`,
@@ -166,71 +156,28 @@ export function useManuscriptDetailApi({
   }, [setManuscript, setIsLoading, setError, setDataAvailability])
 
   const downloadFile = useCallback(async (manuscriptId: string, fileType: string) => {
-    if (!session) {
-      console.error('❌ No session available for download')
-      return
-    }
-
     try {
-      const response = await fetch(`/api/v1/manuscripts/${manuscriptId}/download`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': document.cookie,
-        },
-        credentials: 'include',
-        body: JSON.stringify({ fileType })
-      })
-
-      if (!response.ok) {
-        throw new Error(`Download failed: ${response.status}`)
-      }
-
-      // Handle download response
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${manuscriptId}_${fileType}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-
+      // For static builds, we need to implement download differently or disable it
+      // This functionality would need to be handled by the Data4Rev API directly
+      console.warn('Download functionality not available in static build mode')
+      alert('Download functionality is not available in static mode. Please contact support for file access.')
     } catch (error) {
       console.error('❌ Download failed:', error)
       throw error
     }
-  }, [session])
+  }, [])
 
   const submitValidation = useCallback(async (manuscriptId: string, validationData: any) => {
-    if (!session) {
-      console.error('❌ No session available for validation')
-      return
-    }
-
     try {
-      const response = await fetch(`/api/v1/manuscripts/${manuscriptId}/validation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': document.cookie,
-        },
-        credentials: 'include',
-        body: JSON.stringify(validationData)
-      })
-
-      if (!response.ok) {
-        throw new Error(`Validation submission failed: ${response.status}`)
-      }
-
-      return await response.json()
-
+      // For static builds, validation submission would need to be handled by Data4Rev API
+      console.warn('Validation submission not available in static build mode')
+      alert('Validation submission is not available in static mode. Please contact support.')
+      return { success: false, message: 'Not available in static mode' }
     } catch (error) {
       console.error('❌ Validation submission failed:', error)
       throw error
     }
-  }, [session])
+  }, [])
 
   return {
     fetchApiManuscriptDetail,

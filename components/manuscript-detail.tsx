@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { useSession } from "next-auth/react"
+// No longer using NextAuth for static builds
 import { endpoints, config } from "@/lib/config"
 import { getImageUrl } from "@/lib/image-utils"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -855,16 +855,10 @@ const getManuscriptDetail = async (msid: string) => {
   return finalManuscript
 }
 
-// Helper function to build full API URLs
-const buildApiUrl = (endpoint: string): string => {
-  // Always use relative paths to avoid CORS issues between different Vercel deployments
-  const baseUrl = config.api.baseUrl.startsWith('http') ? '/api' : config.api.baseUrl
-  return `${baseUrl}${endpoint}`
-}
+// No longer needed - using API client directly
 
 
 const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) => {
-  const { data: session } = useSession()
   const [selectedView, setSelectedView] = useState<"manuscript" | "list" | "fulltext">("manuscript")
   const [selectedFigureIndex, setSelectedFigureIndex] = useState(0)
   const [linkedData, setLinkedData] = useState(mockLinkedData)
@@ -941,43 +935,14 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setIsFetching(true)
     setIsLoadingApi(true)
     
-    // Check if we should bypass auth or if we have a session
-    const shouldBypass = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" || process.env.NODE_ENV === "development"
-    if (!session && !shouldBypass) {
-      setIsLoadingApi(false)
-      setIsFetching(false)
-      return
-    }
+    // For static builds, no session check needed
     
     try {
-      const response = await fetch(`${buildApiUrl(endpoints.manuscriptDetails(msid))}?apiMode=true`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': document.cookie,
-        },
-        credentials: 'include',
-      })
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(`API request failed: ${response.status} - ${errorData.error || response.statusText}`)
-      }
-      const apiData: any = await response.json()
+      const response = await api.manuscripts.getById(msid)
+      const apiData: any = response.data
       
-      // Check if this is an error response from API mode
-      if (apiData.error && apiData.isApiMode) {
-        throw new Error(`Data4Rev API Error: ${apiData.error} - ${apiData.details}`)
-      }
-      
-      // Fetch validation data separately
-      let validationData: any = null;
-      try {
-        const validationResponse = await fetch(`/api/v1/manuscripts/${msid}/validation`);
-        if (validationResponse.ok) {
-          validationData = await validationResponse.json();
-        }
-      } catch (validationError) {
-        console.warn('Failed to fetch validation data:', validationError);
-      }
+      // Validation data is included in the manuscript details from Data4Rev API
+      let validationData: any = apiData.validation || null;
 
       // Transform API data to match our manuscript format
       const statusMapping = getStatusMapping(apiData.status)
@@ -1281,19 +1246,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setFullTextError(null)
     
     try {
-      const response = await fetch(`/api/v1/manuscripts/${msid}/content`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': document.cookie,
-        },
-        credentials: 'include',
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch content: ${response.status}`)
-      }
-      
-      const data = await response.json()
+      const response = await api.manuscripts.getContent(msid)
+      const data = response.data
       
       // Always set content if it exists, regardless of fallback status
       if (data.content) {
@@ -1741,27 +1695,15 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     }
 
     try {
-      // Use API to create figure if using API data
+      // Use API client to create figure if using API data
       if (useApiData) {
-        const response = await fetch(`/api/v1/manuscripts/${msid}/figures`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(newFigureData)
-        });
-
-        if (response.ok) {
-          const createdFigure = await response.json();
-          
-          // Refresh manuscript data to get the updated figure list
-          await fetchApiManuscriptDetail();
-          
-          console.log('✅ Figure created via API:', createdFigure);
-          return;
-        } else {
-          console.warn('❌ API figure creation failed, falling back to mock');
-        }
+        const response = await api.figures.create(msid, newFigureData);
+        
+        // Refresh manuscript data to get the updated figure list
+        await fetchApiManuscriptDetail();
+        
+        console.log('✅ Figure created via API:', response.data);
+        return;
       }
 
       // Fallback to mock figure creation
@@ -2227,20 +2169,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setSourceDataError(null)
     
     try {
-      const response = await fetch(`/api/v1/manuscripts/${msid}/download?format=list`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': document.cookie,
-        },
-        credentials: 'include',
-      })
+      // For static builds, we'll get source data from the manuscript details API
+      const response = await api.manuscripts.getById(msid)
+      const manuscriptData = response.data
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch source data: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      setSourceDataFiles(data.files || [])
+      // Extract source data files from manuscript data  
+      const files = manuscriptData.files || []
+      setSourceDataFiles(files)
       
     } catch (error) {
       console.error('Error fetching source data:', error)
@@ -2434,13 +2369,9 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   ])
 
   const handleDownloadFile = (fileName: string) => {
-    // Create a mock download - in real app this would fetch the actual file
-    const link = document.createElement("a")
-    link.href = `/api/files/download/${fileName}`
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    // For static builds, file downloads would need to be handled by Data4Rev API directly
+    console.warn('File download not available in static build mode')
+    alert('File download functionality is not available in static mode. Please contact support.')
   }
 
   const handleEditFile = (fileId: number) => {
@@ -3687,7 +3618,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              disabled
+                              title="File downloads not available in static build mode"
                               title="Download file"
                             >
                               <Download className="w-4 h-4" />
@@ -3722,7 +3654,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              disabled
+                              title="File downloads not available in static build mode"
                               title="Download file"
                             >
                               <Download className="w-4 h-4" />
@@ -3757,7 +3690,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              disabled
+                              title="File downloads not available in static build mode"
                               title="Download file"
                             >
                               <Download className="w-4 h-4" />
@@ -3792,7 +3726,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              disabled
+                              title="File downloads not available in static build mode"
                               title="Download file"
                             >
                               <Download className="w-4 h-4" />
@@ -3827,7 +3762,8 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => window.open(`/api/v1/manuscripts/${msid}/files/${file.id}/download`, '_blank')}
+                              disabled
+                              title="File downloads not available in static build mode"
                               title="Download file"
                             >
                               <Download className="w-4 h-4" />
@@ -3846,11 +3782,12 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
                       Total: {sourceDataFiles.length} files
                     </p>
                     <Button
-                      onClick={() => window.open(`/api/v1/manuscripts/${msid}/download`, '_blank')}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      disabled
+                      className="bg-gray-400 cursor-not-allowed"
+                      title="File downloads not available in static build mode"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Download All Files
+                      Download All Files (Unavailable)
                     </Button>
                   </div>
                 </div>

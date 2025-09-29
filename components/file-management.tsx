@@ -299,44 +299,16 @@ export function FileManagement({ msid }: FileManagementProps) {
     return sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
   }
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = event.target.files
     if (!uploadedFiles) return
 
-    Array.from(uploadedFiles).forEach((file) => {
-      // Simulate upload progress
-      setUploadProgress(0)
-      const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev === null) return null
-          if (prev >= 100) {
-            clearInterval(interval)
-            // Add file to list
-            const newFile = {
-              id: `file${Date.now()}`,
-              filename: file.name,
-              path: `/manuscripts/${msid}/uploads/`,
-              size: formatFileSize(file.size),
-              sizeBytes: file.size,
-              type: file.type.startsWith("image/") ? "image" : "document",
-              source: "uploaded" as const,
-              uploadedDate: new Date().toISOString(),
-              uploadedBy: "Current User",
-              assignments: [],
-              validationStatus: "unassigned" as const,
-              hasErrors: false,
-              hasWarnings: false,
-              previewUrl: null,
-              downloadUrl: `/download/${file.name}`,
-            }
-            setFiles((prev) => [newFile, ...prev])
-            setUploadProgress(null)
-            return null
-          }
-          return prev + 10
-        })
-      }, 100)
-    })
+    // For static builds, file uploads need to be handled differently
+    console.warn('File upload not available in static build mode')
+    alert('File upload functionality is not available in static mode. Please contact support for file uploads.')
+    
+    // Reset the input
+    event.target.value = ''
   }
 
   const handleReassignFile = (fileId: string, newAssignment: string) => {

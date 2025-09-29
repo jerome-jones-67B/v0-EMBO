@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useMemo } from 'react'
-import { useSession } from 'next-auth/react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody } from "@/components/ui/table"
@@ -25,7 +24,6 @@ import { getStatusMapping } from '@/lib/status-mapping'
 import type { Manuscript } from '@/types/manuscript'
 
 export function ManuscriptDashboardRefactored() {
-  const { data: session } = useSession()
   const {
     state,
     setManuscripts,

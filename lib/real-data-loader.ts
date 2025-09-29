@@ -29,10 +29,10 @@ export interface ProcessedFigureData extends RealFigureData {
 // Load all figures from the API
 export async function loadAllFigures(): Promise<ProcessedFigureData[]> {
   try {
-    const response = await fetch('/api/real-data')
-    if (!response.ok) {
-      throw new Error('Failed to load real data')
-    }
+    // For static builds, we can't load real data from API endpoints
+    // This functionality would need to be integrated directly with Data4Rev API
+    console.warn('Real data loading not available in static build mode')
+    throw new Error('Real data loading not available in static build mode')
     
     const data = await response.json()
     return data.figures || []

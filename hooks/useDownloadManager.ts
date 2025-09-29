@@ -1,6 +1,4 @@
 import { useState, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
-import { endpoints, config } from '@/lib/config'
 import { logger } from '@/lib/logger'
 
 // Constants for download timing
@@ -18,17 +16,11 @@ interface DownloadProgress {
 }
 
 export function useDownloadManager() {
-  const { data: session } = useSession()
   const [downloadingManuscripts, setDownloadingManuscripts] = useState<Set<string>>(new Set())
   const [downloadProgress, setDownloadProgress] = useState<Record<string, DownloadProgress>>({})
   const [showDownloadToast, setShowDownloadToast] = useState<Record<string, boolean>>({})
   const [downloadConnections, setDownloadConnections] = useState<Record<string, EventSource | null>>({})
   const [downloadAbortControllers, setDownloadAbortControllers] = useState<Record<string, AbortController | null>>({})
-
-  const buildApiUrl = (endpoint: string) => {
-    const baseUrl = config.api.baseUrl
-    return `${baseUrl}${endpoint}`
-  }
 
   const handleDownloadFiles = useCallback(async (
     msid: string, 

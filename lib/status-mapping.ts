@@ -93,6 +93,24 @@ export const STATUS_MAPPINGS: Record<string, StatusMapping> = {
     badgeVariant: 'outline',
     isMapped: true
   },
+  'depositing': {
+    apiStatus: 'depositing',
+    displayStatus: 'Deposited',
+    workflowState: 'deposited-to-biostudies',
+    priority: 'normal',
+    qcStatus: 'validated',
+    badgeVariant: 'outline',
+    isMapped: true
+  },
+  'incomplete': {
+    apiStatus: 'incomplete',
+    displayStatus: 'New submission',
+    workflowState: 'ready-for-curation',
+    priority: 'urgent',
+    qcStatus: 'needs-validation',
+    badgeVariant: 'destructive',
+    isMapped: true
+  },
   'api-error': {
     apiStatus: 'api-error',
     displayStatus: 'API Error',

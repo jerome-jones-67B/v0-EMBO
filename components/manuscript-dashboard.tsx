@@ -16,7 +16,8 @@ import { Settings2, Database, Zap } from "lucide-react"
 import { ManuscriptDetailRefactored } from "./manuscript/manuscript-detail-refactored" // Import the refactored manuscript detail component
 import { AuthorList } from "./author-list"
 import { UserNav } from "./user-nav"
-import { useSession } from "next-auth/react"
+// No longer using NextAuth for static builds
+import { api } from "@/lib/api-client"
 import { endpoints, config } from "@/lib/config"
 import { dataService } from "@/lib/data-service"
 import { getValidStatusesForTab as getValidStatuses, getStatusMapping } from "@/lib/status-mapping"
@@ -27,12 +28,7 @@ import { initialMockManuscripts } from "@/lib/mock-dashboard-manuscripts"
 type SortField = "msid" | "receivedDate" | "title" | "authors" | "status" | "priority" | "lastModified"
 type SortDirection = "asc" | "desc"
 
-// Helper function to build full API URLs
-const buildApiUrl = (endpoint: string): string => {
-  // Always use relative paths to avoid CORS issues between different Vercel deployments
-  const baseUrl = config.api.baseUrl.startsWith('http') ? '/api' : config.api.baseUrl
-  return `${baseUrl}${endpoint}`
-}
+// No longer needed - using API client directly
 
 // Function to compute AI checks summary from QC checks data
 function computeAIChecksSummary(manuscript: any) {
@@ -87,7 +83,6 @@ function computeAIChecksSummary(manuscript: any) {
 }
 
 export default function ManuscriptDashboard() {
-  const { data: session } = useSession()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
@@ -100,7 +95,13 @@ export default function ManuscriptDashboard() {
   const [editedAccessionValue, setEditedAccessionValue] = useState("")
   const [mockManuscripts, setMockManuscripts] = useState(initialMockManuscripts)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
-  const [useApiData, setUseApiData] = useState(!dataService.getUseMockData())
+  const [useApiData, setUseApiData] = useState(() => {
+    const useMock = dataService.getUseMockData()
+    console.log('🔍 Initial data service useMockData:', useMock)
+    console.log('🔍 Environment NEXT_PUBLIC_USE_MOCK_DATA:', process.env.NEXT_PUBLIC_USE_MOCK_DATA)
+    console.log('🔍 Calculated useApiData:', !useMock)
+    return !useMock
+  })
   const [apiManuscripts, setApiManuscripts] = useState<any[]>([])
   const [isLoadingApi, setIsLoadingApi] = useState(false)
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false)
@@ -253,12 +254,8 @@ export default function ManuscriptDashboard() {
 
   // Function to assign manuscript to current user
   const assignToMe = async (msid: string) => {
-    if (!session?.user) {
-      alert('You must be logged in to assign manuscripts.')
-      return
-    }
-
-    const userName = session.user.name || session.user.email || 'Unknown User'
+    // For static builds, use a fixed user
+    const userName = 'EMBO User'
     
     if (useApiData) {
       // Update API manuscripts state
@@ -276,7 +273,7 @@ export default function ManuscriptDashboard() {
       )
       
       // In a real implementation, this would call an API endpoint to update the assignment
-      // PUT /api/v1/manuscripts/{id}/assign with { assignedTo: session.user.id }
+      // PUT /api/v1/manuscripts/{id}/assign with { assignedTo: 'user-id' }
       
       // Show user feedback
       setTimeout(() => {
@@ -310,10 +307,7 @@ export default function ManuscriptDashboard() {
 
   // Function to unassign manuscript from current user
   const unassignFromMe = async (msid: string) => {
-    if (!session?.user) {
-      alert('You must be logged in to unassign manuscripts.')
-      return
-    }
+    // For static builds, always allow unassignment
     
     if (useApiData) {
       // Update API manuscripts state
@@ -365,8 +359,8 @@ export default function ManuscriptDashboard() {
 
   // Helper function to check if current user is assigned to a manuscript
   const isAssignedToMe = (manuscript: any) => {
-    if (!session?.user || !manuscript.assignedTo || manuscript.assignedTo === "") return false
-    const userName = session.user.name || session.user.email || 'Unknown User'
+    if (!manuscript.assignedTo || manuscript.assignedTo === "") return false
+    const userName = 'EMBO User'
     return manuscript.assignedTo === userName
   }
 
@@ -550,6 +544,16 @@ export default function ManuscriptDashboard() {
   const filteredAndSortedManuscripts = useMemo(() => {
     const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
     
+    // 🔍 Debug: Enhanced logging for API mode debugging
+    console.log('🔍 useApiData:', useApiData)
+    console.log('🔍 apiManuscripts.length:', apiManuscripts.length) 
+    console.log('🔍 mockManuscripts.length:', mockManuscripts.length)
+    console.log('🔍 Current manuscripts count:', currentManuscripts.length)
+    console.log('🔍 Active tab:', activeTab)
+    if (currentManuscripts.length > 0) {
+      console.log('🔍 First manuscript structure:', currentManuscripts[0])
+    }
+    
     // Enhance manuscripts with computed aiChecks if they don't have them
     const enhancedManuscripts = currentManuscripts.map(manuscript => {
       if (!manuscript.aiChecks) {
@@ -566,6 +570,12 @@ export default function ManuscriptDashboard() {
     const filtered = enhancedManuscripts.filter((manuscript) => {
       // Use workflowState for tab filtering (mapped from API status)
       const workflowState = manuscript.workflowState || 'no-pipeline-results'
+      
+      // 🔍 Debug: Log filtering decisions
+      if (useApiData) {
+        console.log(`🔍 API Manuscript ${manuscript.msid}: workflowState="${workflowState}", activeTab="${activeTab}", matches="${workflowState === activeTab}"`)
+      }
+      
       if (workflowState !== activeTab) return false
 
       // Use displayStatus for status filtering (consistent with statusCounts)
@@ -804,46 +814,51 @@ export default function ManuscriptDashboard() {
   const fetchApiData = async () => {
     setIsLoadingApi(true)
     
-    // Check if we should bypass auth or if we have a session
-    const shouldBypass = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" || process.env.NODE_ENV === "development"
-    if (!session && !shouldBypass) {
-      setIsLoadingApi(false)
-      setIsInitialLoadComplete(true)
-      return
-    }
-    
-    
     try {
-      // Build URL with explicit pagination parameters to ensure first page
-      const url = new URL(buildApiUrl(endpoints.manuscripts), window.location.origin)
-      url.searchParams.set('page', '0')
-      url.searchParams.set('pagesize', '100') // Get more items to show full list
-      url.searchParams.set('sort', 'received_at')
-      url.searchParams.set('ascending', 'true')
+      console.log('🔄 Starting API call to fetch manuscripts...')
+      console.log('🔄 Auth token present:', !!process.env.NEXT_PUBLIC_DATA4REV_AUTH_TOKEN)
+      console.log('🔄 API base URL:', process.env.NEXT_PUBLIC_DATA4REV_API_BASE_URL)
+      console.log('🔄 Use mock data setting:', process.env.NEXT_PUBLIC_USE_MOCK_DATA)
       
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-      
-      const response = await fetch(url.toString(), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': document.cookie, // Include session cookies
-        },
-        credentials: 'include', // Include cookies in the request
-        signal: controller.signal
+      const response = await api.manuscripts.getAll({
+        page: 0,
+        pagesize: 100,
+        sort: 'received_at',
+        ascending: true
       })
       
-      clearTimeout(timeoutId)
+      console.log('🔄 Raw API response:', response)
+      console.log('🔄 Response type:', typeof response)
+      console.log('🔄 Response keys:', Object.keys(response || {}))
       
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`)
+      // ✅ The API client returns the data directly (not wrapped in .data)
+      const data = response
+      
+      // 🔍 Debug: Log the actual response structure
+      console.log('📊 Data object:', data)
+      console.log('📊 Data.manuscripts:', data?.manuscripts)
+      console.log('📊 Data.total:', data?.total)
+      
+      // ✅ Extract manuscripts array from API response
+      const manuscripts = data?.manuscripts || []
+      
+      console.log('📊 Extracted manuscripts:', manuscripts)
+      console.log('📊 Manuscripts count:', manuscripts.length)
+      if (manuscripts.length > 0) {
+        console.log('📊 First manuscript:', manuscripts[0])
+        console.log('📊 Sample manuscript keys:', Object.keys(manuscripts[0]))
       }
       
-      const data = await response.json()
+      if (!Array.isArray(manuscripts)) {
+        console.error('❌ Expected manuscripts array, got:', typeof manuscripts, manuscripts)
+        throw new Error('Invalid API response: manuscripts data is not an array')
+      }
       
       // Transform API data to match our mock data structure using proper status mapping
-      const transformedManuscripts = data.manuscripts.map((manuscript: any) => {
+      console.log('📊 Transforming manuscripts...')
+      const transformedManuscripts = manuscripts.map((manuscript: any, index: number) => {
         const statusMapping = getStatusMapping(manuscript.status)
+        console.log(`📊 Manuscript ${index + 1}: "${manuscript.msid}" status="${manuscript.status}" -> workflowState="${statusMapping.workflowState}"`)
         return {
           id: manuscript.id, // ✅ Include the integer ID for API calls
           msid: manuscript.msid,
@@ -876,7 +891,16 @@ export default function ManuscriptDashboard() {
         index === self.findIndex((m: any) => m.msid === manuscript.msid)
       )
       
+      console.log('📊 Unique manuscripts after deduplication:', uniqueManuscripts.length)
+      console.log('📊 Setting API manuscripts state...')
       setApiManuscripts(uniqueManuscripts)
+      
+      // ✅ FIX: Update UI state to show API data is being used
+      console.log('📊 Setting useApiData to true...')
+      setUseApiData(true)
+      console.log('📊 Setting dataService.setUseMockData to false...')
+      dataService.setUseMockData(false)
+      
     } catch (error) {
       console.error('❌ Failed to fetch API data:', error)
       if (error instanceof Error && error.name === 'AbortError') {
@@ -906,6 +930,9 @@ export default function ManuscriptDashboard() {
 
   // Switch between API and mock data
   const handleDataSourceSwitch = async (useApi: boolean) => {
+    console.log('🔄 handleDataSourceSwitch called with useApi:', useApi)
+    console.log('🔄 Current apiManuscripts.length:', apiManuscripts.length)
+    
     setUseApiData(useApi)
     setIsInitialLoadComplete(false) // Reset load state when switching
     
@@ -913,9 +940,11 @@ export default function ManuscriptDashboard() {
     dataService.setUseMockData(!useApi)
     
     if (useApi && apiManuscripts.length === 0) {
+      console.log('🔄 Calling fetchApiData() because API manuscripts are empty')
       await fetchApiData()
     } else {
       // For mock data, mark as loaded immediately
+      console.log('🔄 Using existing data or mock data')
       setIsInitialLoadComplete(true)
     }
   }

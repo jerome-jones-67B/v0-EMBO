@@ -1,6 +1,6 @@
 "use client"
 
-import { SessionProvider } from "next-auth/react"
+// No longer using NextAuth for static builds
 import { ReactNode } from "react"
 
 interface Props {
@@ -8,5 +8,5 @@ interface Props {
 }
 
 export default function AuthSessionProvider({ children }: Props) {
-  return <SessionProvider>{children}</SessionProvider>
+  return <>{children}</>
 }
