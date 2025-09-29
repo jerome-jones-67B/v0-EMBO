@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 // Note: This file still has some NextAuth references that need cleanup for static builds
 import { useSession } from "next-auth/react"
 import { endpoints, config } from "@/lib/config"
-import { api } from "@/lib/api-client"
+import { api, ApiError } from "@/lib/api-client"
 import { getImageUrl } from "@/lib/image-utils"
 
 // Convert raw text to formatted HTML (replicating old API processing)
@@ -1313,7 +1313,13 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       
     } catch (error) {
       console.error('❌ Error fetching full text content:', error)
-      setFullTextError("Failed to load full text content. Please try again.")
+      
+      // Handle specific error types
+      if (error instanceof ApiError && error.status === 404) {
+        setFullTextError("No content is available for this manuscript yet.")
+      } else {
+        setFullTextError("Failed to load full text content. Please try again.")
+      }
       setFullTextContent("")
       setFullTextMetadata(null)
     } finally {

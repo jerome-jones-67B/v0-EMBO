@@ -13,7 +13,7 @@ import type { ManuscriptDetailData } from '@/types/manuscript-detail'
 import type { Priority } from '@/types/manuscript'
 import { formatDate } from "@/lib/utils/date-utils"
 import { useState, useEffect } from "react"
-import { api } from "@/lib/api-client"
+import { api, ApiError } from "@/lib/api-client"
 
 // Convert raw text to formatted HTML (replicating old API processing)
 function convertTextToHTML(text: string): string {
@@ -86,7 +86,13 @@ export function ManuscriptHeader({ manuscript, onDownload, onBack, onNotesChange
       setManuscriptContent(contentData)
     } catch (error) {
       console.error('Failed to fetch manuscript content:', error)
-      setContentError(error instanceof Error ? error.message : 'Failed to load content')
+      
+      // Handle specific error types
+      if (error instanceof ApiError && error.status === 404) {
+        setContentError('No content is available for this manuscript yet.')
+      } else {
+        setContentError(error instanceof Error ? error.message : 'Failed to load content')
+      }
     } finally {
       setIsLoadingContent(false)
     }
