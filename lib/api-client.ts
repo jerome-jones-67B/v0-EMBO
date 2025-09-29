@@ -125,11 +125,98 @@ class ApiClient {
     return requestPromise;
   }
 
+  private async makeTextRequest(
+    endpoint: string,
+    options: RequestInit = {},
+    attempt: number = 1
+  ): Promise<string> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    // Create cache key for GET requests only (avoid caching mutations)
+    const method = options.method || 'GET';
+    const cacheKey = method === 'GET' ? `${method}:${url}:text` : null;
+    
+    // Check cache for duplicate GET requests
+    if (cacheKey && this.requestCache.has(cacheKey)) {
+      const cached = this.requestCache.get(cacheKey)!;
+      const now = Date.now();
+      
+      // If cache is still valid, return the existing promise
+      if (now - cached.timestamp < this.CACHE_DURATION) {
+        console.log(`🔄 Using cached text request:`, method, url);
+        return cached.promise;
+      } else {
+        // Clean up expired cache
+        this.requestCache.delete(cacheKey);
+      }
+    }
+    
+    console.log(`🌐 Text API Request (attempt ${attempt}/${this.retries + 1}):`, method, url);
+    
+    // Create the request promise for text response
+    const requestPromise = (async (): Promise<string> => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+      // Get auth token from environment (for Data4Rev API)
+      const authToken = process.env.NEXT_PUBLIC_DATA4REV_AUTH_TOKEN || config.api.token;
+
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+          headers: {
+            // Don't set Content-Type for text requests
+            ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+            ...options.headers,
+          },
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new ApiError(
+            `HTTP ${response.status}: ${response.statusText}`,
+            response.status
+          );
+        }
+
+        const text = await response.text();
+        return text;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        // Remove from cache on error
+        if (cacheKey) {
+          this.requestCache.delete(cacheKey);
+        }
+        
+        throw error;
+      }
+    })();
+    
+    // Cache GET requests
+    if (cacheKey) {
+      this.requestCache.set(cacheKey, {
+        promise: requestPromise,
+        timestamp: Date.now()
+      });
+    }
+    
+    return requestPromise;
+  }
+
   // Generic CRUD operations
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
     const searchParams = params ? new URLSearchParams(params).toString() : '';
     const url = searchParams ? `${endpoint}?${searchParams}` : endpoint;
     return this.makeRequest<ApiResponse<T>>(url);
+  }
+
+  async getText(endpoint: string, params?: Record<string, any>): Promise<string> {
+    const searchParams = params ? new URLSearchParams(params).toString() : '';
+    const url = searchParams ? `${endpoint}?${searchParams}` : endpoint;
+    return this.makeTextRequest(url);
   }
 
   async getList<T>(
@@ -204,7 +291,7 @@ export const api = {
     getById: (id: string) =>
       apiClient.get<ManuscriptDetails>(endpoints.manuscriptDetails(id)),
     getContent: (id: string) =>
-      apiClient.get<any>(endpoints.manuscriptContent(id)),
+      apiClient.getText(endpoints.manuscriptContent(id)),
     deposit: (id: string) =>
       apiClient.post<DepositionEventDetails[]>(endpoints.manuscriptDeposit(id), {}),  
   },

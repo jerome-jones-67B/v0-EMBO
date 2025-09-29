@@ -1,9 +1,38 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
-// No longer using NextAuth for static builds
+// Note: This file still has some NextAuth references that need cleanup for static builds
+import { useSession } from "next-auth/react"
 import { endpoints, config } from "@/lib/config"
+import { api } from "@/lib/api-client"
 import { getImageUrl } from "@/lib/image-utils"
+
+// Convert raw text to formatted HTML (replicating old API processing)
+function convertTextToHTML(text: string): string {
+  if (!text) return ''
+  
+  // Split into paragraphs (double line breaks)
+  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0)
+  
+  return paragraphs.map(paragraph => {
+    // Clean up the paragraph
+    const cleanParagraph = paragraph
+      .replace(/\n/g, ' ') // Convert single line breaks to spaces
+      .replace(/\s+/g, ' ') // Collapse multiple spaces
+      .trim()
+    
+    // Basic formatting
+    let formatted = cleanParagraph
+      // Convert **bold** to <strong>
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Convert *italic* to <em>
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // Convert simple URLs to links
+      .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>')
+    
+    return `<p class="mb-4">${formatted}</p>`
+  }).join('')
+}
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
@@ -1246,35 +1275,39 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setFullTextError(null)
     
     try {
-      const response = await api.manuscripts.getContent(msid)
-      const data = response.data
+      const rawContent = await api.manuscripts.getContent(msid)
+      // API now returns raw text directly, not wrapped in response object
       
-      // Always set content if it exists, regardless of fallback status
-      if (data.content) {
-        setFullTextContent(typeof data.content === 'string' ? data.content : JSON.stringify(data.content, null, 2))
+      // Always set content if it exists
+      if (rawContent) {
+        // Convert raw text to formatted HTML for better display (like the old API did)
+        const htmlContent = typeof rawContent === 'string' ? convertTextToHTML(rawContent) : JSON.stringify(rawContent, null, 2)
+        setFullTextContent(htmlContent)
         setFullTextError(null)
         setFullTextMetadata({
-          source: data.source,
-          contentType: data.content_type,
-          wordCount: data.word_count,
-          fallback: data.fallback
+          source: 'data4rev-api',
+          contentType: 'text/html', // Now converted to HTML
+          wordCount: rawContent && typeof rawContent === 'string' ? rawContent.split(/\s+/).filter((word: string) => word.length > 0).length : 0,
+          fallback: false
         })
         
         if (process.env.NODE_ENV === 'development') {
-          console.log('📄 Full text content loaded:', {
-            source: data.source,
-            contentType: data.content_type,
-            wordCount: data.word_count,
-            fallback: data.fallback
+          console.log('📄 Full text content loaded and converted to HTML:', {
+            source: 'data4rev-api',
+            contentType: 'text/html',
+            wordCount: rawContent && typeof rawContent === 'string' ? rawContent.split(/\s+/).filter((word: string) => word.length > 0).length : 0,
+            fallback: false,
+            originalLength: rawContent ? rawContent.length : 0,
+            htmlLength: htmlContent ? htmlContent.length : 0
           });
         }
       } else {
-        setFullTextError(data.error || "No content available")
+        setFullTextError("No content available")
         setFullTextContent("")
         setFullTextMetadata(null)
         
         if (process.env.NODE_ENV === 'development') {
-          console.warn('📄 Full text content failed:', data.source || 'unknown');
+          console.warn('📄 Full text content failed: No content returned from API');
         }
       }
       

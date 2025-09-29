@@ -13,6 +13,34 @@ import type { ManuscriptDetailData } from '@/types/manuscript-detail'
 import type { Priority } from '@/types/manuscript'
 import { formatDate } from "@/lib/utils/date-utils"
 import { useState, useEffect } from "react"
+import { api } from "@/lib/api-client"
+
+// Convert raw text to formatted HTML (replicating old API processing)
+function convertTextToHTML(text: string): string {
+  if (!text) return ''
+  
+  // Split into paragraphs (double line breaks)
+  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0)
+  
+  return paragraphs.map(paragraph => {
+    // Clean up the paragraph
+    const cleanParagraph = paragraph
+      .replace(/\n/g, ' ') // Convert single line breaks to spaces
+      .replace(/\s+/g, ' ') // Collapse multiple spaces
+      .trim()
+    
+    // Basic formatting
+    let formatted = cleanParagraph
+      // Convert **bold** to <strong>
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Convert *italic* to <em>
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // Convert simple URLs to links
+      .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>')
+    
+    return `<p class="mb-4">${formatted}</p>`
+  }).join('')
+}
 
 interface ManuscriptHeaderProps {
   manuscript: ManuscriptDetailData
@@ -38,34 +66,21 @@ export function ManuscriptHeader({ manuscript, onDownload, onBack, onNotesChange
     setContentError(null)
     
     try {
-      const response = await fetch(`/api/v1/manuscripts/${manuscript.id}/content`, {
-        headers: {
-          'Cookie': document.cookie,
-        },
-        credentials: 'include'
-      })
+      // Use Data4Rev API directly for static builds
+      console.log('📄 Fetching manuscript content from Data4Rev API for:', manuscript.id || manuscript.msid)
+      const rawContent = await api.manuscripts.getContent(manuscript.id || manuscript.msid)
+      // API now returns raw text directly, not wrapped in response object
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch content: ${response.status}`)
-      }
+      // Convert raw text to formatted HTML for better display (like the old API did)
+      const htmlContent = rawContent && typeof rawContent === 'string' ? convertTextToHTML(rawContent) : ''
       
-      // Check content type to determine how to handle the response
-      const contentType = response.headers.get('content-type') || ''
-      
-      let contentData
-      if (contentType.includes('application/json')) {
-        // Handle JSON response (from our API wrapper)
-        contentData = await response.json()
-      } else {
-        // Handle direct text/HTML response from Data4Rev API
-        const textContent = await response.text()
-        contentData = {
-          content: textContent,
-          content_type: contentType.includes('text/html') ? 'text/html' : 'text/plain',
-          word_count: textContent.split(/\s+/).filter(word => word.length > 0).length,
-          source: 'data4rev-api',
-          fallback: false
-        }
+      // Structure the response to match expected format
+      const contentData = {
+        content: htmlContent,
+        content_type: 'text/html', // Convert to HTML for rich formatting
+        word_count: rawContent && typeof rawContent === 'string' ? rawContent.split(/\s+/).filter((word: string) => word.length > 0).length : 0,
+        source: 'data4rev-api',
+        fallback: false
       }
       
       setManuscriptContent(contentData)
