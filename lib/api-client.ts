@@ -77,8 +77,17 @@ class ApiClient {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-      // Get auth token from environment (for Data4Rev API)
-      const authToken = process.env.NEXT_PUBLIC_DATA4REV_AUTH_TOKEN || config.api.token;
+      // Get auth token from config (for Data4Rev API)
+      const authToken = config.api.token;
+      
+      // Debug logging for environment variables
+      console.log('🔧 Debug - Environment check:', {
+        configToken: config.api.token,
+        baseUrl: config.api.baseUrl,
+        useMockData: config.features.useMockData,
+        hasToken: !!authToken,
+        tokenLength: authToken?.length
+      });
 
       try {
         const response = await fetch(url, {
@@ -158,8 +167,8 @@ class ApiClient {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-      // Get auth token from environment (for Data4Rev API)
-      const authToken = process.env.NEXT_PUBLIC_DATA4REV_AUTH_TOKEN || config.api.token;
+      // Get auth token from config (for Data4Rev API)
+      const authToken = config.api.token;
 
       try {
         const response = await fetch(url, {
