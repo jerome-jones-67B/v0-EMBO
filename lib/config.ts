@@ -1,5 +1,13 @@
 // Configuration for API endpoints and environment settings
 
+// Environment variable debugging
+console.log('🔧 Config Debug - Environment Variables:', {
+  'NEXT_PUBLIC_DATA4REV_AUTH_TOKEN': process.env.NEXT_PUBLIC_DATA4REV_AUTH_TOKEN ? `${process.env.NEXT_PUBLIC_DATA4REV_AUTH_TOKEN.substring(0, 10)}...` : 'undefined',
+  'NEXT_PUBLIC_DATA4REV_API_BASE_URL': process.env.NEXT_PUBLIC_DATA4REV_API_BASE_URL || 'undefined',
+  'NEXT_PUBLIC_USE_MOCK_DATA': process.env.NEXT_PUBLIC_USE_MOCK_DATA || 'undefined',
+  'NODE_ENV': process.env.NODE_ENV || 'undefined'
+});
+
 export const config = {
   // API Configuration - Now points directly to Data4Rev API for static builds
   api: {

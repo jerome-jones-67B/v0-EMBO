@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import AuthSessionProvider from "@/components/session-provider"
+import { EnvDebug } from "@/components/env-debug"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body>
         <AuthSessionProvider>
           {children}
+          <EnvDebug />
         </AuthSessionProvider>
       </body>
     </html>
