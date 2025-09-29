@@ -202,7 +202,9 @@ export const mockSourceData: SourceDataFile[] = [
     name: 'western_blot_quantification.xlsx',
     size: '2.1 MB',
     url: '/api/files/western_blot_quantification.xlsx',
-    description: 'Quantification data for all Western blot experiments'
+    description: 'Quantification data for all Western blot experiments',
+    mappedElements: ['fig1a', 'fig2a'],
+    originalUri: '/data/raw/western_blot_quantification.xlsx'
   },
   {
     id: '2',
@@ -210,7 +212,9 @@ export const mockSourceData: SourceDataFile[] = [
     name: 'statistical_analysis.R', 
     size: '45 KB',
     url: '/api/files/statistical_analysis.R',
-    description: 'R script used for statistical analysis and plotting'
+    description: 'R script used for statistical analysis and plotting',
+    mappedElements: ['fig1', 'fig2'],
+    originalUri: '/scripts/analysis/statistical_analysis.R'
   },
   {
     id: '3',
@@ -218,6 +222,38 @@ export const mockSourceData: SourceDataFile[] = [
     name: 'aggregated_results.csv',
     size: '890 KB', 
     url: '/api/files/aggregated_results.csv',
-    description: 'Processed and aggregated experimental results'
+    description: 'Processed and aggregated experimental results',
+    mappedElements: ['manuscript'],
+    originalUri: '/data/processed/aggregated_results.csv'
+  },
+  {
+    id: '4',
+    type: 'Figure Data',
+    name: 'protein_structure_coordinates.pdb',
+    size: '3.2 MB',
+    url: '/api/files/protein_structure_coordinates.pdb',
+    description: 'Protein structure coordinates for Figure 1',
+    mappedElements: ['fig1b', 'fig1c'],
+    originalUri: '/figures/structures/protein_structure_coordinates.pdb'
+  },
+  {
+    id: '5',
+    type: 'Raw Data',
+    name: 'microscopy_images.zip',
+    size: '156 MB',
+    url: '/api/files/microscopy_images.zip',
+    description: 'Raw microscopy images for time-course analysis',
+    mappedElements: ['fig2b', 'fig2c', 'fig2d'],
+    originalUri: '/data/microscopy/time_course/microscopy_images.zip'
+  },
+  {
+    id: '6',
+    type: 'Supplementary',
+    name: 'additional_controls.xlsx',
+    size: '1.8 MB',
+    url: '/api/files/additional_controls.xlsx',
+    description: 'Additional control experiments and validation data',
+    mappedElements: [],
+    originalUri: '/supplementary/controls/additional_controls.xlsx'
   }
 ]

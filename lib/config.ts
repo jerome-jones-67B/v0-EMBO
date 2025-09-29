@@ -1,12 +1,12 @@
 // Configuration for API endpoints and environment settings
 
 export const config = {
-  // API Configuration
+  // API Configuration - Now points directly to Data4Rev API for static builds
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
+    baseUrl: process.env.NEXT_PUBLIC_DATA4REV_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api',
     timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '10000'),
     retries: parseInt(process.env.NEXT_PUBLIC_API_RETRIES || '3'),
-    token: process.env.API_TOKEN,
+    token: process.env.NEXT_PUBLIC_DATA4REV_AUTH_TOKEN,
   },
   
   // Feature flags
@@ -28,8 +28,8 @@ export const config = {
     allowedTypes: ['pdf', 'docx', 'xlsx', 'csv', 'zip', 'png', 'jpg', 'tiff', 'fcs', 'mzML'],
   },
   
-  // Data4Rev API Configuration
-  DATA4REV_API_BASE: process.env.DATA4REV_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api',
+  // Data4Rev API Configuration (kept for backward compatibility)
+  DATA4REV_API_BASE: process.env.NEXT_PUBLIC_DATA4REV_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api',
 } as const;
 
 // API Endpoints - paths relative to base URL (no /api prefix needed)
@@ -48,5 +48,8 @@ export const endpoints = {
   sourceDataItem: (manuscriptId: string, sourceDataId: string) => `/v1/manuscripts/${manuscriptId}/source-data/${sourceDataId}`,
   files: '/v1/files',
   file: (fileId: string) => `/v1/files/${fileId}`,
+  manuscriptFiles: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/files`,
+  manuscriptFileDownload: (manuscriptId: string, fileId: string) => `/v1/manuscripts/${manuscriptId}/files/${fileId}/download`,
   checkResults: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/check-results`,
+  manuscriptValidation: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/validation`,
 } as const;

@@ -1,6 +1,5 @@
 "use client"
 
-import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -14,30 +13,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { User, LogOut, Code } from "lucide-react"
 
 export function UserNav() {
-  const { data: session, status } = useSession()
-
-  if (status === "loading") {
-    return (
-      <div className="flex items-center space-x-2">
-        <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
-        <div className="h-4 w-20 animate-pulse rounded bg-muted" />
-      </div>
-    )
-  }
-
-  // Check if auth is bypassed (development mode)
-  const isAuthBypassed = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" || process.env.NODE_ENV === "development"
-  
-  if (!session?.user && !isAuthBypassed) {
-    return null
-  }
-
-  // Use mock user data when auth is bypassed
-  const user = session?.user || {
-    name: "Developer",
-    email: "dev@localhost",
+  // For static builds, use a fixed user
+  const user = {
+    name: "EMBO User",
+    email: "user@embo.org",
     image: null
   }
+  
+  // For static builds, auth bypass is not applicable
+  const isAuthBypassed = false
 
   const getInitials = (name: string) => {
     return name
@@ -90,20 +74,13 @@ export function UserNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {!isAuthBypassed ? (
-          <DropdownMenuItem
-            className="text-red-600 focus:text-red-600 hover:bg-red-50 focus:bg-red-50 hover:text-red-700 focus:text-red-700"
-            onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem disabled className="text-gray-400">
-            <Code className="mr-2 h-4 w-4" />
-            <span>Auth Bypassed</span>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem
+          className="text-red-600 focus:text-red-600 hover:bg-red-50 focus:bg-red-50 hover:text-red-700 focus:text-red-700"
+          onClick={() => window.location.href = '/'}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Refresh App</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

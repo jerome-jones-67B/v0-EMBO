@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { useSession } from 'next-auth/react'
 import { Card, CardContent } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/shared/loading-spinner"
 import { ErrorBoundary } from "@/components/shared/error-boundary"
+import { SafeRender, SafeString } from "@/components/shared/safe-render"
 import { ManuscriptHeader } from "./manuscript-header"
 import { FigureViewer } from "./figure-viewer"
 import { SourceFilesTreeview } from "./source-files-treeview"
@@ -14,6 +14,39 @@ import { useManuscriptDetailApi } from "@/hooks/useManuscriptDetailApi"
 import { mockManuscriptDetails, mockSourceData } from "@/lib/mock-manuscript-details"
 import { ManuscriptLoadingScreen } from '@/components/manuscript-loading-screen'
 import { dataService } from '@/lib/data-service'
+import { api } from '@/lib/api-client'
+import type { ManuscriptDetailData } from '@/types/manuscript-detail'
+
+// Helper function to generate available elements for mapping based on manuscript data
+const generateAvailableElements = (manuscript: ManuscriptDetailData | null) => {
+  const elements = [{ value: 'manuscript', label: 'Manuscript' }]
+  
+  if (manuscript?.figures) {
+    manuscript.figures.forEach((figure, figIndex) => {
+      // Add main figure
+      elements.push({ 
+        value: figure.id, 
+        label: `Figure ${figIndex + 1}` 
+      })
+      
+      // Add figure panels
+      figure.panels.forEach((panel, panelIndex) => {
+        const panelLetter = String.fromCharCode(65 + panelIndex) // A, B, C, etc.
+        elements.push({ 
+          value: panel.id, 
+          label: `Figure ${figIndex + 1}${panelLetter}` 
+        })
+      })
+    })
+  }
+  
+  // Add common supplementary options
+  elements.push({ value: 'supplement', label: 'Supplementary' })
+  elements.push({ value: 'methods', label: 'Methods' })
+  elements.push({ value: 'appendix', label: 'Appendix' })
+  
+  return elements
+}
 
 interface ManuscriptDetailProps {
   msid?: string
@@ -23,7 +56,7 @@ interface ManuscriptDetailProps {
 
 export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: ManuscriptDetailProps = {}) {
   const params = useParams()
-  const { data: session } = useSession()
+  // No longer using session for static builds
   // Use msid prop if provided, otherwise fall back to route params
   const manuscriptId = msid || (params?.id as string)
 
@@ -31,8 +64,11 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
   const [sourceDataFiles, setSourceDataFiles] = useState<any[]>([])
   const [isLoadingSourceData, setIsLoadingSourceData] = useState(false)
   const [sourceDataError, setSourceDataError] = useState<string | null>(null)
+  
+  // Prevent duplicate API calls in React StrictMode
+  const isInitializingRef = useRef(false)
 
-  // Fetch source data files from download API
+  // Fetch source data files from Data4Rev API (client-side replacement for /download?format=list)
   const fetchSourceDataFiles = useCallback(async () => {
     if (!manuscriptId) return
     
@@ -41,33 +77,65 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
     
     try {
       console.log('📁 Fetching source data files for manuscript:', manuscriptId)
-      const response = await fetch(`/api/v1/manuscripts/${manuscriptId}/download?format=list`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': document.cookie,
-        },
-        credentials: 'include',
-      })
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch source data: ${response.status}`)
+      // Try multiple Data4Rev API endpoints for files
+      let filesData = null
+      let source = ''
+      
+      try {
+        // Option 1: Try the correct Data4Rev API files endpoint
+        console.log('📁 Trying manuscript files endpoint /v1/manuscripts/{id}/files...')
+        const filesResponse = await api.files.getByManuscriptId(manuscriptId)
+        filesData = filesResponse
+        source = 'files endpoint'
+        console.log('✅ Found files via files endpoint:', filesData)
+      } catch (filesError) {
+        console.log('⚠️ Files endpoint failed, checking manuscript detail for embedded files...', filesError)
+        
+        try {
+          // Option 2: Check if manuscript details include file information (ManuscriptDetails.files)
+          const manuscriptDetail = await api.manuscripts.getById(manuscriptId)
+          if (manuscriptDetail && (manuscriptDetail as any).files) {
+            filesData = (manuscriptDetail as any).files
+            source = 'manuscript detail'
+            console.log('✅ Found files in manuscript detail:', filesData)
+          } else {
+            throw new Error('No files found in manuscript detail')
+          }
+        } catch (detailError) {
+          throw new Error(`All file fetch attempts failed: ${detailError}`)
+        }
       }
       
-      const data = await response.json()
-      console.log('✅ Source data fetched:', data)
-      console.log('📁 Sample file structure:', data.files?.[0])
+      console.log(`📁 Successfully fetched files from ${source}:`, filesData)
+      
+      // Transform the response to match expected format
+      // Files endpoint returns array directly, manuscript detail has files nested under .files
+      const files = Array.isArray(filesData) ? filesData : (filesData as any)?.files || []
+      if (!Array.isArray(files)) {
+        throw new Error('Invalid response format: files data is not an array')
+      }
+      
+      console.log('📁 Processing files:', files.length, 'files found')
       
       // Transform API data to match SourceFilesTreeview expected format
-      const transformedFiles = (data.files || []).map((file: any, index: number) => ({
+      // Handle both FileDetails (from manuscript detail) and FileDetailsWithSourceData (from files endpoint)
+      const transformedFiles = files.map((file: any, index: number) => ({
         id: file.id?.toString() || index.toString(),
-        type: categorizeFileType(file.filename || file.name || ''),
-        name: file.filename || file.name || `file_${file.id || index}`,
-        size: file.size || null, // Don't show size if not available
-        url: file.uri || file.preview_uri || `/api/v1/manuscripts/${manuscriptId}/files/${file.id}/download`,
-        originalUri: file.uri, // Preserve original URI for path parsing
-        description: file.source || file.uploaded_by || 'Source data file'
+        type: categorizeFileType(file.name || file.filename || ''),
+        name: file.name || file.filename || `file_${file.id || index}`,
+        size: file.size || file.filesize || null,
+        url: file.uri || file.preview_uri || '#', // Use Data4Rev API fields
+        originalUri: file.uri, // Data4Rev API field
+        description: file.source || file.uploaded_by || 'Source data file',
+        // Additional Data4Rev API fields
+        mimeType: file.preview_mime_type,
+        uploadedBy: file.uploaded_by,
+        source: file.source,
+        assignedTo: file.assigned_to // Only available in FileDetailsWithSourceData
       }))
       
+      console.log('📁 Transformed files:', transformedFiles)
       setSourceDataFiles(transformedFiles)
       
     } catch (error) {
@@ -131,10 +199,13 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
     setDataAvailability
   })
 
-  // Initialize with mock data or fetch from API
+  // Single consolidated effect for all data loading
   useEffect(() => {
-    const initializeData = async () => {
-      if (!manuscriptId) return
+    const initializeAllData = async () => {
+      if (!manuscriptId || isInitializingRef.current) return
+
+      // Prevent duplicate calls in React StrictMode
+      isInitializingRef.current = true
 
       // Prioritize useApiData prop, then check global setting
       const shouldUseApi = useApiData || !dataService.getUseMockData()
@@ -142,7 +213,19 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
       if (shouldUseApi) {
         // Always try API first - the backend will handle authentication
         try {
-          await fetchApiManuscriptDetail(manuscriptId)
+          console.log('🚀 Loading manuscript and source data for:', manuscriptId)
+          
+          // Load manuscript details and source data in parallel
+          const [manuscriptResult] = await Promise.allSettled([
+            fetchApiManuscriptDetail(manuscriptId),
+            // Only fetch source data if not already loaded
+            sourceDataFiles.length === 0 && !isLoadingSourceData ? fetchSourceDataFiles() : Promise.resolve()
+          ])
+          
+          if (manuscriptResult.status === 'rejected') {
+            throw manuscriptResult.reason
+          }
+          
         } catch (error) {
           console.warn('API call failed, falling back to mock data:', error)
           // Fallback to mock data if API fails
@@ -154,18 +237,13 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
         setManuscript(mockManuscriptDetails)
         setIsLoading(false)
       }
+
+      // Reset the ref to allow future re-initialization if manuscriptId changes
+      isInitializingRef.current = false
     }
 
-    initializeData()
-  }, [manuscriptId, useApiData, fetchApiManuscriptDetail, setManuscript, setIsLoading])
-
-  // Prefetch source data when component mounts
-  useEffect(() => {
-    if (useApiData && manuscriptId && sourceDataFiles.length === 0 && !isLoadingSourceData) {
-      console.log('🚀 Prefetching source data for manuscript:', manuscriptId)
-      fetchSourceDataFiles()
-    }
-  }, [fetchSourceDataFiles, useApiData, manuscriptId, sourceDataFiles.length, isLoadingSourceData])
+    initializeAllData()
+  }, [manuscriptId, useApiData]) // Minimal dependencies to prevent unnecessary re-runs
 
 
   // Handle download
@@ -319,17 +397,32 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
                 <CardContent className="p-6">
                   <h3 className="font-semibold mb-4">Quality Assurance Summary</h3>
                   <div className="space-y-2">
-                    {state.manuscript.qcChecks.map((check, index) => (
-                      <div key={check.id || `qc-${index}`} className="flex items-center gap-2 text-sm">
-                        <div className={`w-2 h-2 rounded-full ${
-                          check.type === 'success' ? 'bg-green-500' :
-                          check.type === 'warning' ? 'bg-yellow-500' :
-                          check.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-                        }`} />
-                        <span>{check.message}</span>
-                        <span className="text-muted-foreground">({check.category})</span>
-                      </div>
-                    ))}
+                    {state.manuscript.qcChecks.map((check: any, index) => {
+                      // Defensive check: ensure check is properly formatted
+                      const safeCheck = typeof check === 'object' && check !== null ? {
+                        id: check.id || `qc-${index}`,
+                        type: check.type || 'info',
+                        message: String(check.message || (check as any).name || 'Check result'),
+                        category: String(check.category || 'Quality Check')
+                      } : {
+                        id: `qc-${index}`,
+                        type: 'info',
+                        message: String(check) || 'Check result',
+                        category: 'Quality Check'
+                      }
+                      
+                      return (
+                        <div key={safeCheck.id} className="flex items-center gap-2 text-sm">
+                          <div className={`w-2 h-2 rounded-full ${
+                            safeCheck.type === 'success' ? 'bg-green-500' :
+                            safeCheck.type === 'warning' ? 'bg-yellow-500' :
+                            safeCheck.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                          }`} />
+                          <SafeString value={safeCheck.message} />
+                          <span className="text-muted-foreground">(<SafeString value={safeCheck.category} />)</span>
+                        </div>
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -346,6 +439,7 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
               isLoading={isLoadingSourceData}
               error={sourceDataError}
               onRefresh={fetchSourceDataFiles}
+              availableElements={generateAvailableElements(state.manuscript)}
             />
             
             {/* Additional Information Sections */}
@@ -392,19 +486,34 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
                 <CardContent className="p-6">
                   <h3 className="font-semibold mb-4">Quality Checks ({Array.isArray(state.manuscript.qcChecks) ? state.manuscript.qcChecks.length : 0})</h3>
                   <div className="space-y-2">
-                    {Array.isArray(state.manuscript.qcChecks) ? state.manuscript.qcChecks.map((check) => (
-                      <div key={check.id} className="flex items-start gap-2">
-                        <div className={`w-2 h-2 rounded-full mt-2 ${
-                          check.type === 'success' ? 'bg-green-500' :
-                          check.type === 'warning' ? 'bg-yellow-500' :
-                          check.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-                        }`} />
-                        <div className="flex-1">
-                          <div className="text-sm">{check.message}</div>
-                          <div className="text-xs text-muted-foreground">{check.category}</div>
+                    {Array.isArray(state.manuscript.qcChecks) ? state.manuscript.qcChecks.map((check: any, index) => {
+                      // Defensive check: ensure check is properly formatted
+                      const safeCheck = typeof check === 'object' && check !== null ? {
+                        id: check.id || `qc-${index}`,
+                        type: check.type || 'info',
+                        message: String(check.message || (check as any).name || 'Check result'),
+                        category: String(check.category || 'Quality Check')
+                      } : {
+                        id: `qc-${index}`,
+                        type: 'info',
+                        message: String(check) || 'Check result',
+                        category: 'Quality Check'
+                      }
+                      
+                      return (
+                        <div key={safeCheck.id} className="flex items-start gap-2">
+                          <div className={`w-2 h-2 rounded-full mt-2 ${
+                            safeCheck.type === 'success' ? 'bg-green-500' :
+                            safeCheck.type === 'warning' ? 'bg-yellow-500' :
+                            safeCheck.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                          }`} />
+                          <div className="flex-1">
+                            <div className="text-sm"><SafeString value={safeCheck.message} /></div>
+                            <div className="text-xs text-muted-foreground"><SafeString value={safeCheck.category} /></div>
+                          </div>
                         </div>
-                      </div>
-                    )) : <div className="text-sm text-muted-foreground">No quality checks available</div>}
+                      )
+                    }) : <div className="text-sm text-muted-foreground">No quality checks available</div>}
                   </div>
                 </CardContent>
               </Card>

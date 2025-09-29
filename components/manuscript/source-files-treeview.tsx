@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { MultiSelect } from "@/components/ui/multi-select"
 import type { SourceDataFile } from "@/types/manuscript-detail"
 
 interface SourceFilesTreeviewProps {
@@ -20,6 +21,7 @@ interface SourceFilesTreeviewProps {
   isLoading?: boolean
   error?: string | null
   onRefresh?: () => void
+  availableElements?: { value: string; label: string }[]
 }
 
 interface TreeNode {
@@ -30,12 +32,30 @@ interface TreeNode {
   file?: SourceDataFile
 }
 
-export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = null, onRefresh }: SourceFilesTreeviewProps) {
+export function SourceFilesTreeview({ 
+  sourceFiles, 
+  isLoading = false, 
+  error = null, 
+  onRefresh,
+  availableElements = [
+    { value: 'manuscript', label: 'Manuscript' },
+    { value: 'fig1', label: 'Figure 1' },
+    { value: 'fig1a', label: 'Figure 1A' },
+    { value: 'fig1b', label: 'Figure 1B' },
+    { value: 'fig1c', label: 'Figure 1C' },
+    { value: 'fig2', label: 'Figure 2' },
+    { value: 'fig2a', label: 'Figure 2A' },
+    { value: 'fig2b', label: 'Figure 2B' },
+    { value: 'fig2c', label: 'Figure 2C' },
+    { value: 'fig2d', label: 'Figure 2D' },
+    { value: 'supplement', label: 'Supplementary' }
+  ]
+}: SourceFilesTreeviewProps) {
   // Show loading state if we're loading or if we have no files and no error (initial state)
   const shouldShowLoading = isLoading || (sourceFiles.length === 0 && !error)
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
-  const [mappingTarget, setMappingTarget] = useState<Record<string, string>>({})
+  const [mappingTargets, setMappingTargets] = useState<Record<string, string[]>>({})
 
   // Organize files into a tree structure based on file paths
   const organizeFilesIntoTree = (files: SourceDataFile[]): TreeNode[] => {
@@ -75,7 +95,7 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
       // If no meaningful path, try to extract from the filename or use a default
       if (!filePath && file.name) {
         // If filename contains path-like structure, use it
-        if (file.name.includes('/')) {
+        if (file.name.includes('/') || file.name.includes(':')) {
           filePath = file.name
         } else {
           // Put uncategorized files in a default folder based on file type
@@ -84,8 +104,11 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
         }
       }
       
-      // Split path into segments
-      const pathSegments = filePath.split('/').filter(segment => segment.length > 0)
+      // Split path into segments (treat both '/' and ':' as separators, especially for zip files)
+      const pathSegments = filePath
+        .replace(/:/g, '/') // Convert colons to slashes
+        .split('/')
+        .filter(segment => segment.length > 0)
       
       // If no segments, put in root
       if (pathSegments.length === 0) {
@@ -238,12 +261,23 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
     })
   }
 
-  const handleMappingChange = (fileId: string, target: string) => {
-    setMappingTarget(prev => ({
+  const handleMappingChange = (fileId: string, selectedValues: string[]) => {
+    setMappingTargets(prev => ({
       ...prev,
-      [fileId]: target
+      [fileId]: selectedValues
     }))
   }
+
+  // Initialize mapping targets from API data
+  useEffect(() => {
+    const initialMappings: Record<string, string[]> = {}
+    sourceFiles.forEach(file => {
+      if (file.mappedElements && file.mappedElements.length > 0) {
+        initialMappings[file.id] = [...file.mappedElements]
+      }
+    })
+    setMappingTargets(initialMappings)
+  }, [sourceFiles])
 
   const expandAll = () => {
     const allFolderIds = getAllFolderIds(treeNodes)
@@ -254,27 +288,28 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
     setExpandedFolders(new Set())
   }
 
-  // Get mapping indicators for a directory based on its children
+  // Get mapping indicators for a directory based on its immediate children only
   const getDirectoryMappingIndicators = (node: TreeNode): string[] => {
     if (!node.children) return []
     
     const mappings = new Set<string>()
     
-    const collectMappings = (children: TreeNode[]) => {
-      children.forEach(child => {
-        if (child.type === 'file' || isZipFolder(child)) {
-          const mapping = mappingTarget[child.id]
-          if (mapping) {
-            mappings.add(mapping)
-          }
-        } else if (child.children) {
-          collectMappings(child.children)
-        }
-      })
-    }
+    // Only collect mappings from immediate children, not nested ones
+    node.children.forEach(child => {
+      if (child.type === 'file' || isZipFolder(child)) {
+        const fileMappings = mappingTargets[child.id] || []
+        fileMappings.forEach(mapping => mappings.add(mapping))
+      }
+    })
     
-    collectMappings(node.children)
     return Array.from(mappings)
+  }
+
+  const getFileMappingLabels = (fileId: string): string[] => {
+    const mappings = mappingTargets[fileId] || []
+    return mappings.map(value => 
+      availableElements.find(element => element.value === value)?.label || value
+    )
   }
 
   // Auto-expand all folders when files change
@@ -296,32 +331,30 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
       
       return (
         <div key={node.id}>
-          <div className="flex items-center gap-2 py-2 px-2 hover:bg-muted/50">
+          <div className="flex items-start gap-2 py-2 px-2 hover:bg-muted/50 min-h-12">
             {/* Mapping dropdown/indicators - always at left, no indentation */}
             {isZip ? (
-              <Select
-                value={mappingTarget[node.id] || ""}
-                onValueChange={(value) => handleMappingChange(node.id, value)}
-              >
-                <SelectTrigger className="w-32 h-8 text-xs">
-                  <SelectValue placeholder="Map to..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="figure-1">Figure 1</SelectItem>
-                  <SelectItem value="figure-2">Figure 2</SelectItem>
-                  <SelectItem value="supplement">Supplement</SelectItem>
-                  <SelectItem value="manuscript">Manuscript</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="w-72 min-w-72">
+                <MultiSelect
+                  options={availableElements}
+                  selected={mappingTargets[node.id] || []}
+                  onSelectionChange={(selected) => handleMappingChange(node.id, selected)}
+                  placeholder="Map to..."
+                  className="w-full min-h-8 text-xs"
+                />
+              </div>
             ) : (
               /* Mapping indicators for regular directories */
-              <div className="w-32 flex flex-wrap gap-1">
+              <div className="w-72 min-w-72 flex flex-wrap gap-1 py-1">
                 {directoryMappings.length > 0 ? (
-                  directoryMappings.map((mapping, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs px-1 py-0">
-                      {mapping.replace(/-/g, ' ')}
-                    </Badge>
-                  ))
+                  directoryMappings.map((mapping, idx) => {
+                    const label = availableElements.find(el => el.value === mapping)?.label || mapping
+                    return (
+                      <Badge key={idx} variant="secondary" className="text-xs px-1 py-0">
+                        {label}
+                      </Badge>
+                    )
+                  })
                 ) : (
                   <span className="text-xs text-muted-foreground">No mappings</span>
                 )}
@@ -334,19 +367,19 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
                 type="checkbox"
                 checked={isSelected}
                 onChange={() => toggleFileSelection(node.id)}
-                className="h-4 w-4 cursor-pointer"
+                className="h-4 w-4 cursor-pointer mt-1 flex-shrink-0"
               />
             )}
             
             {/* Folder structure with indentation */}
             <div 
-              className="flex items-center gap-1 flex-1"
+              className="flex items-start gap-1 flex-1"
               style={{ paddingLeft: `${indent}px` }}
             >
             {/* Expand/collapse button */}
             <button
               onClick={() => toggleFolder(node.id)}
-              className="flex items-center gap-1 hover:bg-muted rounded p-1 cursor-pointer"
+              className="flex items-center gap-1 hover:bg-muted rounded p-1 cursor-pointer mt-1"
             >
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -361,7 +394,7 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
                 <span className="font-medium">{node.name}</span>
               </button>
               
-              <Badge variant="outline" className="ml-auto">
+              <Badge variant="outline" className="ml-auto mt-1">
                 {node.children?.length || 0}
               </Badge>
             </div>
@@ -379,54 +412,66 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
     return (
       <div 
         key={node.id}
-        className={`flex items-center gap-2 py-2 px-2 hover:bg-muted/50 ${isSelected ? 'bg-muted' : ''}`}
+        className={`flex items-start gap-2 py-2 px-2 hover:bg-muted/50 min-h-12 ${isSelected ? 'bg-muted' : ''}`}
       >
         {/* Mapping dropdown - always at left, no indentation */}
-        <Select
-          value={mappingTarget[node.id] || ""}
-          onValueChange={(value) => handleMappingChange(node.id, value)}
-        >
-          <SelectTrigger className="w-32 h-8 text-xs">
-            <SelectValue placeholder="Map to..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="figure-1">Figure 1</SelectItem>
-            <SelectItem value="figure-2">Figure 2</SelectItem>
-            <SelectItem value="supplement">Supplement</SelectItem>
-            <SelectItem value="manuscript">Manuscript</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="w-72 min-w-72">
+          <MultiSelect
+            options={availableElements}
+            selected={mappingTargets[node.id] || []}
+            onSelectionChange={(selected) => handleMappingChange(node.id, selected)}
+            placeholder="Map to..."
+            className="w-full min-h-8 text-xs"
+          />
+        </div>
         
         <input
           type="checkbox"
           checked={isSelected}
           onChange={() => toggleFileSelection(node.id)}
-          className="h-4 w-4 cursor-pointer"
+          className="h-4 w-4 cursor-pointer mt-1 flex-shrink-0"
         />
         
         {/* File structure with indentation */}
         <div 
-          className="flex items-center gap-2 flex-1"
+          className="flex items-start gap-2 flex-1"
           style={{ paddingLeft: `${indent + 20}px` }}
         >
-          <File className="h-4 w-4 text-gray-500" />
+          <File className="h-4 w-4 text-gray-500 mt-1 flex-shrink-0" />
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium truncate">{node.file?.name}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium">{node.file?.name}</span>
               {hasValidSize(node.file?.size) && (
                 <Badge variant="secondary" className="text-xs">
                   {node.file?.size}
                 </Badge>
               )}
             </div>
-            <div className="text-xs text-muted-foreground truncate">
+            <div className="text-xs text-muted-foreground mt-1">
               {node.file?.description}
             </div>
+            
+            {/* Display current API mappings */}
+            {node.file?.mappedElements && node.file.mappedElements.length > 0 && (
+              <div className="w-full mt-2">
+                <div className="text-xs text-muted-foreground mb-1">API mappings:</div>
+                <div className="flex flex-wrap gap-1">
+                  {node.file.mappedElements.map((mapping, idx) => {
+                    const label = availableElements.find(el => el.value === mapping)?.label || mapping
+                    return (
+                      <Badge key={idx} variant="outline" className="text-xs px-1 py-0 mb-1">
+                        {label}
+                      </Badge>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Action buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-start gap-2 mt-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 cursor-pointer">
@@ -460,63 +505,55 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            Source Files
-            {shouldShowLoading && (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            )}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            {folderCount > 0 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={expandAll}
-                  className="gap-2 cursor-pointer"
-                  disabled={shouldShowLoading}
-                >
-                  <FolderOpen className="w-4 h-4" />
-                  Expand All
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={collapseAll}
-                  className="gap-2 cursor-pointer"
-                  disabled={shouldShowLoading}
-                >
-                  <FolderClosed className="w-4 h-4" />
-                  Collapse All
-                </Button>
-              </>
-            )}
-            {onRefresh && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onRefresh}
-                className="gap-2 cursor-pointer"
-                disabled={shouldShowLoading}
-              >
-                <RotateCcw className="w-4 h-4" />
-                Refresh
-              </Button>
-            )}
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-white border-b">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              Source Files
+              {shouldShowLoading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              )}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {folderCount > 0 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={expandAll}
+                    className="gap-2 cursor-pointer"
+                    disabled={shouldShowLoading}
+                  >
+                    <FolderOpen className="w-4 h-4" />
+                    Expand All
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={collapseAll}
+                    className="gap-2 cursor-pointer"
+                    disabled={shouldShowLoading}
+                  >
+                    <FolderClosed className="w-4 h-4" />
+                    Collapse All
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        {!shouldShowLoading && sourceFiles.length > 0 && (
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>Files: {sourceFiles.length}</span>
-            <span>Folders: {folderCount}</span>
-            <span>Selectable: {selectableItemCount}</span>
-            <span>Selected: {selectedFiles.size}</span>
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="p-0">
+          {!shouldShowLoading && sourceFiles.length > 0 && (
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>Files: {sourceFiles.length}</span>
+              <span>Folders: {folderCount}</span>
+              <span>Selectable: {selectableItemCount}</span>
+              <span>Selected: {selectedFiles.size}</span>
+            </div>
+          )}
+        </CardHeader>
+      </div>
+      {/* Scrollable Content */}
+      <CardContent className="p-0 h-[calc(100vh-200px)] overflow-y-auto">
         {error ? (
           <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg m-4">
             <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -550,28 +587,28 @@ export function SourceFilesTreeview({ sourceFiles, isLoading = false, error = nu
           {treeNodes.map(node => renderTreeNode(node))}
         </div>
         )}
+      </CardContent>
         
-        {selectedFiles.size > 0 && (
-          <div className="p-4 border-t bg-muted/20">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {selectedFiles.size} items selected
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="cursor-pointer">
-                  Bulk Download
-                </Button>
-                <Button variant="outline" size="sm" className="cursor-pointer">
-                  Bulk Map
-                </Button>
-                <Button variant="destructive" size="sm" className="cursor-pointer">
-                  Remove Selected
-                </Button>
-              </div>
+      {selectedFiles.size > 0 && (
+        <div className="p-4 border-t bg-muted/20">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">
+              {selectedFiles.size} items selected
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="cursor-pointer">
+                Bulk Download
+              </Button>
+              <Button variant="outline" size="sm" className="cursor-pointer">
+                Bulk Map
+              </Button>
+              <Button variant="destructive" size="sm" className="cursor-pointer">
+                Remove Selected
+              </Button>
             </div>
           </div>
-        )}
-      </CardContent>
+        </div>
+      )}
     </Card>
   )
 }

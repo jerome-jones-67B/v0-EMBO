@@ -149,12 +149,23 @@ export const FullTextView: React.FC<FullTextViewProps> = ({
 
               {/* Content Display Area */}
               <div className="relative">
-                <div 
-                  className="max-h-[600px] overflow-y-auto p-4 bg-white rounded-lg border font-mono text-sm whitespace-pre-wrap"
-                  style={{ lineHeight: '1.6' }}
-                >
-                  {fullTextContent}
-                </div>
+                {fullTextMetadata?.contentType === 'text/html' ? (
+                  <div 
+                    className="max-h-[600px] overflow-y-auto p-6 bg-white rounded-lg border prose prose-lg max-w-none"
+                    style={{ 
+                      lineHeight: '1.75',
+                      fontFamily: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif'
+                    }}
+                    dangerouslySetInnerHTML={{ __html: fullTextContent }}
+                  />
+                ) : (
+                  <div 
+                    className="max-h-[600px] overflow-y-auto p-4 bg-white rounded-lg border font-mono text-sm whitespace-pre-wrap"
+                    style={{ lineHeight: '1.6' }}
+                  >
+                    {fullTextContent}
+                  </div>
+                )}
                 {fullTextContent.length > 5000 && (
                   <div className="absolute bottom-2 right-2">
                     <span className="text-xs bg-white/90 text-gray-500 px-2 py-1 rounded border shadow-sm">

@@ -9,6 +9,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Enable static export for static hosting
+  output: 'export',
+  // Disable features that don't work with static export
+  trailingSlash: true,
   experimental: {
     esmExternals: false,
   },

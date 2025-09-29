@@ -56,6 +56,8 @@ export interface SourceDataFile {
   size: string
   url: string
   description: string
+  mappedElements?: string[] // Elements this file is mapped to (from API)
+  originalUri?: string // Original file path for tree structure
 }
 
 export interface ManuscriptDetailState {

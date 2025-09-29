@@ -1,21 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
-import { endpoints, config } from '@/lib/config'
+import { api } from '@/lib/api-client'
 import { dataService } from '@/lib/data-service'
 import { getStatusMapping } from '@/lib/status-mapping'
 import { logger } from '@/lib/logger'
 import { Manuscript } from '@/types/manuscript'
 
 export function useApiDataLoader() {
-  const { data: session } = useSession()
   const [apiManuscripts, setApiManuscripts] = useState<Manuscript[]>([])
   const [isLoadingApi, setIsLoadingApi] = useState(false)
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false)
-
-  const buildApiUrl = (endpoint: string) => {
-    const baseUrl = config.api.baseUrl
-    return `${baseUrl}${endpoint}`
-  }
 
   // Function to compute AI checks summary from QC checks data
   const computeAIChecksSummary = (manuscript: any) => {
@@ -72,29 +65,17 @@ export function useApiDataLoader() {
   // Function to fetch API data
   const fetchApiData = useCallback(async () => {
     setIsLoadingApi(true)
-    
-    if (!session) {
-      logger.error('No session available for API call')
-      setIsLoadingApi(false)
-      return
-    }
 
     try {
       logger.info('📡 Fetching manuscripts from API...')
-      const response = await fetch(buildApiUrl(endpoints.manuscripts), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': document.cookie,
-        },
-        credentials: 'include',
+      const response = await api.manuscripts.getAll({
+        page: 0,
+        pagesize: 100,
+        sort: 'received_at',
+        ascending: true
       })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(`API request failed: ${response.status} - ${errorData.error || response.statusText}`)
-      }
-
-      const apiData = await response.json()
+      const apiData = response.data
       logger.success('API data received:', apiData)
 
       // Transform API data to match our manuscript format
@@ -140,7 +121,7 @@ export function useApiDataLoader() {
       setIsLoadingApi(false)
       setIsInitialLoadComplete(true)
     }
-  }, [session])
+  }, [])
 
   // Initial data loading effect
   useEffect(() => {

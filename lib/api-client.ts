@@ -34,10 +34,12 @@ class ApiClient {
   private baseUrl: string;
   private timeout: number;
   private retries: number;
+  private requestCache: Map<string, { promise: Promise<any>, timestamp: number }> = new Map();
+  private readonly CACHE_DURATION = 5000; // 5 seconds cache for duplicate prevention
 
   constructor() {
-    // Always use relative paths to avoid CORS issues between different Vercel deployments
-    this.baseUrl = config.api.baseUrl.startsWith('http') ? '/api' : config.api.baseUrl;
+    // For static builds, always use the full Data4Rev API URL
+    this.baseUrl = config.api.baseUrl;
     this.timeout = config.api.timeout;
     this.retries = config.api.retries;
   }
@@ -48,54 +50,160 @@ class ApiClient {
     attempt: number = 1
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    // Get auth token from environment or localStorage
-    const authToken = process.env.NEXT_PUBLIC_AUTH_TOKEN || 
-      (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
-          ...options.headers,
-        },
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new ApiError(
-          `HTTP ${response.status}: ${response.statusText}`,
-          response.status
-        );
+    
+    // Create cache key for GET requests only (avoid caching mutations)
+    const method = options.method || 'GET';
+    const cacheKey = method === 'GET' ? `${method}:${url}` : null;
+    
+    // Check cache for duplicate GET requests
+    if (cacheKey && this.requestCache.has(cacheKey)) {
+      const cached = this.requestCache.get(cacheKey)!;
+      const now = Date.now();
+      
+      // If cache is still valid, return the existing promise
+      if (now - cached.timestamp < this.CACHE_DURATION) {
+        console.log(`🔄 Using cached request:`, method, url);
+        return cached.promise;
+      } else {
+        // Clean up expired cache
+        this.requestCache.delete(cacheKey);
       }
+    }
+    
+    console.log(`🌐 API Request (attempt ${attempt}/${this.retries + 1}):`, method, url);
+    
+    // Create the request promise
+    const requestPromise = (async (): Promise<T> => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      clearTimeout(timeoutId);
+      // Get auth token from config (for Data4Rev API)
+      const authToken = config.api.token;
 
-      if (error instanceof ApiError) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+            ...options.headers,
+          },
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new ApiError(
+            `HTTP ${response.status}: ${response.statusText}`,
+            response.status
+          );
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        // Remove from cache on error
+        if (cacheKey) {
+          this.requestCache.delete(cacheKey);
+        }
+        
         throw error;
       }
-
-      // Retry logic for network errors
-      if (attempt < this.retries && error instanceof Error) {
-        console.warn(`API request failed, retrying... (${attempt}/${this.retries})`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        return this.makeRequest<T>(endpoint, options, attempt + 1);
-      }
-
-      throw new ApiError(
-        error instanceof Error ? error.message : 'Unknown error occurred',
-        0
-      );
+    })();
+    
+    // Cache GET requests
+    if (cacheKey) {
+      this.requestCache.set(cacheKey, {
+        promise: requestPromise,
+        timestamp: Date.now()
+      });
     }
+    
+    return requestPromise;
+  }
+
+  private async makeTextRequest(
+    endpoint: string,
+    options: RequestInit = {},
+    attempt: number = 1
+  ): Promise<string> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    // Create cache key for GET requests only (avoid caching mutations)
+    const method = options.method || 'GET';
+    const cacheKey = method === 'GET' ? `${method}:${url}:text` : null;
+    
+    // Check cache for duplicate GET requests
+    if (cacheKey && this.requestCache.has(cacheKey)) {
+      const cached = this.requestCache.get(cacheKey)!;
+      const now = Date.now();
+      
+      // If cache is still valid, return the existing promise
+      if (now - cached.timestamp < this.CACHE_DURATION) {
+        console.log(`🔄 Using cached text request:`, method, url);
+        return cached.promise;
+      } else {
+        // Clean up expired cache
+        this.requestCache.delete(cacheKey);
+      }
+    }
+    
+    console.log(`🌐 Text API Request (attempt ${attempt}/${this.retries + 1}):`, method, url);
+    
+    // Create the request promise for text response
+    const requestPromise = (async (): Promise<string> => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+      // Get auth token from config (for Data4Rev API)
+      const authToken = config.api.token;
+
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+          headers: {
+            // Don't set Content-Type for text requests
+            ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+            ...options.headers,
+          },
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new ApiError(
+            `HTTP ${response.status}: ${response.statusText}`,
+            response.status
+          );
+        }
+
+        const text = await response.text();
+        return text;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        // Remove from cache on error
+        if (cacheKey) {
+          this.requestCache.delete(cacheKey);
+        }
+        
+        throw error;
+      }
+    })();
+    
+    // Cache GET requests
+    if (cacheKey) {
+      this.requestCache.set(cacheKey, {
+        promise: requestPromise,
+        timestamp: Date.now()
+      });
+    }
+    
+    return requestPromise;
   }
 
   // Generic CRUD operations
@@ -103,6 +211,12 @@ class ApiClient {
     const searchParams = params ? new URLSearchParams(params).toString() : '';
     const url = searchParams ? `${endpoint}?${searchParams}` : endpoint;
     return this.makeRequest<ApiResponse<T>>(url);
+  }
+
+  async getText(endpoint: string, params?: Record<string, any>): Promise<string> {
+    const searchParams = params ? new URLSearchParams(params).toString() : '';
+    const url = searchParams ? `${endpoint}?${searchParams}` : endpoint;
+    return this.makeTextRequest(url);
   }
 
   async getList<T>(
@@ -177,7 +291,7 @@ export const api = {
     getById: (id: string) =>
       apiClient.get<ManuscriptDetails>(endpoints.manuscriptDetails(id)),
     getContent: (id: string) =>
-      apiClient.get<any>(endpoints.manuscriptContent(id)),
+      apiClient.getText(endpoints.manuscriptContent(id)),
     deposit: (id: string) =>
       apiClient.post<DepositionEventDetails[]>(endpoints.manuscriptDeposit(id), {}),  
   },
@@ -228,11 +342,30 @@ export const api = {
       apiClient.get<FileDetails>(endpoints.file(fileId)),
     delete: (fileId: string) =>
       apiClient.delete<void>(endpoints.file(fileId)),
+    // Get files for a specific manuscript
+    getByManuscriptId: (manuscriptId: string) =>
+      apiClient.get<any>(endpoints.manuscriptFiles(manuscriptId)),
+    // Note: The old /download?format=list endpoint doesn't exist in Data4Rev API
+    // Use getByManuscriptId instead to get all files for a manuscript
   },
 
   // Check Results
   checkResults: {
     getByManuscriptId: (manuscriptId: string) =>
       apiClient.get<CheckResultDetails[]>(endpoints.checkResults(manuscriptId)),
+  },
+
+  // Validation
+  validation: {
+    getByManuscriptId: (manuscriptId: string) =>
+      apiClient.get<any>(endpoints.manuscriptValidation(manuscriptId)),
+    submit: (manuscriptId: string, data: any) =>
+      apiClient.post<any>(endpoints.manuscriptValidation(manuscriptId), data),
+  },
+
+  // Deposit
+  deposit: {
+    submit: (manuscriptId: string) =>
+      apiClient.post<any>(endpoints.manuscriptDeposit(manuscriptId), {}),
   },
 };

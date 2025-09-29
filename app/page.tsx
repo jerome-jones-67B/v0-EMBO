@@ -1,4 +1,4 @@
-import { ManuscriptDashboard } from "@/components/manuscript-dashboard"
+import ManuscriptDashboard from "@/components/manuscript-dashboard"
 import { AuthGuard } from "@/components/auth-guard"
 
 export default function Home() {
