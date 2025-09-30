@@ -58,5 +58,10 @@ export const endpoints = {
 
 // Utility function to build full API URLs
 export function buildApiUrl(endpoint: string): string {
-  return `${config.api.baseUrl}${endpoint}`;
+  if (!endpoint) {
+    return config.api.baseUrl;
+  }
+  const baseUrl = config.api.baseUrl.endsWith('/') ? config.api.baseUrl.slice(0, -1) : config.api.baseUrl;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${baseUrl}${cleanEndpoint}`;
 }

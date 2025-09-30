@@ -25,8 +25,6 @@ import { initialMockManuscripts } from "@/lib/mock-dashboard-manuscripts"
 import { computeAIChecksSummary } from "@/lib/dashboard-utils"
 import { buildApiUrl } from "@/lib/config"
 
-// No longer needed - using API client directly
-
 // Main dashboard component
 
 export default function ManuscriptDashboard() {

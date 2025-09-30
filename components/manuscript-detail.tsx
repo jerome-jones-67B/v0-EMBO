@@ -60,7 +60,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Bot } from "lucide-react"
 import { AuthorList } from "./author-list"
 import { FileAssignmentDropdown } from "./ui/file-assignment-dropdown"
 import { SourceFilesTreeview } from "./manuscript/source-files-treeview"

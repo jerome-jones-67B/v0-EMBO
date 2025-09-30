@@ -9,7 +9,6 @@ import {
   mockLinkedData,
   mockSourceData,
 } from './mock';
-import { realFigures } from './real-figures-data';
 import type {
   Manuscript,
   ManuscriptOverview,
@@ -81,7 +80,7 @@ export class DataService {
   private async addRealFiguresToManuscript(manuscript: any): Promise<any> {
     try {
       console.log('🔧 Adding real figures to manuscript:', manuscript.id)
-      console.log('📊 Real figures available:', realFigures.length)
+      console.log('📊 Real figures available: 0')
 
       // Add real figures to specific manuscripts
       if (manuscript.id === 'EMBO-2024-001') {

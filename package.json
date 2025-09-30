@@ -10,6 +10,10 @@
     "serve": "npx serve out -p 3001",
     "preview": "npm run build && npm run serve",
     "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false",
     "generate-env": "node scripts/generate-vercel-env.js",
     "expand-env": "node scripts/expand-vercel-env.js"
   },
