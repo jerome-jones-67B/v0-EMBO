@@ -32,6 +32,16 @@ export const config = {
   DATA4REV_API_BASE: process.env.NEXT_PUBLIC_DATA4REV_API_BASE_URL || 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api',
 } as const;
 
+// Utility function to build full API URLs
+export function buildApiUrl(endpoint: string): string {
+  if (!endpoint) {
+    return config.api.baseUrl;
+  }
+  const baseUrl = config.api.baseUrl.endsWith('/') ? config.api.baseUrl.slice(0, -1) : config.api.baseUrl;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${baseUrl}${cleanEndpoint}`;
+}
+
 // API Endpoints - paths relative to base URL (no /api prefix needed)
 export const endpoints = {
   manuscripts: '/v1/manuscripts',
@@ -55,13 +65,3 @@ export const endpoints = {
   checkResults: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/check-results`,
   manuscriptValidation: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/validation`,
 } as const;
-
-// Utility function to build full API URLs
-export function buildApiUrl(endpoint: string): string {
-  if (!endpoint) {
-    return config.api.baseUrl;
-  }
-  const baseUrl = config.api.baseUrl.endsWith('/') ? config.api.baseUrl.slice(0, -1) : config.api.baseUrl;
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `${baseUrl}${cleanEndpoint}`;
-}

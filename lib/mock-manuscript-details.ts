@@ -17,61 +17,54 @@ export const mockManuscriptDetails: ManuscriptDetailData = {
     {
       id: 1,
       title: "Hsp70 ATPase Domain Structure",
-      legend: "Crystal structure of the Hsp70 ATPase domain in complex with ATP. (A) Overall structure showing the two lobes. (B) Close-up view of the ATP-binding site. (C) Comparison with ADP-bound state.",
+      caption: "Crystal structure of the Hsp70 ATPase domain in complex with ATP. (A) Overall structure showing the two lobes. (B) Close-up view of the ATP-binding site. (C) Comparison with ADP-bound state.",
       panels: [
         {
           id: 1,
-          legend: "Overall structure of Hsp70 ATPase domain showing nucleotide-binding domain (NBD) in blue and substrate-binding domain (SBD) in green.",
-          imagePath: "/protein-structure-control.png",
-          qualityChecks: [
-            {
-              id: "check1",
-              type: "success",
-              message: "Image resolution: 300 DPI ✓",
-              severity: "low",
-              category: "Technical Quality"
-            },
-            {
-              id: "check2",
-              type: "success",
-              message: "File format: TIFF ✓",
-              severity: "low",
-              category: "Format"
-            }
-          ]
+          label: "A",
+          caption: "Overall structure of Hsp70 ATPase domain showing nucleotide-binding domain (NBD) in blue and substrate-binding domain (SBD) in green.",
+          x1: 0,
+          y1: 0,
+          x2: 1,
+          y2: 1,
+          confidence: 0.95,
+          sort_order: 0,
+          source_data: [],
+          links: [],
+          check_results: []
         },
         {
-          id: 2, 
-          legend: "Detailed view of the ATP-binding site showing key catalytic residues and metal coordination.",
-          imagePath: "/atp-folding-cycle.png",
-          qualityChecks: [
-            {
-              id: "check3",
-              type: "warning",
-              message: "Consider higher magnification for clarity",
-              severity: "medium",
-              category: "Scientific Content"
-            }
-          ]
+          id: 2,
+          label: "B",
+          caption: "Detailed view of the ATP-binding site showing key catalytic residues and metal coordination.",
+          x1: 0,
+          y1: 0,
+          x2: 1,
+          y2: 1,
+          confidence: 0.92,
+          sort_order: 1,
+          source_data: [],
+          links: [],
+          check_results: []
         },
         {
           id: 3,
-          legend: "Superposition of ATP-bound (blue) and ADP-bound (red) conformations highlighting conformational changes.",
-          imagePath: "/protein-structures.png",
-          qualityChecks: [
-            {
-              id: "check4",
-              type: "success",
-              message: "Color scheme appropriate for colorblind accessibility ✓",
-              severity: "low",
-              category: "Accessibility"
-            }
-          ]
+          label: "C",
+          caption: "Superposition of ATP-bound (blue) and ADP-bound (red) conformations highlighting conformational changes.",
+          x1: 0,
+          y1: 0,
+          x2: 1,
+          y2: 1,
+          confidence: 0.88,
+          sort_order: 2,
+          source_data: [],
+          links: [],
+          check_results: []
         }
       ],
       qualityChecks: [
         {
-          id: "figcheck1",
+          id: "fig1-check1",
           type: "success",
           message: "All panels properly labeled ✓",
           severity: "low",
@@ -82,47 +75,63 @@ export const mockManuscriptDetails: ManuscriptDetailData = {
     {
       id: 2,
       title: "Protein Aggregation Kinetics",
-      legend: "Time-course analysis of protein aggregation under heat shock conditions. Fluorescence microscopy images show aggregation at different time points.",
+      caption: "Time-course analysis of protein aggregation under heat shock conditions. Fluorescence microscopy images show aggregation at different time points.",
       panels: [
         {
           id: 4,
-          legend: "Control condition showing dispersed protein distribution.",
-          imagePath: "/microscopy-0-hours.png",
-          qualityChecks: [
-            {
-              id: "check5",
-              type: "success",
-              message: "Scale bar present ✓",
-              severity: "low",
-              category: "Technical Quality"
-            }
-          ]
+          label: "A",
+          caption: "Control condition showing dispersed protein distribution.",
+          x1: 0,
+          y1: 0,
+          x2: 1,
+          y2: 1,
+          confidence: 0.90,
+          sort_order: 0,
+          source_data: [],
+          links: [],
+          check_results: []
         },
         {
           id: 5,
-          legend: "Early aggregation visible as small puncta (arrows).",
-          imagePath: "/microscopy-two-hours.png", 
-          qualityChecks: [
-            {
-              id: "check6",
-              type: "warning",
-              message: "Arrows could be more visible",
-              severity: "medium",
-              category: "Visual Clarity"
-            }
-          ]
+          label: "B",
+          caption: "Early aggregation visible as small puncta (arrows).",
+          x1: 0,
+          y1: 0,
+          x2: 1,
+          y2: 1,
+          confidence: 0.85,
+          sort_order: 1,
+          source_data: [],
+          links: [],
+          check_results: []
         },
         {
           id: 6,
-          legend: "Progressive aggregation with larger structures formed.",
-          imagePath: "/microscopy-6-hours.png",
-          qualityChecks: []
+          label: "C",
+          caption: "Progressive aggregation with larger structures formed.",
+          x1: 0,
+          y1: 0,
+          x2: 1,
+          y2: 1,
+          confidence: 0.88,
+          sort_order: 2,
+          source_data: [],
+          links: [],
+          check_results: []
         },
         {
           id: 7,
-          legend: "Extensive aggregation throughout the cell.",
-          imagePath: "/microscopy-24-hours.png",
-          qualityChecks: []
+          label: "D",
+          caption: "Extensive aggregation throughout the cell.",
+          x1: 0,
+          y1: 0,
+          x2: 1,
+          y2: 1,
+          confidence: 0.92,
+          sort_order: 3,
+          source_data: [],
+          links: [],
+          check_results: []
         }
       ],
       qualityChecks: [

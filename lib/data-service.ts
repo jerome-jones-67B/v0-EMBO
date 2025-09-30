@@ -86,12 +86,12 @@ export class DataService {
       if (manuscript.id === 'EMBO-2024-001') {
         // Add your real figures to this manuscript
         console.log('✅ Adding real figures to EMBO-2024-001')
-        console.log('📋 Real figures data:', realFigures)
+        console.log('📋 Real figures data: []')
 
         const result = {
           ...manuscript,
-          figures: realFigures,
-          figureCount: realFigures.length
+          figures: [],
+          figureCount: 0
         };
 
         console.log('🎯 Final manuscript with figures:', result)
@@ -206,7 +206,6 @@ export class DataService {
       submissionType: mockManuscript.submissionType || 'Research Article',
       wordCount: mockManuscript.wordCount,
       collaborators: mockManuscript.collaborators || [],
-      figures: (mockManuscript as any).figures || [],
     };
   }
 
@@ -351,8 +350,8 @@ export class DataService {
     limit?: number;
   }): Promise<PaginatedResponse<Figure>> {
     if (this.useMockData) {
-      // Combine mock figures with real figures
-      const allFigures = [...mockFigures, ...realFigures];
+      // Use only mock figures
+      const allFigures = [...mockFigures];
       let filteredData = allFigures.map(f => this.transformMockFigure(f));
 
       if (params?.manuscriptId) {

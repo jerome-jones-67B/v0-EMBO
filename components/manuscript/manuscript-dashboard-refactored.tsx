@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useMemo } from 'react'
+// Mock session for static builds
+const session = { user: { name: 'Test User', email: 'test@example.com' } }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody } from "@/components/ui/table"
