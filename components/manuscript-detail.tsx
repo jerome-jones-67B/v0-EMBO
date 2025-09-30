@@ -90,6 +90,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Bot } from "lucide-react"
 import { AuthorList } from "./author-list"
+import { FileAssignmentDropdown } from "./ui/file-assignment-dropdown"
+import { SourceFilesTreeview } from "./manuscript/source-files-treeview"
 
 interface ManuscriptDetailProps {
   msid: string
@@ -2200,7 +2202,7 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
   const [isLoadingSourceData, setIsLoadingSourceData] = useState(false)
   const [sourceDataError, setSourceDataError] = useState<string | null>(null)
 
-  // Fetch source data files from download API
+  // Fetch source data files from files API
   const fetchSourceDataFiles = useCallback(async () => {
     if (!msid) return
     
@@ -2208,18 +2210,21 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
     setSourceDataError(null)
     
     try {
-      // For static builds, we'll get source data from the manuscript details API
-      const response = await api.manuscripts.getById(msid)
-      const manuscriptData = response.data
+      // Use the dedicated files endpoint to get files with assignment information
+      const response = await api.files.getByManuscriptId(msid)
+      const files = response.data || []
       
-      // Extract source data files from manuscript data  
-      const files = manuscriptData.files || []
+      console.log('📁 Fetched files with assignments:', files)
+      console.log('📁 Sample file structure:', files[0])
+      if (files.length > 0 && files[0].assigned_to) {
+        console.log('📁 Sample assignment structure:', files[0].assigned_to)
+      }
       setSourceDataFiles(files)
       
     } catch (error) {
       console.error('Error fetching source data:', error)
       setSourceDataError(error instanceof Error ? error.message : 'Unknown error')
-      // Fallback to mock data on error
+      // Fallback to empty array on error
       setSourceDataFiles([])
     } finally {
       setIsLoadingSourceData(false)
@@ -2233,6 +2238,34 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       fetchSourceDataFiles()
     }
   }, [fetchSourceDataFiles, useApiData, selectedView, sourceDataFiles.length, isLoadingSourceData, msid])
+
+  // Handle file assignment changes
+  const handleFileAssignment = useCallback(async (fileId: number, figureId?: number, panelId?: number) => {
+    if (!msid) return
+    
+    try {
+      console.log('🔄 Updating file assignment:', { fileId, figureId, panelId })
+      
+      if (figureId && panelId) {
+        // Assign to panel
+        await api.sourceData.assignToPanel(msid, figureId.toString(), panelId.toString(), fileId)
+      } else if (figureId) {
+        // Assign to figure
+        await api.sourceData.assignToFigure(msid, figureId.toString(), fileId)
+      } else {
+        // Assign to manuscript
+        await api.sourceData.assignToManuscript(msid, fileId)
+      }
+      
+      // Refresh the files list to get updated assignments
+      await fetchSourceDataFiles()
+      
+      console.log('✅ File assignment updated successfully')
+    } catch (error) {
+      console.error('❌ Error updating file assignment:', error)
+      throw error // Re-throw to let the dropdown handle the error
+    }
+  }, [msid, fetchSourceDataFiles])
 
   const allSubmittedFiles = [
     {
@@ -3448,66 +3481,16 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
       location: check.figureId ? `Figure ${check.figureId}` : "General Manuscript"
     }))
 
-    // Categorize source data files
-    const categorizeFiles = (files: any[]) => {
-      if (!files || files.length === 0) return {
-        manuscript: [],
-        figures: [],
-        supplementary: [],
-        metadata: [],
-        other: []
-      }
-
-      return {
-        manuscript: files.filter((file: any) => {
-          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
-          const uri = file.uri?.toLowerCase() || ''
-          return filename.includes('.pdf') || 
-                 uri.includes('/pdf/') || 
-                 (filename.includes('.docx') && uri.includes('/doc/'))
-        }),
-        figures: files.filter((file: any) => {
-          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
-          const uri = file.uri?.toLowerCase() || ''
-          return (filename.includes('.png') || filename.includes('.jpg') || 
-                 filename.includes('.jpeg') || filename.includes('.tiff') || 
-                 filename.includes('.gif') || filename.includes('.svg') ||
-                 filename.includes('.pdf') || filename.includes('.eps')) && 
-                 (uri.includes('/graphic/') || uri.includes('/figure') || filename.includes('fig'))
-        }),
-        supplementary: files.filter((file: any) => {
-          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
-          const uri = file.uri?.toLowerCase() || ''
-          return uri.includes('/suppl_data/') || 
-                 filename.includes('supplement') ||
-                 filename.includes('.xlsx') ||
-                 filename.includes('.csv') ||
-                 filename.includes('data') ||
-                 filename.includes('.zip')
-        }),
-        metadata: files.filter((file: any) => {
-          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
-          return filename.includes('.xml') || filename.includes('.json')
-        }),
-        other: files.filter((file: any) => {
-          const filename = file.filename?.toLowerCase() || file.name?.toLowerCase() || ''
-          const uri = file.uri?.toLowerCase() || ''
-          // Files that don't fit into other categories
-          return !filename.includes('.pdf') && 
-                 !uri.includes('/pdf/') && 
-                 !uri.includes('/graphic/') && 
-                 !uri.includes('/figure') && 
-                 !uri.includes('/suppl_data/') && 
-                 !filename.includes('supplement') &&
-                 !filename.includes('.xml') && 
-                 !filename.includes('.json') &&
-                 !filename.includes('fig') &&
-                 !(filename.includes('.docx') && uri.includes('/doc/'))
-        })
-      }
-    }
-
-    const categorizedFiles = categorizeFiles(sourceDataFiles)
+    // Get manuscript figures for dropdown options
+    const manuscriptFigures = manuscript?.figures || []
+    console.log('🔍 Manuscript figures for SourceFilesTreeview:', manuscriptFigures)
+    console.log('🔍 Manuscript figures length:', manuscriptFigures.length)
+    console.log('🔍 First figure:', manuscriptFigures[0])
+    console.log('🔍 Passing to SourceFilesTreeview:', { 
+      sourceFilesCount: sourceDataFiles.length, 
+      figuresCount: manuscriptFigures.length, 
+      figures: manuscriptFigures 
+    })
 
     return (
       <div className="space-y-6">
@@ -3577,263 +3560,15 @@ const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) =
           </CardContent>
         </Card>
 
-        {/* Source Files Section */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Database className="w-5 h-5" />
-                Source Data Files
-                {isLoadingSourceData && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 ml-2"></div>
-                )}
-              </CardTitle>
-              {!isLoadingSourceData && !sourceDataError && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchSourceDataFiles}
-                  title="Refresh source data"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-            {sourceDataFiles.length > 0 && (
-              <CardDescription>
-                {sourceDataFiles.length} files available for download
-              </CardDescription>
-            )}
-          </CardHeader>
-          <CardContent>
-            {sourceDataError ? (
-              <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-                <span className="text-red-800">Error loading source data: {sourceDataError}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchSourceDataFiles}
-                  className="ml-auto"
-                >
-                  <RotateCcw className="w-4 h-4 mr-1" />
-                  Retry
-                </Button>
-              </div>
-            ) : isLoadingSourceData ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading source data files...</p>
-                </div>
-              </div>
-            ) : sourceDataFiles.length === 0 ? (
-              <div className="text-center py-8">
-                <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-muted-foreground">No source data files available</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Manuscript Files */}
-                {categorizedFiles.manuscript.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Manuscript Files ({categorizedFiles.manuscript.length})
-                    </h4>
-                    <div className="grid gap-2">
-                      {categorizedFiles.manuscript.map((file: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-red-600" />
-                            <div>
-                              <p className="font-medium">{file.filename || file.name}</p>
-                              {file.uri && (
-                                <p className="text-xs text-gray-500">{file.uri}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled
-                              title="File downloads not available in static build mode"
-                              title="Download file"
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Figure Files */}
-                {categorizedFiles.figures.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-                      <Database className="w-4 h-4" />
-                      Figure Files ({categorizedFiles.figures.length})
-                    </h4>
-                    <div className="grid gap-2">
-                      {categorizedFiles.figures.map((file: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-blue-600" />
-                            <div>
-                              <p className="font-medium">{file.filename || file.name}</p>
-                              {file.uri && (
-                                <p className="text-xs text-gray-500">{file.uri}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled
-                              title="File downloads not available in static build mode"
-                              title="Download file"
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Supplementary Files */}
-                {categorizedFiles.supplementary.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-                      <Database className="w-4 h-4" />
-                      Supplementary Data ({categorizedFiles.supplementary.length})
-                    </h4>
-                    <div className="grid gap-2">
-                      {categorizedFiles.supplementary.map((file: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-green-600" />
-                            <div>
-                              <p className="font-medium">{file.filename || file.name}</p>
-                              {file.uri && (
-                                <p className="text-xs text-gray-500">{file.uri}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled
-                              title="File downloads not available in static build mode"
-                              title="Download file"
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Metadata Files */}
-                {categorizedFiles.metadata.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Metadata Files ({categorizedFiles.metadata.length})
-                    </h4>
-                    <div className="grid gap-2">
-                      {categorizedFiles.metadata.map((file: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-purple-600" />
-                            <div>
-                              <p className="font-medium">{file.filename || file.name}</p>
-                              {file.uri && (
-                                <p className="text-xs text-gray-500">{file.uri}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled
-                              title="File downloads not available in static build mode"
-                              title="Download file"
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Other Files */}
-                {categorizedFiles.other.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Other Files ({categorizedFiles.other.length})
-                    </h4>
-                    <div className="grid gap-2">
-                      {categorizedFiles.other.map((file: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-gray-600" />
-                            <div>
-                              <p className="font-medium">{file.filename || file.name}</p>
-                              {file.uri && (
-                                <p className="text-xs text-gray-500">{file.uri}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled
-                              title="File downloads not available in static build mode"
-                              title="Download file"
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Download All Button */}
-                <div className="pt-4 border-t">
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-600">
-                      Total: {sourceDataFiles.length} files
-                    </p>
-                    <Button
-                      disabled
-                      className="bg-gray-400 cursor-not-allowed"
-                      title="File downloads not available in static build mode"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download All Files (Unavailable)
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Source Files Tree View */}
+        <SourceFilesTreeview
+          sourceFiles={sourceDataFiles}
+          figures={manuscriptFigures}
+          isLoading={isLoadingSourceData}
+          error={sourceDataError}
+          onRefresh={fetchSourceDataFiles}
+          onAssignmentChange={handleFileAssignment}
+        />
       </div>
     )
   }

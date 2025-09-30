@@ -15,6 +15,7 @@ import type {
   SourceDataDetails,
   SourceDataCreate,
   FileDetails,
+  ManuscriptFileDetails,
   CheckResultDetails,
   DepositionEventDetails
 } from './types';
@@ -332,6 +333,14 @@ export const api = {
       apiClient.post<SourceDataDetails>(endpoints.sourceData(manuscriptId), data),
     delete: (manuscriptId: string, sourceDataId: string) =>
       apiClient.delete<void>(endpoints.sourceDataItem(manuscriptId, sourceDataId)),
+    
+    // File assignment methods
+    assignToManuscript: (manuscriptId: string, fileId: number) =>
+      apiClient.post<void>(endpoints.sourceData(manuscriptId), { file_id: fileId }),
+    assignToFigure: (manuscriptId: string, figureId: string, fileId: number) =>
+      apiClient.post<void>(endpoints.figureSourceData(manuscriptId, figureId), { file_id: fileId }),
+    assignToPanel: (manuscriptId: string, figureId: string, panelId: string, fileId: number) =>
+      apiClient.post<void>(endpoints.panelSourceData(manuscriptId, figureId, panelId), { file_id: fileId }),
   },
 
   // Files
@@ -344,7 +353,7 @@ export const api = {
       apiClient.delete<void>(endpoints.file(fileId)),
     // Get files for a specific manuscript
     getByManuscriptId: (manuscriptId: string) =>
-      apiClient.get<any>(endpoints.manuscriptFiles(manuscriptId)),
+      apiClient.get<ManuscriptFileDetails[]>(endpoints.manuscriptFiles(manuscriptId)),
     // Note: The old /download?format=list endpoint doesn't exist in Data4Rev API
     // Use getByManuscriptId instead to get all files for a manuscript
   },

@@ -16,19 +16,38 @@ export interface ManuscriptDetailData {
 }
 
 export interface Figure {
-  id: string
+  id: number
+  label: string
   title: string
-  legend: string
+  caption: string
+  caption_confidence: number
+  image_file_id: number
+  sort_order: number
+  source_data: Array<{
+    file_id: number
+    id: number
+  }>
+  links: any[]
+  check_results: any[]
   panels: FigurePanel[]
-  qualityChecks: QualityCheck[]
 }
 
 export interface FigurePanel {
-  id: string
-  description: string
-  legend: string
-  imagePath: string
-  qualityChecks: QualityCheck[]
+  id: number
+  label: string
+  caption: string
+  x1: number | null
+  y1: number | null
+  x2: number | null
+  y2: number | null
+  confidence: number | null
+  sort_order: number
+  source_data: Array<{
+    file_id: number
+    id: number
+  }>
+  links: any[]
+  check_results: any[]
 }
 
 export interface QualityCheck {

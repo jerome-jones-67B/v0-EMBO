@@ -122,6 +122,23 @@ export interface FileDetails {
   content_type: string;
   size: number;
   id: number;
+  assigned_to?: {
+    figure_id: number | null;
+    panel_id: number | null;
+  }[];
+}
+
+// File structure from the /manuscripts/{id}/files endpoint
+export interface ManuscriptFileDetails {
+  id: number;
+  name: string;
+  source: string;
+  assigned_to: {
+    figure_id?: number | null;
+    panel_id?: number | null;
+    file_id?: number;
+    id?: number;
+  }[];
 }
 
 export interface DepositionEventDetails {

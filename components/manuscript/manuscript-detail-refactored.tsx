@@ -11,7 +11,7 @@ import { FigureViewer } from "./figure-viewer"
 import { SourceFilesTreeview } from "./source-files-treeview"
 import { useManuscriptDetailState } from "@/hooks/useManuscriptDetailState"
 import { useManuscriptDetailApi } from "@/hooks/useManuscriptDetailApi"
-import { mockManuscriptDetails, mockSourceData } from "@/lib/mock-manuscript-details"
+import { mockManuscriptDetails } from "@/lib/mock-manuscript-details"
 import { ManuscriptLoadingScreen } from '@/components/manuscript-loading-screen'
 import { dataService } from '@/lib/data-service'
 import { api } from '@/lib/api-client'
@@ -281,6 +281,12 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
     setSelectedFigureIndex(index)
   }
 
+  // Handle file assignment changes
+  const handleFileAssignment = async (fileId: number, figureId?: number, panelId?: number) => {
+    console.log('📋 File assignment changed:', { fileId, figureId, panelId })
+    // TODO: Implement file assignment logic
+  }
+
   // Loading state
   if (state.isLoading) {
     return (
@@ -435,11 +441,12 @@ export function ManuscriptDetailRefactored({ msid, onBack, useApiData = true }: 
             <div className="space-y-6">
             {/* Source Files Treeview at the top */}
             <SourceFilesTreeview 
-              sourceFiles={sourceDataFiles.length > 0 ? sourceDataFiles : mockSourceData}
+              sourceFiles={sourceDataFiles}
+              figures={state.manuscript?.figures || []}
               isLoading={isLoadingSourceData}
               error={sourceDataError}
               onRefresh={fetchSourceDataFiles}
-              availableElements={generateAvailableElements(state.manuscript)}
+              onAssignmentChange={handleFileAssignment}
             />
             
             {/* Additional Information Sections */}

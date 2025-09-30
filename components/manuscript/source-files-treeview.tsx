@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { ChevronDown, ChevronRight, File, Folder, MoreHorizontal, Download, Link2, Eye, RotateCcw, AlertTriangle, FolderOpen, FolderClosed, Archive, FileArchive } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,13 +15,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { MultiSelect } from "@/components/ui/multi-select"
 import type { SourceDataFile } from "@/types/manuscript-detail"
+import type { FigureDetails, ManuscriptFileDetails } from "@/lib/types"
+import type { Figure } from "@/types/manuscript-detail"
 
 interface SourceFilesTreeviewProps {
-  sourceFiles: SourceDataFile[]
+  sourceFiles: ManuscriptFileDetails[]
+  figures?: Figure[]
   isLoading?: boolean
   error?: string | null
   onRefresh?: () => void
-  availableElements?: { value: string; label: string }[]
+  onAssignmentChange?: (fileId: number, figureId?: number, panelId?: number) => Promise<void>
 }
 
 interface TreeNode {
@@ -29,28 +32,56 @@ interface TreeNode {
   name: string
   type: 'folder' | 'file'
   children?: TreeNode[]
-  file?: SourceDataFile
+  file?: ManuscriptFileDetails
 }
 
 export function SourceFilesTreeview({ 
   sourceFiles, 
+  figures = [],
   isLoading = false, 
   error = null, 
   onRefresh,
-  availableElements = [
-    { value: 'manuscript', label: 'Manuscript' },
-    { value: 'fig1', label: 'Figure 1' },
-    { value: 'fig1a', label: 'Figure 1A' },
-    { value: 'fig1b', label: 'Figure 1B' },
-    { value: 'fig1c', label: 'Figure 1C' },
-    { value: 'fig2', label: 'Figure 2' },
-    { value: 'fig2a', label: 'Figure 2A' },
-    { value: 'fig2b', label: 'Figure 2B' },
-    { value: 'fig2c', label: 'Figure 2C' },
-    { value: 'fig2d', label: 'Figure 2D' },
-    { value: 'supplement', label: 'Supplementary' }
-  ]
+  onAssignmentChange
 }: SourceFilesTreeviewProps) {
+  // Generate available elements from actual figures data - memoized to prevent re-renders
+  const availableElements = useMemo(() => {
+    const elements: Array<{
+      value: string
+      label: string
+      figure_id?: number | null
+      panel_id?: number | null
+    }> = []
+
+    if (figures.length === 0) {
+      return elements
+    }
+
+    // Add figure and panel options with simplified label format
+    figures.forEach((figure, index) => {
+      // Add the main figure option
+      elements.push({
+        value: `figure-${figure.id}`,
+        label: figure.label || `Figure ${figure.id}`,
+        figure_id: figure.id,
+        panel_id: null
+      })
+      
+      // Add individual panel options
+      figure.panels?.forEach((panel, panelIndex) => {
+        elements.push({
+          value: `panel-${figure.id}-${panel.id}`,
+          label: `${figure.label || `Figure ${figure.id}`}${panel.label || `Panel ${panel.id}`}`,
+          figure_id: figure.id,
+          panel_id: panel.id
+        })
+      })
+    })
+
+    return elements
+  }, [figures])
+
+  // Only use the manuscript figures - no assignment-based elements
+  const allAvailableElements = availableElements
   // Show loading state if we're loading or if we have no files and no error (initial state)
   const shouldShowLoading = isLoading || (sourceFiles.length === 0 && !error)
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
@@ -58,7 +89,7 @@ export function SourceFilesTreeview({
   const [mappingTargets, setMappingTargets] = useState<Record<string, string[]>>({})
 
   // Organize files into a tree structure based on file paths
-  const organizeFilesIntoTree = (files: SourceDataFile[]): TreeNode[] => {
+  const organizeFilesIntoTree = (files: ManuscriptFileDetails[]): TreeNode[] => {
     const root: TreeNode = {
       id: 'root',
       name: 'root',
@@ -67,102 +98,98 @@ export function SourceFilesTreeview({
     }
 
     files.forEach(file => {
-      // Get file path from originalUri first, then URL, or use a default path
-      let filePath = ''
+      const fileName = file.name || ''
+      const isZipFile = fileName.toLowerCase().endsWith('.zip')
       
-      // Try originalUri first (most accurate)
-      if ((file as any).originalUri) {
-        filePath = (file as any).originalUri
-      }
-      // Fall back to URL/URI
-      else if (file.url) {
-        try {
-          const url = new URL(file.url, window.location.origin)
-          filePath = url.pathname
-        } catch {
-          // If URL parsing fails, use the URL as-is
-          filePath = file.url
-        }
-      }
-      
-      // Remove API prefixes and clean up the path
-      filePath = filePath
-        .replace(/^\/api\/v1\/manuscripts\/[^\/]+\/files\/[^\/]+\/download/, '') // Remove API download path
-        .replace(/^\/api\/files\//, '') // Remove simple API path
-        .replace(/^\/files\//, '') // Remove files prefix
-        .replace(/^\/+/, '') // Remove leading slashes
-      
-      // If no meaningful path, try to extract from the filename or use a default
-      if (!filePath && file.name) {
-        // If filename contains path-like structure, use it
-        if (file.name.includes('/') || file.name.includes(':')) {
-          filePath = file.name
-        } else {
-          // Put uncategorized files in a default folder based on file type
-          const fileType = file.type?.toLowerCase().replace(/\s+/g, '_') || 'uncategorized'
-          filePath = `${fileType}/${file.name}`
-        }
-      }
-      
-      // Split path into segments (treat both '/' and ':' as separators, especially for zip files)
-      const pathSegments = filePath
-        .replace(/:/g, '/') // Convert colons to slashes
-        .split('/')
-        .filter(segment => segment.length > 0)
-      
-      // If no segments, put in root
-      if (pathSegments.length === 0) {
-        pathSegments.push('root', file.name)
-      }
-      
-      // Navigate/create the folder structure
-      let currentNode = root
-      
-      // Process all segments except the last one (which is the filename)
-      for (let i = 0; i < pathSegments.length - 1; i++) {
-        const segment = pathSegments[i]
-        
-        // Extract clean folder name (segment should already be clean, but this ensures it)
-        const cleanSegment = segment.split('/').pop() || segment
-        
-        // Look for existing folder
-        let childFolder = currentNode.children?.find(
-          child => child.type === 'folder' && child.name === cleanSegment
-        )
-        
-        // Create folder if it doesn't exist
-        if (!childFolder) {
-          const folderPath = pathSegments.slice(0, i + 1).join('/')
-          childFolder = {
-            id: `folder-${folderPath}`,
-            name: cleanSegment,
-        type: 'folder',
-            children: []
+      if (isZipFile) {
+        // For zip files, create them as standalone files at the root level
+        const zipFileNode: TreeNode = {
+          id: file.id.toString(),
+          name: fileName,
+          type: 'file',
+          children: [], // Can have children but treated as file
+          file: {
+            ...file,
+            name: fileName
           }
-          if (!currentNode.children) currentNode.children = []
-          currentNode.children.push(childFolder)
         }
         
-        currentNode = childFolder
-      }
-      
-      // Add the file to the current folder
-      // Extract just the filename (basename) without any folder path
-      const rawFileName = pathSegments[pathSegments.length - 1] || file.name
-      const fileName = rawFileName.split('/').pop() || rawFileName
-      
-      const fileNode: TreeNode = {
-          id: file.id,
-        name: fileName,
-        type: 'file',
-        file: {
-          ...file,
-          name: fileName // Update the file object name too for consistency
+        if (!root.children) root.children = []
+        root.children.push(zipFileNode)
+      } else {
+        // For regular files, use the existing path-based logic
+        let filePath = fileName
+        
+        // If filename contains path-like structure, use it as-is
+        if (filePath.includes('/') || filePath.includes(':')) {
+          // File already has path structure
+        } else {
+          // Put uncategorized files in a default folder based on source
+          const sourceType = file.source?.toLowerCase().replace(/\s+/g, '_') || 'uncategorized'
+          filePath = `${sourceType}/${file.name}`
         }
+        
+        // Split path into segments (treat both '/' and ':' as separators)
+        const pathSegments = filePath
+          .replace(/:/g, '/') // Convert colons to slashes
+          .split('/')
+          .filter(segment => segment.length > 0)
+        
+        // If no segments, put in root
+        if (pathSegments.length === 0) {
+          pathSegments.push('root', file.name)
+        }
+        
+        // Navigate/create the folder structure
+        let currentNode = root
+        
+        // Process all segments except the last one (which is the filename)
+        for (let i = 0; i < pathSegments.length - 1; i++) {
+          const segment = pathSegments[i]
+          
+          // Extract clean folder name (segment should already be clean, but this ensures it)
+          const cleanSegment = segment.split('/').pop() || segment
+          
+          // Look for existing folder
+          let childFolder = currentNode.children?.find(
+            child => child.type === 'folder' && child.name === cleanSegment
+          )
+          
+          // Create folder if it doesn't exist
+          if (!childFolder) {
+            const folderPath = pathSegments.slice(0, i + 1).join('/')
+            childFolder = {
+              id: `folder-${folderPath}`,
+              name: cleanSegment,
+              type: 'folder',
+              children: []
+            }
+            if (!currentNode.children) currentNode.children = []
+            currentNode.children.push(childFolder)
+          }
+          
+          currentNode = childFolder
+        }
+        
+        // Add the file to the current folder
+        // Extract just the filename (basename) without any folder path
+        const rawFileName = pathSegments[pathSegments.length - 1] || file.name
+        const finalFileName = rawFileName.split('/').pop() || rawFileName
+        
+        // Regular file node
+        const fileNode: TreeNode = {
+          id: file.id.toString(),
+          name: finalFileName,
+          type: 'file',
+          file: {
+            ...file,
+            name: finalFileName
+          }
+        }
+        
+        if (!currentNode.children) currentNode.children = []
+        currentNode.children.push(fileNode)
       }
-      
-      if (!currentNode.children) currentNode.children = []
-      currentNode.children.push(fileNode)
     })
 
     // Sort folders and files
@@ -187,9 +214,9 @@ export function SourceFilesTreeview({
     return root.children || []
   }
 
-  // Check if a folder is a zip file
-  const isZipFolder = (node: TreeNode): boolean => {
-    return node.type === 'folder' && node.name.toLowerCase().endsWith('.zip')
+  // Check if a file is a zip file
+  const isZipFile = (node: TreeNode): boolean => {
+    return node.type === 'file' && node.name.toLowerCase().endsWith('.zip')
   }
 
   // Check if file size should be displayed
@@ -221,10 +248,10 @@ export function SourceFilesTreeview({
     }, 0)
   }
 
-  // Count selectable items (files + zip folders)
+  // Count selectable items (files + zip files)
   const countSelectableItems = (nodes: TreeNode[]): number => {
     return nodes.reduce((count, node) => {
-      if (node.type === 'file' || isZipFolder(node)) {
+      if (node.type === 'file' || isZipFile(node)) {
         return count + 1
       } else if (node.children) {
         return count + countSelectableItems(node.children)
@@ -261,23 +288,77 @@ export function SourceFilesTreeview({
     })
   }
 
-  const handleMappingChange = (fileId: string, selectedValues: string[]) => {
+  const handleMappingChange = useCallback(async (fileId: string, selectedValues: string[]) => {
+    // Update local state immediately for UI responsiveness
     setMappingTargets(prev => ({
       ...prev,
       [fileId]: selectedValues
     }))
-  }
+
+    // If onAssignmentChange is provided, make API calls for new assignments
+    if (onAssignmentChange) {
+      const currentAssignments = mappingTargets[fileId] || []
+      const newAssignments = selectedValues.filter(value => !currentAssignments.includes(value))
+      
+      // Make API calls for each new assignment
+      for (const assignmentValue of newAssignments) {
+        try {
+          const element = allAvailableElements.find(el => el.value === assignmentValue)
+          if (element) {
+            await onAssignmentChange(
+              parseInt(fileId), 
+              element.figure_id || undefined, 
+              element.panel_id || undefined
+            )
+          }
+        } catch (error) {
+          console.error('Error updating assignment:', error)
+          // Revert the UI change on error
+          setMappingTargets(prev => ({
+            ...prev,
+            [fileId]: currentAssignments
+          }))
+        }
+      }
+    }
+  }, [onAssignmentChange, allAvailableElements, mappingTargets])
 
   // Initialize mapping targets from API data
   useEffect(() => {
+    if (!sourceFiles.length) {
+      setMappingTargets({})
+      return
+    }
+
     const initialMappings: Record<string, string[]> = {}
+    
     sourceFiles.forEach(file => {
-      if (file.mappedElements && file.mappedElements.length > 0) {
-        initialMappings[file.id] = [...file.mappedElements]
+      const assignedTo = file.assigned_to || (file as any).assignedTo
+      
+      if (assignedTo && assignedTo.length > 0) {
+        const assignments = assignedTo.map(assignment => {
+          // Handle the standard structure: { figure_id, panel_id }
+          if (assignment.figure_id !== undefined) {
+            if (assignment.figure_id && assignment.panel_id) {
+              // Both figure_id and panel_id are set - this is a panel assignment
+              return `panel-${assignment.figure_id}-${assignment.panel_id}`
+            } else if (assignment.figure_id && (assignment.panel_id === null || assignment.panel_id === undefined)) {
+              // Only figure_id is set - this is a figure assignment
+              return `figure-${assignment.figure_id}`
+            }
+          }
+          return null
+        }).filter((value): value is string => value !== null)
+        
+        initialMappings[file.id.toString()] = assignments
+      } else {
+        // Initialize empty array for files without assignments
+        initialMappings[file.id.toString()] = []
       }
     })
+    
     setMappingTargets(initialMappings)
-  }, [sourceFiles])
+  }, [sourceFiles.length]) // Only depend on sourceFiles.length to prevent infinite loops
 
   const expandAll = () => {
     const allFolderIds = getAllFolderIds(treeNodes)
@@ -288,99 +369,170 @@ export function SourceFilesTreeview({
     setExpandedFolders(new Set())
   }
 
-  // Get mapping indicators for a directory based on its immediate children only
-  const getDirectoryMappingIndicators = (node: TreeNode): string[] => {
-    if (!node.children) return []
-    
-    const mappings = new Set<string>()
-    
-    // Only collect mappings from immediate children, not nested ones
-    node.children.forEach(child => {
-      if (child.type === 'file' || isZipFolder(child)) {
-        const fileMappings = mappingTargets[child.id] || []
-        fileMappings.forEach(mapping => mappings.add(mapping))
-      }
-    })
-    
-    return Array.from(mappings)
-  }
 
-  const getFileMappingLabels = (fileId: string): string[] => {
-    const mappings = mappingTargets[fileId] || []
-    return mappings.map(value => 
-      availableElements.find(element => element.value === value)?.label || value
-    )
-  }
-
-  // Auto-expand all folders when files change
+  // Auto-expand only folders containing files with assignments
   useEffect(() => {
     if (sourceFiles.length > 0 && treeNodes.length > 0) {
-      const allFolderIds = getAllFolderIds(treeNodes)
-      setExpandedFolders(new Set(allFolderIds))
+      const foldersWithAssignments = new Set<string>()
+      
+      // Find folders that contain files with assignments (recursively)
+      const findFoldersWithAssignments = (nodes: TreeNode[], parentPath: string = ''): boolean => {
+        let hasAnyAssignments = false
+        
+        nodes.forEach(node => {
+          if (node.type === 'folder') {
+            const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name
+            
+            // Recursively check if this folder or any of its children have assignments
+            const hasAssignmentsInSubtree = findFoldersWithAssignments(node.children || [], currentPath)
+            
+            if (hasAssignmentsInSubtree) {
+              foldersWithAssignments.add(node.id)
+              hasAnyAssignments = true
+            }
+          } else if (node.type === 'file' && node.file) {
+            // Check if this file has assignments
+            const assignedTo = node.file.assigned_to || (node.file as any).assignedTo
+            if (assignedTo && assignedTo.length > 0) {
+              hasAnyAssignments = true
+            }
+          }
+        })
+        
+        return hasAnyAssignments
+      }
+      
+      findFoldersWithAssignments(treeNodes)
+      setExpandedFolders(foldersWithAssignments)
     }
   }, [sourceFiles.length, treeNodes.length])
+
+  // Helper function to get immediate children mappings for a folder
+  const getImmediateChildrenMappings = (node: TreeNode): string[] => {
+    if (node.type !== 'folder') return []
+    
+    const mappings: string[] = []
+    
+    // Helper function to extract labels from assignments
+    const extractLabelsFromAssignments = (assignedTo: any[]) => {
+      return assignedTo.map(assignment => {
+        if (assignment.figure_id && assignment.panel_id) {
+          const figure = figures.find(f => f.id === assignment.figure_id)
+          
+          if (figure) {
+            const panel = figure.panels?.find(p => p.id === assignment.panel_id)
+            
+            if (panel) {
+              return `${figure.label || `Figure ${figure.id}`}${panel.label || `Panel ${panel.id}`}`
+            } else {
+              // Panel not found - ignore this assignment
+              
+              return null
+            }
+          } else {
+            // Figure not found - ignore this assignment
+            
+            return null
+          }
+        } else if (assignment.figure_id) {
+          // Find the matching figure (figure only, no panel)
+          
+          const figure = figures.find(f => f.id === assignment.figure_id)
+          
+          if (figure) {
+            return figure.label || `Figure ${figure.id}`
+          } else {
+            // Figure not found - ignore this assignment
+            console.log(`Figure ${assignment.figure_id} not found`)
+            return null
+          }
+        }
+        return null
+      }).filter((label): label is string => label !== null)
+    }
+    
+    // For zip files, combine the zip file's own assignments with nested elements' assignments
+    if (isZipFile(node)) {
+      // Add the zip file's own assignments
+      if (node.file) {
+        const assignedTo = node.file.assigned_to || (node.file as any).assignedTo
+        if (assignedTo && assignedTo.length > 0) {
+          mappings.push(...extractLabelsFromAssignments(assignedTo))
+        }
+      }
+      
+      // Add assignments from nested elements (recursively)
+      const collectNestedAssignments = (children: TreeNode[]) => {
+        children.forEach(child => {
+          if (child.file) {
+            const assignedTo = child.file.assigned_to || (child.file as any).assignedTo
+            if (assignedTo && assignedTo.length > 0) {
+              mappings.push(...extractLabelsFromAssignments(assignedTo))
+            }
+          }
+          // Recursively check nested children
+          if (child.children) {
+            collectNestedAssignments(child.children)
+          }
+        })
+      }
+      
+      if (node.children) {
+        collectNestedAssignments(node.children)
+      }
+    } else {
+      // For regular folders, only show immediate children assignments
+      if (node.children) {
+        node.children.forEach(child => {
+          // Handle both regular files and zip files
+          if ((child.type === 'file' || isZipFile(child)) && child.file) {
+            const assignedTo = child.file.assigned_to || (child.file as any).assignedTo
+            if (assignedTo && assignedTo.length > 0) {
+              mappings.push(...extractLabelsFromAssignments(assignedTo))
+            }
+          }
+        })
+      }
+    }
+    
+    const uniqueMappings = [...new Set(mappings)]
+    return uniqueMappings
+  }
 
   const renderTreeNode = (node: TreeNode, level: number = 0) => {
     const isExpanded = expandedFolders.has(node.id)
     const isSelected = selectedFiles.has(node.id)
     const indent = level * 20
-    const isZip = isZipFolder(node)
+    const isZip = isZipFile(node)
 
-    if (node.type === 'folder') {
-      const directoryMappings = getDirectoryMappingIndicators(node)
-      
+    if (node.type === 'file' || isZip) {
+      const selectedValues = mappingTargets[node.id] || []
+    }
+
+    if (node.type === 'folder' || isZip) {
       return (
         <div key={node.id}>
-          <div className="flex items-start gap-2 py-2 px-2 hover:bg-muted/50 min-h-12">
-            {/* Mapping dropdown/indicators - always at left, no indentation */}
-            {isZip ? (
-              <div className="w-72 min-w-72">
-                <MultiSelect
-                  options={availableElements}
-                  selected={mappingTargets[node.id] || []}
-                  onSelectionChange={(selected) => handleMappingChange(node.id, selected)}
-                  placeholder="Map to..."
-                  className="w-full min-h-8 text-xs"
-                />
-              </div>
-            ) : (
-              /* Mapping indicators for regular directories */
-              <div className="w-72 min-w-72 flex flex-wrap gap-1 py-1">
-                {directoryMappings.length > 0 ? (
-                  directoryMappings.map((mapping, idx) => {
-                    const label = availableElements.find(el => el.value === mapping)?.label || mapping
-                    return (
-                      <Badge key={idx} variant="secondary" className="text-xs px-1 py-0">
-                        {label}
-                      </Badge>
-                    )
-                  })
-                ) : (
-                  <span className="text-xs text-muted-foreground">No mappings</span>
-                )}
-              </div>
-            )}
-            
-            {/* Checkbox for zip folders (selectable like files) */}
+          <div className="flex items-center gap-2 py-2 px-2 hover:bg-muted/50 min-h-12">
+            {/* Checkbox for zip files (selectable like files) */}
             {isZip && (
               <input
                 type="checkbox"
                 checked={isSelected}
                 onChange={() => toggleFileSelection(node.id)}
-                className="h-4 w-4 cursor-pointer mt-1 flex-shrink-0"
+                className="h-4 w-4 cursor-pointer flex-shrink-0"
               />
             )}
             
             {/* Folder structure with indentation */}
             <div 
-              className="flex items-start gap-1 flex-1"
+              className="flex items-center gap-2 flex-1"
               style={{ paddingLeft: `${indent}px` }}
             >
-            {/* Expand/collapse button */}
-            <button
-              onClick={() => toggleFolder(node.id)}
-              className="flex items-center gap-1 hover:bg-muted rounded p-1 cursor-pointer mt-1"
-            >
+              {/* Expand/collapse button */}
+              <button
+                onClick={() => toggleFolder(node.id)}
+                className="flex items-center gap-1 hover:bg-muted rounded p-1 cursor-pointer"
+              >
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 ) : (
@@ -394,7 +546,35 @@ export function SourceFilesTreeview({
                 <span className="font-medium">{node.name}</span>
               </button>
               
-              <Badge variant="outline" className="ml-auto mt-1">
+              {/* Display immediate children mappings */}
+              {(() => {
+                const mappings = getImmediateChildrenMappings(node)
+                
+                return mappings.length > 0 && (
+                  <div className="flex flex-wrap gap-1 ml-2">
+                      {mappings.map((mapping, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {mapping}
+                        </Badge>
+                      ))}
+                  </div>
+                )
+              })()}
+              
+              {/* MultiSelect for zip files - right next to file name */}
+              {isZip && (
+                <div className="flex-1 min-w-0">
+                  <MultiSelect
+                    options={allAvailableElements}
+                    selected={mappingTargets[node.id] || []}
+                    onSelectionChange={(selected) => handleMappingChange(node.id, selected)}
+                    placeholder="Map to..."
+                    className="w-full min-h-8 text-xs"
+                  />
+                </div>
+              )}
+              
+              <Badge variant="outline" className="ml-auto">
                 {node.children?.length || 0}
               </Badge>
             </div>
@@ -414,17 +594,6 @@ export function SourceFilesTreeview({
         key={node.id}
         className={`flex items-start gap-2 py-2 px-2 hover:bg-muted/50 min-h-12 ${isSelected ? 'bg-muted' : ''}`}
       >
-        {/* Mapping dropdown - always at left, no indentation */}
-        <div className="w-72 min-w-72">
-          <MultiSelect
-            options={availableElements}
-            selected={mappingTargets[node.id] || []}
-            onSelectionChange={(selected) => handleMappingChange(node.id, selected)}
-            placeholder="Map to..."
-            className="w-full min-h-8 text-xs"
-          />
-        </div>
-        
         <input
           type="checkbox"
           checked={isSelected}
@@ -434,44 +603,32 @@ export function SourceFilesTreeview({
         
         {/* File structure with indentation */}
         <div 
-          className="flex items-start gap-2 flex-1"
+          className="flex items-center gap-2 flex-1"
           style={{ paddingLeft: `${indent + 20}px` }}
         >
-          <File className="h-4 w-4 text-gray-500 mt-1 flex-shrink-0" />
+          {isZip ? (
+            <Archive className="h-4 w-4 text-orange-500 flex-shrink-0" />
+          ) : (
+            <File className="h-4 w-4 text-gray-500 flex-shrink-0" />
+          )}
           
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium">{node.file?.name}</span>
-              {hasValidSize(node.file?.size) && (
-                <Badge variant="secondary" className="text-xs">
-                  {node.file?.size}
-                </Badge>
-              )}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {node.file?.description}
-            </div>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-sm font-medium flex-shrink-0">{node.file?.name}</span>
             
-            {/* Display current API mappings */}
-            {node.file?.mappedElements && node.file.mappedElements.length > 0 && (
-              <div className="w-full mt-2">
-                <div className="text-xs text-muted-foreground mb-1">API mappings:</div>
-                <div className="flex flex-wrap gap-1">
-                  {node.file.mappedElements.map((mapping, idx) => {
-                    const label = availableElements.find(el => el.value === mapping)?.label || mapping
-                    return (
-                      <Badge key={idx} variant="outline" className="text-xs px-1 py-0 mb-1">
-                        {label}
-                      </Badge>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+            {/* MultiSelect for file assignments - right next to file name */}
+            <div className="flex-1 min-w-0">
+              <MultiSelect
+                options={allAvailableElements}
+                selected={mappingTargets[node.id] || []}
+                onSelectionChange={(selected) => handleMappingChange(node.id, selected)}
+                placeholder="Map to..."
+                className="w-full min-h-8 text-xs"
+              />
+            </div>
           </div>
           
           {/* Action buttons */}
-          <div className="flex items-start gap-2 mt-1">
+          <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 cursor-pointer">

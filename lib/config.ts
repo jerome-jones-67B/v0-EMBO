@@ -46,6 +46,8 @@ export const endpoints = {
   link: (manuscriptId: string, linkId: string) => `/v1/manuscripts/${manuscriptId}/links/${linkId}`,
   sourceData: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/source-data`,
   sourceDataItem: (manuscriptId: string, sourceDataId: string) => `/v1/manuscripts/${manuscriptId}/source-data/${sourceDataId}`,
+  figureSourceData: (manuscriptId: string, figureId: string) => `/v1/manuscripts/${manuscriptId}/figures/${figureId}/source-data`,
+  panelSourceData: (manuscriptId: string, figureId: string, panelId: string) => `/v1/manuscripts/${manuscriptId}/figures/${figureId}/panels/${panelId}/source-data`,
   files: '/v1/files',
   file: (fileId: string) => `/v1/files/${fileId}`,
   manuscriptFiles: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/files`,
