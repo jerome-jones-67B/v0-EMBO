@@ -423,10 +423,15 @@ export function SourceFilesTreeview({
             const panel = figure.panels?.find(p => p.id === assignment.panel_id)
             
             if (panel) {
-              return `${figure.label || `Figure ${figure.id}`}${panel.label || `Panel ${panel.id}`}`
+              return `${figure.label}${panel.label}`
             } else {
-              // Panel not found - ignore this assignment
-              
+              // Panel not found - debug what panels are available
+              console.log('Panel not found:', { 
+                assignment, 
+                figureId: assignment.figure_id, 
+                panelId: assignment.panel_id,
+                availablePanels: figure.panels?.map(p => ({ id: p.id, label: p.label }))
+              })
               return null
             }
           } else {
@@ -436,10 +441,10 @@ export function SourceFilesTreeview({
           }
         } else if (assignment.figure_id) {
           // Find the matching figure (figure only, no panel)
-          
           const figure = figures.find(f => f.id === assignment.figure_id)
           
           if (figure) {
+            // Use the figure's label property for display
             return figure.label || `Figure ${figure.id}`
           } else {
             // Figure not found - ignore this assignment

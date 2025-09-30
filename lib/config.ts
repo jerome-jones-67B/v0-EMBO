@@ -55,3 +55,8 @@ export const endpoints = {
   checkResults: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/check-results`,
   manuscriptValidation: (manuscriptId: string) => `/v1/manuscripts/${manuscriptId}/validation`,
 } as const;
+
+// Utility function to build full API URLs
+export function buildApiUrl(endpoint: string): string {
+  return `${config.api.baseUrl}${endpoint}`;
+}

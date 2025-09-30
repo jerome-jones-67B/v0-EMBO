@@ -1,38 +1,10 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
-// Note: This file still has some NextAuth references that need cleanup for static builds
-import { useSession } from "next-auth/react"
-import { endpoints, config } from "@/lib/config"
 import { api, ApiError } from "@/lib/api-client"
 import { getImageUrl } from "@/lib/image-utils"
 
-// Convert raw text to formatted HTML (replicating old API processing)
-function convertTextToHTML(text: string): string {
-  if (!text) return ''
-  
-  // Split into paragraphs (double line breaks)
-  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0)
-  
-  return paragraphs.map(paragraph => {
-    // Clean up the paragraph
-    const cleanParagraph = paragraph
-      .replace(/\n/g, ' ') // Convert single line breaks to spaces
-      .replace(/\s+/g, ' ') // Collapse multiple spaces
-      .trim()
-    
-    // Basic formatting
-    let formatted = cleanParagraph
-      // Convert **bold** to <strong>
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Convert *italic* to <em>
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      // Convert simple URLs to links
-      .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>')
-    
-    return `<p class="mb-4">${formatted}</p>`
-  }).join('')
-}
+import { convertTextToHTML } from "@/lib/text-utils"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
@@ -890,6 +862,9 @@ const getManuscriptDetail = async (msid: string) => {
 
 
 const ManuscriptDetail = ({ msid, onBack, useApiData }: ManuscriptDetailProps) => {
+  // Mock session for static builds
+  const session = { user: { name: 'Test User', email: 'test@example.com' } }
+  
   const [selectedView, setSelectedView] = useState<"manuscript" | "list" | "fulltext">("manuscript")
   const [selectedFigureIndex, setSelectedFigureIndex] = useState(0)
   const [linkedData, setLinkedData] = useState(mockLinkedData)

@@ -13,74 +13,21 @@ import { Switch } from "@/components/ui/switch"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Settings2, Database, Zap } from "lucide-react"
-import { ManuscriptDetailRefactored } from "./manuscript/manuscript-detail-refactored" // Import the refactored manuscript detail component
+import { ManuscriptDetailRefactored } from "./manuscript/manuscript-detail-refactored"
 import { AuthorList } from "./author-list"
 import { UserNav } from "./user-nav"
-// No longer using NextAuth for static builds
 import { api } from "@/lib/api-client"
-import { endpoints, config } from "@/lib/config"
 import { dataService } from "@/lib/data-service"
 import { getValidStatusesForTab as getValidStatuses, getStatusMapping } from "@/lib/status-mapping"
 import { Info, ArrowUpDown, ArrowUp, ArrowDown, Search, Filter, AlertTriangle, Users, Check, X, Clock, Eye, Download, MoreHorizontal, ChevronRight, FileText, Archive, Image, Play, Pause, UserMinus, UserPlus, Flag, Edit2 } from "lucide-react"
+import { SortField, SortDirection } from "@/types/dashboard"
 import { initialMockManuscripts } from "@/lib/mock-dashboard-manuscripts"
-
-
-type SortField = "msid" | "receivedDate" | "title" | "authors" | "status" | "priority" | "lastModified"
-type SortDirection = "asc" | "desc"
+import { computeAIChecksSummary } from "@/lib/dashboard-utils"
+import { buildApiUrl } from "@/lib/config"
 
 // No longer needed - using API client directly
 
-// Function to compute AI checks summary from QC checks data
-function computeAIChecksSummary(manuscript: any) {
-  // Get all QC checks from manuscript and figures
-  const allChecks = [
-    ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
-    ...(manuscript?.figures || []).flatMap((fig: any) => fig.qcChecks || [])
-  ];
-  
-  // Filter for AI-generated checks
-  const aiChecks = allChecks.filter(check => check.aiGenerated);
-  
-  // If no AI checks found (likely API data without detailed checks), generate reasonable defaults
-  if (aiChecks.length === 0 && manuscript.msid && !manuscript.msid.includes('EMBO-2024-')) {
-    // Generate realistic AI checks based on manuscript properties for API data
-    const msidHash = manuscript.msid.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-    const statusFactor = manuscript.status === 'segmented' ? 1.2 : 1.0;
-    
-    const baseChecks = Math.floor((msidHash % 8 + 4) * statusFactor); // 4-11 checks
-    const errorRate = 0.15; // 15% errors
-    const warningRate = 0.4; // 40% warnings  
-    const infoRate = 0.45; // 45% info
-    
-    const errors = Math.floor(baseChecks * errorRate);
-    const warnings = Math.floor(baseChecks * warningRate);
-    const info = baseChecks - errors - warnings;
-    const dismissed = Math.floor(baseChecks * 0.1); // 10% dismissed
-    
-    return {
-      total: baseChecks,
-      errors,
-      warnings,
-      info,
-      dismissed
-    };
-  }
-  
-  // Compute counts by type from actual data
-  const errors = aiChecks.filter(check => check.type === 'error').length;
-  const warnings = aiChecks.filter(check => check.type === 'warning').length;
-  const info = aiChecks.filter(check => check.type === 'info').length;
-  const dismissed = aiChecks.filter(check => check.dismissed).length;
-  const total = aiChecks.length;
-  
-  return {
-    total,
-    errors,
-    warnings, 
-    info,
-    dismissed
-  };
-}
+// Main dashboard component
 
 export default function ManuscriptDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -541,9 +488,7 @@ export default function ManuscriptDashboard() {
   const filteredAndSortedManuscripts = useMemo(() => {
     const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
     
-    // 🔍 Debug: Enhanced logging for API mode debugging
-    if (currentManuscripts.length > 0) {
-    }
+    // Enhanced manuscripts with computed aiChecks if they don't have them
     
     // Enhance manuscripts with computed aiChecks if they don't have them
     const enhancedManuscripts = currentManuscripts.map(manuscript => {
@@ -562,25 +507,14 @@ export default function ManuscriptDashboard() {
       // Use workflowState for tab filtering (mapped from API status)
       const workflowState = manuscript.workflowState || 'no-pipeline-results'
       
-      // 🔍 Debug: Log filtering decisions
-      if (useApiData) {
-      }
+      // Filter by workflow state for tab filtering
       
       if (workflowState !== activeTab) return false
 
       // Use displayStatus for status filtering (consistent with statusCounts)
       const displayStatus = manuscript.displayStatus || manuscript.status
       if (statusFilter !== "all" && displayStatus !== statusFilter) {
-        // Debug logging to track filtering behavior
-        if (process.env.NODE_ENV === 'development' && statusFilter === "New submission") {
-          console.log(`❌ Filtered out ${manuscript.msid}: displayStatus="${displayStatus}", status="${manuscript.status}", statusFilter="${statusFilter}"`)
-        }
         return false
-      }
-
-      // Debug logging for manuscripts that pass status filter
-      if (process.env.NODE_ENV === 'development' && statusFilter === "New submission") {
-        console.log(`✅ Included ${manuscript.msid}: displayStatus="${displayStatus}", status="${manuscript.status}", statusFilter="${statusFilter}"`)
       }
 
       // Fixed priority filtering logic

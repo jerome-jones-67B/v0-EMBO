@@ -42,14 +42,26 @@ export function useManuscriptDetailApi({
       let processedFigures = []
       if (apiData && Array.isArray(apiData.figures)) {
         processedFigures = apiData.figures.map((figure: any, index: number) => ({
-          id: figure.id || `figure-${index}`,
-          title: figure.label || figure.title || `Figure ${index + 1}`,
-          legend: figure.caption || figure.legend || 'No legend available',
+          // Match API structure exactly
+          id: figure.id,
+          label: figure.label,
+          caption: figure.caption,
+          image_file_id: figure.image_file_id,
+          sort_order: figure.sort_order,
           panels: Array.isArray(figure.panels) ? figure.panels.map((panel: any, panelIndex: number) => ({
-            id: panel.id || `panel-${panelIndex}`,
-            description: panel.label || panel.description || `Panel ${String.fromCharCode(65 + panelIndex)}`,
-            legend: panel.caption || panel.legend || 'No panel legend',
-            imagePath: getImageUrl(manuscriptId, figure.id || `figure-${index}`, { type: 'full' }),
+            // Match API structure exactly
+            id: panel.id,
+            label: panel.label,
+            caption: panel.caption,
+            x1: panel.x1,
+            y1: panel.y1,
+            x2: panel.x2,
+            y2: panel.y2,
+            confidence: panel.confidence,
+            sort_order: panel.sort_order,
+            source_data: panel.source_data,
+            links: panel.links,
+            check_results: panel.check_results,
             qualityChecks: Array.isArray(panel.check_results) ? panel.check_results.map((check: any) => {
               // Ensure we transform any object to proper format
               if (typeof check === 'object' && check !== null) {
