@@ -14,8 +14,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { MultiSelect } from "@/components/ui/multi-select"
-import type { SourceDataFile } from "@/types/manuscript-detail"
-import type { FigureDetails, ManuscriptFileDetails } from "@/lib/types"
+import type { ManuscriptFileDetails } from "@/lib/types"
 import type { Figure } from "@/types/manuscript-detail"
 
 interface SourceFilesTreeviewProps {
@@ -30,7 +29,7 @@ interface SourceFilesTreeviewProps {
 interface TreeNode {
   id: string
   name: string
-  type: 'folder' | 'file'
+  type: 'folder' | 'file' | 'zip'
   children?: TreeNode[]
   file?: ManuscriptFileDetails
 }
@@ -97,26 +96,224 @@ export function SourceFilesTreeview({
       children: []
     }
 
+    // Process files and build tree structure
     files.forEach(file => {
       const fileName = file.name || ''
       const isZipFile = fileName.toLowerCase().endsWith('.zip')
       
       if (isZipFile) {
-        // For zip files, create them as standalone files at the root level
+        // For ZIP files, find related files that should be their children
+        const zipBaseName = fileName.replace(/\.zip$/i, '')
+        const relatedFiles = files.filter(f => 
+          f.id !== file.id && 
+          !f.name.toLowerCase().endsWith('.zip') &&
+          (f.name.includes(zipBaseName) || 
+           (f.source && f.source.includes(zipBaseName)) ||
+           (f.path && f.path.includes(zipBaseName)))
+        )
+        
+        let filePath = fileName
+        
+        // If filename contains path-like structure, use it as-is
+        if (filePath.includes('/') || filePath.includes(':')) {
+          // File already has path structure
+        } else {
+          // Put uncategorized zip files in a default folder based on source
+          const sourceType = file.source?.toLowerCase().replace(/\s+/g, '_') || 'uncategorized'
+          filePath = `${sourceType}/${file.name}`
+        }
+        
+        // Split path into segments (treat both '/' and ':' as separators)
+        const pathSegments = filePath
+          .replace(/:/g, '/') // Convert colons to slashes
+          .split('/')
+          .filter(segment => segment.length > 0)
+        
+        // If no segments, put in root
+        if (pathSegments.length === 0) {
+          pathSegments.push('root', file.name)
+        }
+        
+        // Navigate/create the folder structure
+        let currentNode = root
+        
+        // Process all segments except the last one (which is the filename)
+        for (let i = 0; i < pathSegments.length - 1; i++) {
+          const segment = pathSegments[i]
+          
+          // Extract clean folder name (segment should already be clean, but this ensures it)
+          const cleanSegment = segment.split('/').pop() || segment
+          
+          // Look for existing folder
+          let childFolder = currentNode.children?.find(
+            child => child.type === 'folder' && child.name === cleanSegment
+          )
+          
+          // Create folder if it doesn't exist
+          if (!childFolder) {
+            const folderPath = pathSegments.slice(0, i + 1).join('/')
+            childFolder = {
+              id: `folder-${folderPath}`,
+              name: cleanSegment,
+              type: 'folder',
+              children: []
+            }
+            if (!currentNode.children) currentNode.children = []
+            currentNode.children.push(childFolder)
+          }
+          
+          currentNode = childFolder
+        }
+        
+        // Add the zip file to the current folder with its children
+        const rawFileName = pathSegments[pathSegments.length - 1] || file.name
+        const finalFileName = rawFileName.split('/').pop() || rawFileName
+        
+        // Create a tree structure for the ZIP file's children
+        const zipRoot: TreeNode = {
+          id: `zip-root-${file.id}`,
+          name: 'root',
+          type: 'folder',
+          children: []
+        }
+        
+        // Process each related file and build tree structure under the ZIP
+        relatedFiles.forEach(childFile => {
+          const childFileName = childFile.name || ''
+          let childFilePath = childFileName
+          
+          // Handle the specific pattern: 'suppl_data/Figure 8.zip:Figure 8/8G/DUSP6.tiff'
+          // We need to remove everything up to and including the colon
+          if (childFilePath.includes(':')) {
+            const colonIndex = childFilePath.indexOf(':')
+            childFilePath = childFilePath.substring(colonIndex + 1)
+          }
+          
+          // If the child file has a path that starts with the ZIP base name, remove it
+          if (childFilePath.startsWith(zipBaseName)) {
+            childFilePath = childFilePath.substring(zipBaseName.length).replace(/^[\/\\]/, '')
+          }
+          
+          // Remove any `.zip` directory from the path
+          childFilePath = childFilePath.replace(/^\.zip[\/\\]/, '').replace(/^\.zip$/, '')
+          
+          // Also remove any path segments that are just `.zip`
+          const tempPathSegments = childFilePath.split(/[\/\\]/)
+          const filteredSegments = tempPathSegments.filter(segment => segment !== '.zip')
+          childFilePath = filteredSegments.join('/')
+          
+          // If filename contains path-like structure, use it as-is
+          if (childFilePath.includes('/') || childFilePath.includes('\\') || childFilePath.includes(':')) {
+            // File already has path structure
+          } else {
+            // Put uncategorized files in a default folder
+            childFilePath = `files/${childFileName}`
+          }
+          
+          // Split path into segments (treat both '/' and '\' as separators)
+          const pathSegments = childFilePath
+            .replace(/\\/g, '/') // Convert backslashes to slashes
+            .replace(/:/g, '/') // Convert colons to slashes
+            .split('/')
+            .filter(segment => segment.length > 0)
+          
+          // If no segments, put in root
+          if (pathSegments.length === 0) {
+            pathSegments.push('files', childFileName)
+          }
+          
+          // Navigate/create the folder structure under the ZIP
+          let currentNode = zipRoot
+          
+          // Process all segments except the last one (which is the filename)
+          for (let i = 0; i < pathSegments.length - 1; i++) {
+            const segment = pathSegments[i]
+            
+            // Extract clean folder name
+            const cleanSegment = segment.split('/').pop() || segment
+            
+            // Look for existing folder
+            let childFolder = currentNode.children?.find(
+              child => child.type === 'folder' && child.name === cleanSegment
+            )
+            
+            // Create folder if it doesn't exist
+            if (!childFolder) {
+              const folderPath = pathSegments.slice(0, i + 1).join('/')
+              childFolder = {
+                id: `zip-folder-${file.id}-${folderPath}`,
+                name: cleanSegment,
+                type: 'folder',
+                children: []
+              }
+              if (!currentNode.children) currentNode.children = []
+              currentNode.children.push(childFolder)
+            }
+            
+            currentNode = childFolder
+          }
+          
+          // Add the file to the current folder
+          const rawFileName = pathSegments[pathSegments.length - 1] || childFileName
+          const finalFileName = rawFileName.split('/').pop() || rawFileName
+          
+          const fileNode: TreeNode = {
+            id: childFile.id.toString(),
+            name: finalFileName,
+            type: 'file',
+            file: {
+              ...childFile,
+              name: finalFileName
+            }
+          }
+          
+          if (!currentNode.children) currentNode.children = []
+          currentNode.children.push(fileNode)
+        })
+        
+        // Sort the ZIP's tree structure
+        const sortZipTreeNode = (node: TreeNode) => {
+          if (node.children) {
+            node.children.sort((a, b) => {
+              if (a.type === 'folder' && b.type === 'file') return -1
+              if (a.type === 'file' && b.type === 'folder') return 1
+              return a.name.localeCompare(b.name)
+            })
+            node.children.forEach(sortZipTreeNode)
+          }
+        }
+        sortZipTreeNode(zipRoot)
+        
+        // Get the children from the ZIP root (skip the root node itself)
+        const zipChildren: TreeNode[] = zipRoot.children || []
+        
+        // ZIP file node - treated as both file and directory
         const zipFileNode: TreeNode = {
           id: file.id.toString(),
-          name: fileName,
-          type: 'file',
-          children: [], // Can have children but treated as file
+          name: finalFileName,
+          type: 'zip', // New zip type for special handling
+          children: zipChildren, // Contains its children
           file: {
             ...file,
-            name: fileName
+            name: finalFileName
           }
         }
         
-        if (!root.children) root.children = []
-        root.children.push(zipFileNode)
+        if (!currentNode.children) currentNode.children = []
+        currentNode.children.push(zipFileNode)
       } else {
+        // Check if this file is already a child of a ZIP file
+        const isChildOfZip = files.some(zipFile => 
+          zipFile.id !== file.id && 
+          zipFile.name.toLowerCase().endsWith('.zip') &&
+          (file.name.includes(zipFile.name.replace(/\.zip$/i, '')) || 
+           (file.source && file.source.includes(zipFile.name.replace(/\.zip$/i, ''))) ||
+           (file.path && file.path.includes(zipFile.name.replace(/\.zip$/i, ''))))
+        )
+        
+        if (isChildOfZip) {
+          return // Skip this file as it's already processed as a ZIP child
+        }
         // For regular files, use the existing path-based logic
         let filePath = fileName
         
@@ -216,7 +413,7 @@ export function SourceFilesTreeview({
 
   // Check if a file is a zip file
   const isZipFile = (node: TreeNode): boolean => {
-    return node.type === 'file' && node.name.toLowerCase().endsWith('.zip')
+    return node.type === 'zip'
   }
 
   // Check if file size should be displayed
@@ -228,7 +425,7 @@ export function SourceFilesTreeview({
   const getAllFolderIds = (nodes: TreeNode[]): string[] => {
     const folderIds: string[] = []
     nodes.forEach(node => {
-      if (node.type === 'folder') {
+      if (node.type === 'folder' || isZipFile(node)) {
         folderIds.push(node.id)
         if (node.children) {
           folderIds.push(...getAllFolderIds(node.children))
@@ -241,7 +438,7 @@ export function SourceFilesTreeview({
   // Count folders recursively
   const countFolders = (nodes: TreeNode[]): number => {
     return nodes.reduce((count, node) => {
-      if (node.type === 'folder') {
+      if (node.type === 'folder' || isZipFile(node)) {
         return count + 1 + (node.children ? countFolders(node.children) : 0)
       }
       return count
@@ -337,15 +534,13 @@ export function SourceFilesTreeview({
       
       if (assignedTo && assignedTo.length > 0) {
         const assignments = assignedTo.map(assignment => {
-          // Handle the standard structure: { figure_id, panel_id }
-          if (assignment.figure_id !== undefined) {
-            if (assignment.figure_id && assignment.panel_id) {
-              // Both figure_id and panel_id are set - this is a panel assignment
-              return `panel-${assignment.figure_id}-${assignment.panel_id}`
-            } else if (assignment.figure_id && (assignment.panel_id === null || assignment.panel_id === undefined)) {
-              // Only figure_id is set - this is a figure assignment
-              return `figure-${assignment.figure_id}`
-            }
+          // Handle the new structure: { figure: { id, label }, panel: { id, label } }
+          if (assignment.figure && assignment.panel) {
+            // Both figure and panel are set - this is a panel assignment
+            return `panel-${assignment.figure.id}-${assignment.panel.id}`
+          } else if (assignment.figure) {
+            // Only figure is set - this is a figure assignment
+            return `figure-${assignment.figure.id}`
           }
           return null
         }).filter((value): value is string => value !== null)
@@ -370,7 +565,7 @@ export function SourceFilesTreeview({
   }
 
 
-  // Auto-expand only folders containing files with assignments
+  // Auto-expand folders with assignments and all ZIP files
   useEffect(() => {
     if (sourceFiles.length > 0 && treeNodes.length > 0) {
       const foldersWithAssignments = new Set<string>()
@@ -396,6 +591,36 @@ export function SourceFilesTreeview({
             if (assignedTo && assignedTo.length > 0) {
               hasAnyAssignments = true
             }
+          } else if (isZipFile(node)) {
+            // For ZIP files, always expand them by default
+            foldersWithAssignments.add(node.id)
+            hasAnyAssignments = true
+            
+            // Recursively expand ALL folders inside ZIP files by default
+            const expandAllFoldersInZip = (nodes: TreeNode[]) => {
+              nodes.forEach(childNode => {
+                if (childNode.type === 'folder') {
+                  // Always expand folders inside ZIP files
+                  foldersWithAssignments.add(childNode.id)
+                  // Recursively expand nested folders
+                  if (childNode.children) {
+                    expandAllFoldersInZip(childNode.children)
+                  }
+                }
+              })
+            }
+            
+            if (node.children) {
+              expandAllFoldersInZip(node.children)
+            }
+            
+            // Also check if the ZIP file itself has assignments
+            const assignedTo = node.file?.assigned_to || (node.file as any)?.assignedTo
+            const hasZipAssignments = assignedTo && assignedTo.length > 0
+            
+            if (hasZipAssignments) {
+              hasAnyAssignments = true
+            }
           }
         })
         
@@ -407,50 +632,23 @@ export function SourceFilesTreeview({
     }
   }, [sourceFiles.length, treeNodes.length])
 
+
   // Helper function to get immediate children mappings for a folder
   const getImmediateChildrenMappings = (node: TreeNode): string[] => {
     if (node.type !== 'folder') return []
     
     const mappings: string[] = []
     
-    // Helper function to extract labels from assignments
+    // Helper function to extract labels from assignments using new API structure
     const extractLabelsFromAssignments = (assignedTo: any[]) => {
       return assignedTo.map(assignment => {
-        if (assignment.figure_id && assignment.panel_id) {
-          const figure = figures.find(f => f.id === assignment.figure_id)
-          
-          if (figure) {
-            const panel = figure.panels?.find(p => p.id === assignment.panel_id)
-            
-            if (panel) {
-              return `${figure.label}${panel.label}`
-            } else {
-              // Panel not found - debug what panels are available
-              console.log('Panel not found:', { 
-                assignment, 
-                figureId: assignment.figure_id, 
-                panelId: assignment.panel_id,
-                availablePanels: figure.panels?.map(p => ({ id: p.id, label: p.label }))
-              })
-              return null
-            }
-          } else {
-            // Figure not found - ignore this assignment
-            
-            return null
-          }
-        } else if (assignment.figure_id) {
-          // Find the matching figure (figure only, no panel)
-          const figure = figures.find(f => f.id === assignment.figure_id)
-          
-          if (figure) {
-            // Use the figure's label property for display
-            return figure.label || `Figure ${figure.id}`
-          } else {
-            // Figure not found - ignore this assignment
-            console.log(`Figure ${assignment.figure_id} not found`)
-            return null
-          }
+        // Handle the new structure: { figure: { id, label }, panel: { id, label } }
+        if (assignment.figure && assignment.panel) {
+          // Both figure and panel are set - this is a panel assignment
+          return `${assignment.figure.label} - ${assignment.panel.label}`
+        } else if (assignment.figure) {
+          // Only figure is set - this is a figure assignment
+          return assignment.figure.label
         }
         return null
       }).filter((label): label is string => label !== null)
@@ -510,11 +708,11 @@ export function SourceFilesTreeview({
     const indent = level * 20
     const isZip = isZipFile(node)
 
-    if (node.type === 'file' || isZip) {
+    if (node.type === 'file') {
       const selectedValues = mappingTargets[node.id] || []
     }
 
-    if (node.type === 'folder' || isZip) {
+    if (node.type === 'folder' || node.type === 'zip') {
       return (
         <div key={node.id}>
           <div className="flex items-center gap-2 py-2 px-2 hover:bg-muted/50 min-h-12">
@@ -593,76 +791,77 @@ export function SourceFilesTreeview({
       )
     }
 
-    // File node
-    return (
-      <div 
-        key={node.id}
-        className={`flex items-start gap-2 py-2 px-2 hover:bg-muted/50 min-h-12 ${isSelected ? 'bg-muted' : ''}`}
-      >
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={() => toggleFileSelection(node.id)}
-          className="h-4 w-4 cursor-pointer mt-1 flex-shrink-0"
-        />
-        
-        {/* File structure with indentation */}
+    // File node (only for regular files, not zip files)
+    if (node.type === 'file') {
+      return (
         <div 
-          className="flex items-center gap-2 flex-1"
-          style={{ paddingLeft: `${indent + 20}px` }}
+          key={node.id}
+          className={`flex items-start gap-2 py-2 px-2 hover:bg-muted/50 min-h-12 ${isSelected ? 'bg-muted' : ''}`}
         >
-          {isZip ? (
-            <Archive className="h-4 w-4 text-orange-500 flex-shrink-0" />
-          ) : (
-            <File className="h-4 w-4 text-gray-500 flex-shrink-0" />
-          )}
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => toggleFileSelection(node.id)}
+            className="h-4 w-4 cursor-pointer mt-1 flex-shrink-0"
+          />
           
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-sm font-medium flex-shrink-0">{node.file?.name}</span>
+          {/* File structure with indentation */}
+          <div 
+            className="flex items-center gap-2 flex-1"
+            style={{ paddingLeft: `${indent + 20}px` }}
+          >
+            <File className="h-4 w-4 text-gray-500 flex-shrink-0" />
             
-            {/* MultiSelect for file assignments - right next to file name */}
-            <div className="flex-1 min-w-0">
-              <MultiSelect
-                options={allAvailableElements}
-                selected={mappingTargets[node.id] || []}
-                onSelectionChange={(selected) => handleMappingChange(node.id, selected)}
-                placeholder="Map to..."
-                className="w-full min-h-8 text-xs"
-              />
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-sm font-medium flex-shrink-0">{node.file?.name}</span>
+              
+              {/* MultiSelect for file assignments - right next to file name */}
+              <div className="flex-1 min-w-0">
+                <MultiSelect
+                  options={allAvailableElements}
+                  selected={mappingTargets[node.id] || []}
+                  onSelectionChange={(selected) => handleMappingChange(node.id, selected)}
+                  placeholder="Map to..."
+                  className="w-full min-h-8 text-xs"
+                />
+              </div>
+            </div>
+            
+            {/* Action buttons */}
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 cursor-pointer">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Copy Link
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive">
+                    Remove
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-          
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 cursor-pointer">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link2 className="h-4 w-4 mr-2" />
-                  Copy Link
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
-                  Remove
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
-      </div>
-    )
+      )
+    }
+
+    // This should not happen with the new type system
+    return null
   }
 
   return (

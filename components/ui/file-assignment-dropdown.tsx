@@ -103,15 +103,13 @@ export function FileAssignmentDropdown({
       let label = ''
       let variant: "default" | "secondary" | "destructive" | "outline" = "outline"
 
-      if (assignment.figure_id && assignment.panel_id) {
+      if (assignment.figure && assignment.panel) {
         // Panel assignment
-        const figureLabel = getFigureLabel(assignment.figure_id)
-        const panelLabel = getPanelLabel(assignment.figure_id, assignment.panel_id)
-        label = `${figureLabel}, ${panelLabel}`
+        label = `${assignment.figure.label} - ${assignment.panel.label}`
         variant = "secondary"
-      } else if (assignment.figure_id) {
+      } else if (assignment.figure) {
         // Figure assignment
-        label = getFigureLabel(assignment.figure_id) || `Figure ${assignment.figure_id}`
+        label = assignment.figure.label
         variant = "secondary"
       } else {
         // Manuscript assignment
@@ -120,7 +118,7 @@ export function FileAssignmentDropdown({
       }
 
       return (
-        <Badge key={`${assignment.figure_id}-${assignment.panel_id}-${index}`} variant={variant} className="text-xs">
+        <Badge key={`${assignment.figure?.id || 'manuscript'}-${assignment.panel?.id || 'none'}-${index}`} variant={variant} className="text-xs">
           {label}
         </Badge>
       )
@@ -148,7 +146,7 @@ export function FileAssignmentDropdown({
           {assignmentOptions.map(option => {
             // Check if this assignment already exists
             const isAlreadyAssigned = file.assigned_to?.some(existing => 
-              existing.figure_id === option.figure_id && existing.panel_id === option.panel_id
+              existing.figure?.id === option.figure_id && existing.panel?.id === option.panel_id
             )
 
             return (

@@ -15,13 +15,12 @@ export const mockManuscriptDetails: ManuscriptDetailData = {
   lastModified: "2024-01-20T10:30:00Z",
   figures: [
     {
-      id: "fig1",
+      id: 1,
       title: "Hsp70 ATPase Domain Structure",
       legend: "Crystal structure of the Hsp70 ATPase domain in complex with ATP. (A) Overall structure showing the two lobes. (B) Close-up view of the ATP-binding site. (C) Comparison with ADP-bound state.",
       panels: [
         {
-          id: "fig1a",
-          description: "Overall structure",
+          id: 1,
           legend: "Overall structure of Hsp70 ATPase domain showing nucleotide-binding domain (NBD) in blue and substrate-binding domain (SBD) in green.",
           imagePath: "/protein-structure-control.png",
           qualityChecks: [
@@ -42,8 +41,7 @@ export const mockManuscriptDetails: ManuscriptDetailData = {
           ]
         },
         {
-          id: "fig1b", 
-          description: "ATP-binding site",
+          id: 2, 
           legend: "Detailed view of the ATP-binding site showing key catalytic residues and metal coordination.",
           imagePath: "/atp-folding-cycle.png",
           qualityChecks: [
@@ -57,8 +55,7 @@ export const mockManuscriptDetails: ManuscriptDetailData = {
           ]
         },
         {
-          id: "fig1c",
-          description: "Structural comparison", 
+          id: 3,
           legend: "Superposition of ATP-bound (blue) and ADP-bound (red) conformations highlighting conformational changes.",
           imagePath: "/protein-structures.png",
           qualityChecks: [
@@ -83,13 +80,12 @@ export const mockManuscriptDetails: ManuscriptDetailData = {
       ]
     },
     {
-      id: "fig2",
+      id: 2,
       title: "Protein Aggregation Kinetics",
       legend: "Time-course analysis of protein aggregation under heat shock conditions. Fluorescence microscopy images show aggregation at different time points.",
       panels: [
         {
-          id: "fig2a",
-          description: "0 hours",
+          id: 4,
           legend: "Control condition showing dispersed protein distribution.",
           imagePath: "/microscopy-0-hours.png",
           qualityChecks: [
@@ -103,8 +99,7 @@ export const mockManuscriptDetails: ManuscriptDetailData = {
           ]
         },
         {
-          id: "fig2b",
-          description: "2 hours",
+          id: 5,
           legend: "Early aggregation visible as small puncta (arrows).",
           imagePath: "/microscopy-two-hours.png", 
           qualityChecks: [
@@ -118,15 +113,13 @@ export const mockManuscriptDetails: ManuscriptDetailData = {
           ]
         },
         {
-          id: "fig2c",
-          description: "6 hours", 
+          id: 6,
           legend: "Progressive aggregation with larger structures formed.",
           imagePath: "/microscopy-6-hours.png",
           qualityChecks: []
         },
         {
-          id: "fig2d",
-          description: "24 hours",
+          id: 7,
           legend: "Extensive aggregation throughout the cell.",
           imagePath: "/microscopy-24-hours.png",
           qualityChecks: []

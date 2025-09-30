@@ -133,11 +133,16 @@ export interface ManuscriptFileDetails {
   id: number;
   name: string;
   source: string;
+  path?: string; // File path for tree structure
   assigned_to: {
-    figure_id?: number | null;
-    panel_id?: number | null;
-    file_id?: number;
-    id?: number;
+    figure: {
+      id: number;
+      label: string;
+    };
+    panel: {
+      id: number;
+      label: string;
+    };
   }[];
 }
 
