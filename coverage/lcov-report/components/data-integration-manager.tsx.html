@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">components</a> data-integration-manager.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/53</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/23</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/15</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/49</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -711,18 +711,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from <span class="cstat-no" 
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { 
-  Upload, 
-  Eye, 
-  CheckCircle, 
-  AlertTriangle, 
+import {
+  Upload,
+  Eye,
+  CheckCircle,
+  AlertTriangle,
   Info,
   Cpu,
   FileText,
   Image as ImageIcon
 } from <span class="cstat-no" title="statement not covered" >'lucide-react'</span>
-import { 
-  loadAndIntegrateRealFigureData, 
+import {
+  loadAndIntegrateRealFigureData,
   createDataIntegrationWorkflow,
   exampleFigure1Data,
   exampleFigure2Data
@@ -768,10 +768,10 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   const loadExampleData = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async (f</span>igureType: 'fig1' | 'fig2') =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setIsLoading(true)</span>
 <span class="cstat-no" title="statement not covered" >    setError(null)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const exampleData = <span class="cstat-no" title="statement not covered" >figureType === 'fig1' ? exampleFigure1Data : exampleFigure2Data</span>
-      
+
       // Simulate loading check4viz data
       const mockCheckData: Check4VizData[] = <span class="cstat-no" title="statement not covered" >[</span>
         {
@@ -789,7 +789,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
           panelId: '1A'
         }
       ]
-      
+
       // Add checks to example data panels
       const exampleDataWithChecks = <span class="cstat-no" title="statement not covered" >{</span>
         ...exampleData,
@@ -798,14 +798,14 @@ export default function <span class="cstat-no" title="statement not covered" ><s
           checks: mockCheckData.filter(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck.panelId === panel.id)</span>
         }))
       }
-      
+
 <span class="cstat-no" title="statement not covered" >      setCheck4VizData(mockCheckData)</span>
 <span class="cstat-no" title="statement not covered" >      setFigureData(exampleDataWithChecks)</span>
-      
+
       // Process the data
       const processedData = <span class="cstat-no" title="statement not covered" >workflow.processFigure(mockCheckData, exampleData)</span>
 <span class="cstat-no" title="statement not covered" >      setPreviewData(processedData)</span>
-      
+
     } catch (err) {
 <span class="cstat-no" title="statement not covered" >      setError(err instanceof Error ? err.message : 'Failed to load example data')</span>
     } finally {
@@ -830,7 +830,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   // Add new check
   const addCheck = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >    if (!checkForm.message.trim()) <span class="cstat-no" title="statement not covered" >return</span></span>
-    
+
     const newCheck: Check4VizData = <span class="cstat-no" title="statement not covered" >{</span>
       type: checkForm.type,
       message: checkForm.message,
@@ -838,7 +838,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
       prompt: checkForm.prompt,
       panelId: checkForm.panelId
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    setCheck4VizData(<span class="fstat-no" title="function not covered" >prev =&gt; <span class="cstat-no" title="statement not covered" >[</span>...prev, newCheck])</span></span>
 <span class="cstat-no" title="statement not covered" >    setCheckForm({</span>
       type: 'issue',
@@ -852,7 +852,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   // Process and preview data
   const processData = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >    if (!figureData || check4VizData.length === 0) <span class="cstat-no" title="statement not covered" >return</span></span>
-    
+
     const processedData = <span class="cstat-no" title="statement not covered" >workflow.processFigure(check4VizData, figureData)</span>
 <span class="cstat-no" title="statement not covered" >    setPreviewData(processedData)</span>
   }
@@ -885,17 +885,17 @@ export default function <span class="cstat-no" title="statement not covered" ><s
               &lt;TabsTrigger value="preview"&gt;Preview&lt;/TabsTrigger&gt;
               &lt;TabsTrigger value="integrate"&gt;Integrate&lt;/TabsTrigger&gt;
             &lt;/TabsList&gt;
-            
+
             &lt;TabsContent value="load" className="space-y-4"&gt;
               &lt;div className="grid grid-cols-2 gap-4"&gt;
-                &lt;Button 
+                &lt;Button
                   onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >l</span>oadExampleData('fig1')}</span>
                   disabled={isLoading}
                   className="w-full"
                 &gt;
                   Load Example Figure 1
                 &lt;/Button&gt;
-                &lt;Button 
+                &lt;Button
                   onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >l</span>oadExampleData('fig2')}</span>
                   disabled={isLoading}
                   variant="outline"
@@ -904,13 +904,13 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                   Load Example Figure 2
                 &lt;/Button&gt;
               &lt;/div&gt;
-              
+
               {<span class="branch-0 cbranch-no" title="branch not covered" >error &amp;&amp; (</span>
                 &lt;div className="p-4 bg-red-50 border border-red-200 rounded-md"&gt;
                   &lt;p className="text-red-800"&gt;{error}&lt;/p&gt;
                 &lt;/div&gt;
               )}
-              
+
               {<span class="branch-0 cbranch-no" title="branch not covered" >figureData &amp;&amp; (</span>
                 &lt;div className="space-y-4"&gt;
                   &lt;h3 className="text-lg font-semibold"&gt;Figure Data&lt;/h3&gt;
@@ -922,12 +922,12 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                 &lt;/div&gt;
               )}
             &lt;/TabsContent&gt;
-            
+
             &lt;TabsContent value="preview" className="space-y-4"&gt;
               {previewData ? (
 <span class="branch-0 cbranch-no" title="branch not covered" >                &lt;div className="space-y-4"&gt;</span>
                   &lt;h3 className="text-lg font-semibold"&gt;Preview Processed Data&lt;/h3&gt;
-                  
+
                   &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;
                     {previewData.panels.map(<span class="fstat-no" title="function not covered" >(p</span>anel: any) =&gt; (
 <span class="cstat-no" title="statement not covered" >                      &lt;Card key={panel.id}&gt;</span>
@@ -964,11 +964,11 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                 &lt;p className="text-gray-500"&gt;No data to preview. Load some data first.&lt;/p&gt;
               )}
             &lt;/TabsContent&gt;
-            
+
             &lt;TabsContent value="integrate" className="space-y-4"&gt;
               &lt;div className="space-y-4"&gt;
                 &lt;h3 className="text-lg font-semibold"&gt;Integration Status&lt;/h3&gt;
-                
+
                 &lt;div className="grid grid-cols-3 gap-4"&gt;
                   &lt;div className="text-center p-4 bg-blue-50 rounded-md"&gt;
                     &lt;FileText className="w-8 h-8 mx-auto mb-2 text-blue-600" /&gt;
@@ -977,7 +977,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                       {figureData ? '1' : '0'}
                     &lt;/p&gt;
                   &lt;/div&gt;
-                  
+
                   &lt;div className="text-center p-4 bg-green-50 rounded-md"&gt;
                     &lt;Cpu className="w-8 h-8 mx-auto mb-2 text-green-600" /&gt;
                     &lt;p className="text-sm font-medium"&gt;AI Checks&lt;/p&gt;
@@ -985,7 +985,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                       {check4VizData.length}
                     &lt;/p&gt;
                   &lt;/div&gt;
-                  
+
                   &lt;div className="text-center p-4 bg-purple-50 rounded-md"&gt;
                     &lt;ImageIcon className="w-8 h-8 mx-auto mb-2 text-purple-600" /&gt;
                     &lt;p className="text-sm font-medium"&gt;Panels&lt;/p&gt;
@@ -994,17 +994,17 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                     &lt;/p&gt;
                   &lt;/div&gt;
                 &lt;/div&gt;
-                
-                &lt;Button 
+
+                &lt;Button
                   onClick={processData}
                   disabled={!figureData || check4VizData.length === 0}
                   className="w-full"
                 &gt;
                   Process and Preview Data
                 &lt;/Button&gt;
-                
+
                 {<span class="branch-0 cbranch-no" title="branch not covered" >previewData &amp;&amp; (</span>
-                  &lt;Button 
+                  &lt;Button
                     onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >o</span>nDataUpdate?.(previewData)}</span>
                     className="w-full"
                     variant="outline"
@@ -1039,4 +1039,3 @@ export default function <span class="cstat-no" title="statement not covered" ><s
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

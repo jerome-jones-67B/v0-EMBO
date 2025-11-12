@@ -2,7 +2,7 @@
 
 /**
  * Vercel Secrets Manager for EMBO Manuscript Management System
- * 
+ *
  * Usage:
  *   node scripts/vercel-secrets.js generate    # Generate all secrets
  *   node scripts/vercel-secrets.js demo       # Setup for demo deployment
@@ -46,22 +46,22 @@ function getProjectName() {
 // Environment variable configurations
 function getEnvironmentConfig(mode, projectName, secrets) {
   const baseUrl = `https://${projectName}.vercel.app/api`;
-  
+
   const configs = {
     demo: {
       // 🔐 Authentication
       NEXTAUTH_URL: `https://${projectName}.vercel.app`,
       NEXTAUTH_SECRET: secrets.NEXTAUTH_SECRET,
-      
+
       // 🎯 Demo Mode Settings
       BYPASS_AUTH: 'true',
       NEXT_PUBLIC_USE_MOCK_DATA: 'true',
-      
+
       // 🔗 API Configuration
       NEXT_PUBLIC_API_BASE_URL: baseUrl,
       DATA4REV_API_BASE_URL: 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api',
       DATA4REV_AUTH_TOKEN: 'demo-token-not-needed',
-      
+
       // ⚙️ App Settings
       NEXT_PUBLIC_API_TIMEOUT: '10000',
       NEXT_PUBLIC_API_RETRIES: '3',
@@ -70,26 +70,26 @@ function getEnvironmentConfig(mode, projectName, secrets) {
       NEXT_PUBLIC_MAX_FILE_SIZE: '52428800',
       NODE_ENV: 'production'
     },
-    
+
     production: {
       // 🔐 Authentication (Required)
       NEXTAUTH_URL: `https://${projectName}.vercel.app`,
       NEXTAUTH_SECRET: secrets.NEXTAUTH_SECRET,
-      
+
       // 🌐 Google OAuth (Add your credentials)
       GOOGLE_CLIENT_ID: 'your-google-oauth-client-id',
       GOOGLE_CLIENT_SECRET: 'your-google-oauth-client-secret',
       GOOGLE_WORKSPACE_DOMAIN: 'yourdomain.com',
-      
+
       // 🔗 API Configuration
       NEXT_PUBLIC_API_BASE_URL: baseUrl,
       DATA4REV_API_BASE_URL: 'https://data4rev-staging.o9l4aslf1oc42.eu-central-1.cs.amazonlightsail.com/api',
       DATA4REV_AUTH_TOKEN: 'your-real-data4rev-token',
-      
+
       // 🛡️ Production Settings
       BYPASS_AUTH: 'false',
       NEXT_PUBLIC_USE_MOCK_DATA: 'false',
-      
+
       // ⚙️ App Settings
       NEXT_PUBLIC_API_TIMEOUT: '10000',
       NEXT_PUBLIC_API_RETRIES: '3',
@@ -99,30 +99,30 @@ function getEnvironmentConfig(mode, projectName, secrets) {
       NODE_ENV: 'production'
     }
   };
-  
+
   return configs[mode] || configs.demo;
 }
 
 // Generate Vercel CLI commands
 function generateVercelCommands(config, projectName) {
   const commands = [];
-  
+
   log('cyan', '📋 Copy and run these Vercel CLI commands:\n');
   log('yellow', '# Make sure you have Vercel CLI installed and logged in:');
   log('bright', 'npm i -g vercel');
   log('bright', 'vercel login\n');
-  
+
   log('yellow', `# Set environment variables for project: ${projectName}`);
-  
+
   Object.entries(config).forEach(([key, value]) => {
     const command = `vercel env add ${key} production`;
     commands.push({ command, value, key });
     log('bright', command);
   });
-  
+
   log('yellow', '\n# After setting all variables, redeploy:');
   log('bright', 'vercel --prod\n');
-  
+
   return commands;
 }
 
@@ -133,28 +133,28 @@ function generateManualInstructions(config, projectName) {
   log('yellow', `2. Select your project: ${projectName}`);
   log('yellow', '3. Go to Settings → Environment Variables');
   log('yellow', '4. Add these variables for "Production" environment:\n');
-  
+
   Object.entries(config).forEach(([key, value]) => {
     log('bright', `${key}=${value}`);
   });
-  
+
   log('yellow', '\n5. Redeploy your application\n');
 }
 
 // Validate environment setup
 function validateEnvironment() {
   log('cyan', '🔍 Validating Environment Configuration...\n');
-  
+
   const requiredVars = [
     'NEXTAUTH_SECRET',
     'NEXTAUTH_URL',
     'NEXT_PUBLIC_API_BASE_URL',
     'DATA4REV_API_BASE_URL'
   ];
-  
+
   const missing = [];
   const present = [];
-  
+
   requiredVars.forEach(varName => {
     if (process.env[varName]) {
       present.push(varName);
@@ -162,13 +162,13 @@ function validateEnvironment() {
       missing.push(varName);
     }
   });
-  
+
   if (present.length > 0) {
     log('green', '✅ Found environment variables:');
     present.forEach(varName => log('green', `  - ${varName}`));
     console.log();
   }
-  
+
   if (missing.length > 0) {
     log('red', '❌ Missing environment variables:');
     missing.forEach(varName => log('red', `  - ${varName}`));
@@ -184,45 +184,45 @@ function validateEnvironment() {
 function main() {
   const projectName = getProjectName();
   const secrets = generateSecrets();
-  
+
   log('bright', '🚀 EMBO Manuscript Management - Vercel Secrets Manager\n');
-  
+
   switch (command) {
     case 'generate':
     case 'demo':
       log('cyan', '🎯 DEMO DEPLOYMENT SETUP');
       log('yellow', 'Perfect for: Presentations, testing, stakeholder demos');
       log('yellow', 'Features: Mock data, bypass authentication, immediate access\n');
-      
+
       const demoConfig = getEnvironmentConfig('demo', projectName, secrets);
       generateManualInstructions(demoConfig, projectName);
       generateVercelCommands(demoConfig, projectName);
-      
+
       log('green', '💡 Demo benefits:');
       log('green', '  ✅ No external API setup needed');
       log('green', '  ✅ No authentication required');
       log('green', '  ✅ Immediate access for stakeholders');
       log('green', '  ✅ Full UI/UX demonstration\n');
       break;
-      
+
     case 'production':
       log('cyan', '🏭 PRODUCTION DEPLOYMENT SETUP');
       log('yellow', 'Features: Real authentication, external API integration, full security\n');
-      
+
       const prodConfig = getEnvironmentConfig('production', projectName, secrets);
       generateManualInstructions(prodConfig, projectName);
       generateVercelCommands(prodConfig, projectName);
-      
+
       log('red', '⚠️  Before production deployment:');
       log('red', '  🔑 Get Google OAuth credentials');
       log('red', '  🔗 Get real Data4Rev API token');
       log('red', '  📝 Update placeholder values above\n');
       break;
-      
+
     case 'validate':
       validateEnvironment();
       break;
-      
+
     default:
       log('red', '❌ Unknown command. Available commands:');
       log('yellow', '  generate    - Generate secrets for demo');

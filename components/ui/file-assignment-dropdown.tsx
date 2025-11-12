@@ -21,11 +21,11 @@ interface FileAssignmentDropdownProps {
   onAssignmentChange: (fileId: number, figureId?: number, panelId?: number) => Promise<void>
 }
 
-export function FileAssignmentDropdown({ 
-  file, 
-  figures, 
-  manuscriptId, 
-  onAssignmentChange 
+export function FileAssignmentDropdown({
+  file,
+  figures,
+  manuscriptId,
+  onAssignmentChange
 }: FileAssignmentDropdownProps) {
   const [isUpdating, setIsUpdating] = useState(false)
 
@@ -42,7 +42,7 @@ export function FileAssignmentDropdown({
       figure_id: figure.id,
       panel_id: null
     })
-    
+
     figure.panels?.forEach(panel => {
       assignmentOptions.push({
         value: `panel-${figure.id}-${panel.id}`,
@@ -66,7 +66,7 @@ export function FileAssignmentDropdown({
       } else if (option.figure_id) {
         await onAssignmentChange(file.id, option.figure_id)
       }
-      
+
     } catch (error) {
       console.error('Error updating file assignment:', error)
     } finally {
@@ -130,7 +130,7 @@ export function FileAssignmentDropdown({
       <div className="flex flex-wrap gap-1 min-w-[200px]">
         {getCurrentAssignments()}
       </div>
-      
+
       <Select
         value=""
         onValueChange={handleAssignmentChange}
@@ -145,13 +145,13 @@ export function FileAssignmentDropdown({
         <SelectContent>
           {assignmentOptions.map(option => {
             // Check if this assignment already exists
-            const isAlreadyAssigned = file.assigned_to?.some(existing => 
+            const isAlreadyAssigned = file.assigned_to?.some(existing =>
               existing.figure?.id === option.figure_id && existing.panel?.id === option.panel_id
             )
 
             return (
-              <SelectItem 
-                key={option.value} 
+              <SelectItem
+                key={option.value}
                 value={option.value}
                 disabled={isAlreadyAssigned}
               >

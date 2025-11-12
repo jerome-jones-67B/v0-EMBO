@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react'
-import type { 
-  Manuscript, 
-  FilterState, 
-  SortState, 
-  ColumnVisibility, 
+import type {
+  Manuscript,
+  FilterState,
+  SortState,
+  ColumnVisibility,
   DownloadProgress,
-  ManuscriptDashboardState 
+  ManuscriptDashboardState
 } from '@/types/manuscript'
 
 const initialFilters: FilterState = {
@@ -36,14 +36,14 @@ export function useManuscriptState() {
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([])
   const [apiManuscripts, setApiManuscripts] = useState<Manuscript[]>([])
   const [selectedManuscripts, setSelectedManuscripts] = useState<Set<string>>(new Set())
-  
+
   // UI state
   const [activeTab, setActiveTab] = useState('all')
   const [filters, setFilters] = useState<FilterState>(initialFilters)
   const [sort, setSort] = useState<SortState>(initialSort)
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(initialColumnVisibility)
   const [showOnlyMine, setShowOnlyMine] = useState(false)
-  
+
   // Loading and data source state
   const [useApiData, setUseApiData] = useState(false)
   const [isLoadingApi, setIsLoadingApi] = useState(false)
@@ -83,7 +83,7 @@ export function useManuscriptState() {
   return {
     // State
     state,
-    
+
     // Setters
     setManuscripts,
     setApiManuscripts,
@@ -97,35 +97,35 @@ export function useManuscriptState() {
     setIsLoadingApi,
     setIsInitialLoadComplete,
     setDownloadProgress,
-    
+
     // Helper functions
     updateFilter: (key: keyof FilterState, value: string) => {
       setFilters(prev => ({ ...prev, [key]: value }))
     },
-    
+
     updateSort: (field: SortState['field'], direction?: SortState['direction']) => {
       setSort(prev => ({
         field,
         direction: direction || (prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc')
       }))
     },
-    
+
     toggleColumnVisibility: (column: keyof ColumnVisibility) => {
       setColumnVisibility(prev => ({ ...prev, [column]: !prev[column] }))
     },
-    
+
     clearFilters: () => {
       setFilters(initialFilters)
     },
-    
+
     selectAllManuscripts: (manuscripts: Manuscript[]) => {
       setSelectedManuscripts(new Set(manuscripts.map(m => m.id)))
     },
-    
+
     clearSelection: () => {
       setSelectedManuscripts(new Set())
     },
-    
+
     toggleManuscriptSelection: (manuscriptId: string) => {
       setSelectedManuscripts(prev => {
         const newSet = new Set(prev)

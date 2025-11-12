@@ -129,7 +129,7 @@ export function ColumnSettings({
                   checked={columnVisibility[column.key]}
                   onCheckedChange={() => onToggleColumn(column.key)}
                 />
-                <Label 
+                <Label
                   htmlFor={column.key}
                   className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >

@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> test-real-data.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/22</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/2</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/4</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/20</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -139,12 +139,12 @@ import { loadAllFigures } from <span class="cstat-no" title="statement not cover
 &nbsp;
 export async function <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >testRealDataLoading() {</span></span>
 <span class="cstat-no" title="statement not covered" >  console.log('Testing real data loading...')</span>
-  
+
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const figures = <span class="cstat-no" title="statement not covered" >await loadAllFigures()</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    console.log(`Loaded ${figures.length} figures:`)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    figures.forEach(<span class="fstat-no" title="function not covered" >(f</span>igure, index) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      console.log(`\nFigure ${index + 1}:`)</span>
 <span class="cstat-no" title="statement not covered" >      console.log(`  ID: ${figure.id}`)</span>
@@ -152,11 +152,11 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >      console.log(`  Panels: ${figure.panels.length}`)</span>
 <span class="cstat-no" title="statement not covered" >      console.log(`  Prompts: ${figure.prompts.length}`)</span>
 <span class="cstat-no" title="statement not covered" >      console.log(`  QC Checks: ${figure.qcChecks.length}`)</span>
-      
+
 <span class="cstat-no" title="statement not covered" >      console.log(`  Panel IDs: ${figure.panels.map(<span class="fstat-no" title="function not covered" >p =&gt; <span class="cstat-no" title="statement not covered" >p</span>.id)</span>.join(', ')}`)</span>
 <span class="cstat-no" title="statement not covered" >      console.log(`  Prompt Types: ${figure.prompts.map(<span class="fstat-no" title="function not covered" >p =&gt; <span class="cstat-no" title="statement not covered" >p</span>.id)</span>.join(', ')}`)</span>
     })
-    
+
 <span class="cstat-no" title="statement not covered" >    return figures</span>
   } catch (error) {
 <span class="cstat-no" title="statement not covered" >    console.error('Error testing real data loading:', error)</span>
@@ -187,4 +187,3 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

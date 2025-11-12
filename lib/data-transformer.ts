@@ -1,10 +1,10 @@
 // Data transformation utilities for converting API data to UI data structures
 
-import { 
-  ManuscriptDetails, 
-  FigureDetails, 
-  PanelDetails, 
-  CheckResultDetails, 
+import {
+  ManuscriptDetails,
+  FigureDetails,
+  PanelDetails,
+  CheckResultDetails,
   LinkDetails,
   SourceDataDetails,
   Manuscript,
@@ -30,20 +30,20 @@ export function transformApiManuscriptToUI(apiManuscript: ManuscriptDetails): an
     currentStatus: mapStatusToDisplay(apiManuscript.status),
     modifiedBy: "Dr. Sarah Chen", // Not available in API
     priority: derivePriorityFromStatus(apiManuscript.status).toLowerCase(),
-    
+
     // Content fields
     abstract: apiManuscript.note || "No abstract available",
     keywords: [], // Not in API, will be empty
     notes: apiManuscript.note || "No additional notes",
     dataAvailability: "Available", // Not in API
-    
+
     // Transform figures to match expected structure
     figures: apiManuscript.figures?.map(transformApiFigureToUI) || [],
-    
+
     // Transform other data
     linkedData: transformLinksToLinkedData(apiManuscript.links || []),
     linkedInfo: transformLinksToLinkedData(apiManuscript.links || []),
-    
+
     // Status mapping
     displayStatus: mapStatusToDisplay(apiManuscript.status),
     workflowState: mapStatusToWorkflow(apiManuscript.status),
@@ -60,7 +60,7 @@ export function transformApiFigureToUI(apiFigure: FigureDetails): any {
     id: apiFigure.id,
     label: apiFigure.label,
     caption: apiFigure.caption,
-    image_file_id: apiFigure.image_file_id,
+    image_file_id: (apiFigure as any).image_file_id,
     sort_order: apiFigure.sort_order,
     panels: apiFigure.panels?.map(transformApiPanelToUI) || [],
     source_data: apiFigure.source_data,
@@ -123,10 +123,10 @@ function derivePriorityFromStatus(status: string): string {
 
 function deriveQCStatusFromCheckResults(checkResults: CheckResultDetails[]): string {
   if (!checkResults || checkResults.length === 0) return 'Pending';
-  
+
   const hasErrors = checkResults.some(check => check.status === 'error');
   const hasWarnings = checkResults.some(check => check.status === 'warning');
-  
+
   if (hasErrors) return 'Issues Found';
   if (hasWarnings) return 'Warnings';
   return 'Passed';
@@ -176,7 +176,7 @@ function mapCheckStatusToType(status: string): 'info' | 'warning' | 'error' {
 }
 
 function hasPanelIssues(checkResults: CheckResultDetails[]): boolean {
-  return checkResults.some(check => 
+  return checkResults.some(check =>
     check.status === 'error' || check.status === 'warning' || check.status === 'fail'
   );
 }

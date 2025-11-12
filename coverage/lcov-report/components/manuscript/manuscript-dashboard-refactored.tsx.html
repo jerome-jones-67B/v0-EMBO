@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">components/manuscript</a> manuscript-dashboard-refactored.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/69</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/24</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/19</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/67</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -836,7 +836,7 @@ const initialMockManuscripts: Manuscript[] = <span class="cstat-no" title="state
 &nbsp;
 export default function <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >ManuscriptDashboard() {</span></span>
   const { data: session } = <span class="cstat-no" title="statement not covered" >useSession()</span>
-  
+
   // Use custom hooks for state management
   const {
     filterState,
@@ -890,11 +890,11 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   // Tab change handler
   const handleTabChange = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(n</span>ewTab: string) =&gt; {</span>
     const validStatuses = <span class="cstat-no" title="statement not covered" >getValidStatuses(newTab)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (filterState.statusFilter !== "all" &amp;&amp; !validStatuses.includes(filterState.statusFilter)) {</span>
 <span class="cstat-no" title="statement not covered" >      updateFilterState({ statusFilter: "all" })</span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    updateDashboardState({ activeTab: newTab })</span>
   }
 &nbsp;
@@ -941,8 +941,8 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   const handleEditAccession = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(m</span>sid: string) =&gt; {</span>
     const manuscript = <span class="cstat-no" title="statement not covered" >manuscripts.find(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.msid === msid)</span></span>
 <span class="cstat-no" title="statement not covered" >    updateDashboardState({ </span>
-      editingAccession: msid, 
-      editedAccessionValue: manuscript?.accessionNumber || "" 
+      editingAccession: msid,
+      editedAccessionValue: manuscript?.accessionNumber || ""
     })
   }
 &nbsp;
@@ -1153,4 +1153,3 @@ export default function <span class="cstat-no" title="statement not covered" ><s
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
-    

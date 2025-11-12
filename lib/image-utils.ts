@@ -20,17 +20,17 @@ export function getFigureImageUrl(
   options: ImageOptions = {}
 ): string {
   const queryParams = new URLSearchParams();
-  
+
   if (options.type) queryParams.set('type', options.type);
   if (options.panelId) queryParams.set('panel', options.panelId);
   if (options.width) queryParams.set('width', options.width.toString());
   if (options.height) queryParams.set('height', options.height.toString());
   if (options.format) queryParams.set('format', options.format);
   if (options.apiMode) queryParams.set('apiMode', 'true');
-  
+
   const baseUrl = `/api/v1/manuscripts/${manuscriptId}/figures/${figureId}/image`;
   const queryString = queryParams.toString();
-  
+
   return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 }
 
@@ -77,7 +77,7 @@ function getFallbackImageUrl(
   if (figureId.startsWith('figure-')) {
     return '/placeholder-e9mgd.png';
   }
-  
+
   // Generate deterministic placeholder based on IDs
   const seed = `${manuscriptId}-${figureId}-${options.panelId || 'main'}`;
   const placeholderImages = [
@@ -103,7 +103,7 @@ function getFallbackImageUrl(
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
-  
+
   return placeholderImages[Math.abs(hash) % placeholderImages.length];
 }
 
@@ -150,7 +150,7 @@ export async function getImageWithFallback(
   if (useApiData) {
     // Try API image first, fall back to placeholder if it fails
     const apiUrl = getFigureImageUrl(manuscriptId, figureId, options);
-    
+
     try {
       const response = await fetch(apiUrl, { method: 'HEAD' });
       if (response.ok && response.headers.get('content-type')?.startsWith('image/')) {
@@ -160,6 +160,6 @@ export async function getImageWithFallback(
       console.warn(`Image fetch failed for ${figureId}, using fallback`);
     }
   }
-  
+
   return getFallbackImageUrl(manuscriptId, String(figureId), options);
 }

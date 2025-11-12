@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">lib/utils</a> manuscript-utils.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">97.33% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>73/75</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">83.54% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>66/79</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>14/14</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">98.46% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>64/65</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -388,7 +388,7 @@ export function searchManuscripts(manuscripts: Manuscript[], searchTerm: string)
   if (!searchTerm.trim()) return manuscripts
 &nbsp;
   const searchLower = searchTerm.toLowerCase()
-  
+
   return manuscripts.filter(manuscript =&gt; {
     const fieldsToSearch = [
       manuscript.msid || <span class="branch-1 cbranch-no" title="branch not covered" >'',</span>
@@ -399,8 +399,8 @@ export function searchManuscripts(manuscripts: Manuscript[], searchTerm: string)
       manuscript.notes || <span class="branch-1 cbranch-no" title="branch not covered" >'',</span>
       manuscript.assignedTo || <span class="branch-1 cbranch-no" title="branch not covered" >''</span>
     ]
-    
-    return fieldsToSearch.some(field =&gt; 
+
+    return fieldsToSearch.some(field =&gt;
       field.toLowerCase().includes(searchLower)
     )
   })
@@ -465,7 +465,7 @@ export function filterAndSortManuscripts(
       if (manuscript.status !== filters.statusFilter) return false
     }
 &nbsp;
-    // Priority filter  
+    // Priority filter
     if (filters.priorityFilter &amp;&amp; filters.priorityFilter !== 'all') {
       if (manuscript.priority !== filters.priorityFilter) return false
     }
@@ -559,4 +559,3 @@ export function getStatusColor(status: string): string {
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
-    

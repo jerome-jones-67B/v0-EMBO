@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">components</a> real-data-manager.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/45</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/12</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/17</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/44</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -652,11 +652,11 @@ import { Card, CardContent, CardHeader, CardTitle } from <span class="cstat-no" 
 import { Button } from <span class="cstat-no" title="statement not covered" >'./ui/button'</span>
 import { Badge } from './ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from <span class="cstat-no" title="statement not covered" >'./ui/tabs'</span>
-import { 
-  Upload, 
-  Eye, 
-  CheckCircle, 
-  AlertTriangle, 
+import {
+  Upload,
+  Eye,
+  CheckCircle,
+  AlertTriangle,
   AlertCircle,
   Info,
   Cpu,
@@ -664,11 +664,11 @@ import {
   Image as ImageIcon,
   Loader2
 } from <span class="cstat-no" title="statement not covered" >'lucide-react'</span>
-import { 
-  loadAllFigures, 
-  convertToMockFormat, 
+import {
+  loadAllFigures,
+  convertToMockFormat,
   generateSampleQCChecks,
-  ProcessedFigureData 
+  ProcessedFigureData
 } from <span class="cstat-no" title="statement not covered" >'../lib/real-data-loader'</span>
 &nbsp;
 interface RealDataManagerProps {
@@ -685,11 +685,11 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   const loadRealData = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async () =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >    setIsLoading(true)</span>
 <span class="cstat-no" title="statement not covered" >    setError(null)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const loadedFigures = <span class="cstat-no" title="statement not covered" >await loadAllFigures()</span>
 <span class="cstat-no" title="statement not covered" >      setFigures(loadedFigures)</span>
-      
+
 <span class="cstat-no" title="statement not covered" >      if (loadedFigures.length &gt; 0) {</span>
 <span class="cstat-no" title="statement not covered" >        setSelectedFigure(loadedFigures[0])</span>
       }
@@ -704,11 +704,11 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   const generateQCChecks = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(f</span>igure: ProcessedFigureData) =&gt; {</span>
     const checks = <span class="cstat-no" title="statement not covered" >generateSampleQCChecks(figure)</span>
     const updatedFigure = <span class="cstat-no" title="statement not covered" >{ ...figure, qcChecks: checks }</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    setFigures(<span class="fstat-no" title="function not covered" >prev =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >      prev.map(<span class="fstat-no" title="function not covered" >f =&gt; <span class="cstat-no" title="statement not covered" >f</span>.id === figure.id ? updatedFigure : f)</span></span>
     )
-    
+
 <span class="cstat-no" title="statement not covered" >    if (selectedFigure?.id === figure.id) {</span>
 <span class="cstat-no" title="statement not covered" >      setSelectedFigure(updatedFigure)</span>
     }
@@ -751,7 +751,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
         &lt;CardContent&gt;
           &lt;div className="space-y-4"&gt;
             &lt;div className="flex items-center gap-4"&gt;
-              &lt;Button 
+              &lt;Button
                 onClick={loadRealData}
                 disabled={isLoading}
                 className="flex items-center gap-2"
@@ -763,12 +763,12 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                 )}
                 Load Real Data
               &lt;/Button&gt;
-              
+
               &lt;div className="text-sm text-gray-600"&gt;
                 {figures.length} figure(s) loaded
               &lt;/div&gt;
             &lt;/div&gt;
-            
+
             {<span class="branch-0 cbranch-no" title="branch not covered" >error &amp;&amp; (</span>
               &lt;div className="p-4 bg-red-50 border border-red-200 rounded-md"&gt;
                 &lt;p className="text-red-800"&gt;{error}&lt;/p&gt;
@@ -785,7 +785,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
             &lt;TabsTrigger value="details"&gt;Details&lt;/TabsTrigger&gt;
             &lt;TabsTrigger value="integrate"&gt;Integrate&lt;/TabsTrigger&gt;
           &lt;/TabsList&gt;
-          
+
           &lt;TabsContent value="overview" className="space-y-4"&gt;
             &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;
               {figures.map(<span class="fstat-no" title="function not covered" >(f</span>igure) =&gt; (
@@ -807,18 +807,18 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                       &lt;p className="text-sm text-gray-600"&gt;
                         &lt;strong&gt;QC Checks:&lt;/strong&gt; {figure.qcChecks.length}
                       &lt;/p&gt;
-                      
+
                       &lt;div className="flex gap-2 mt-4"&gt;
-                        &lt;Button 
-                          size="sm" 
+                        &lt;Button
+                          size="sm"
                           variant="outline"
                           onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etSelectedFigure(figure)}</span>
                         &gt;
                           &lt;Eye className="w-4 h-4 mr-2" /&gt;
                           View
                         &lt;/Button&gt;
-                        &lt;Button 
-                          size="sm" 
+                        &lt;Button
+                          size="sm"
                           variant="outline"
                           onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >g</span>enerateQCChecks(figure)}</span>
                         &gt;
@@ -832,7 +832,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
               ))}
             &lt;/div&gt;
           &lt;/TabsContent&gt;
-          
+
           &lt;TabsContent value="details" className="space-y-4"&gt;
             {selectedFigure ? (
 <span class="branch-0 cbranch-no" title="branch not covered" >              &lt;div className="space-y-4"&gt;</span>
@@ -842,7 +842,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                   &lt;/CardHeader&gt;
                   &lt;CardContent&gt;
                     &lt;p className="text-sm text-gray-600 mb-4"&gt;{selectedFigure.legend}&lt;/p&gt;
-                    
+
                     &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;
                       {selectedFigure.panels.map(<span class="fstat-no" title="function not covered" >(p</span>anel) =&gt; (
 <span class="cstat-no" title="statement not covered" >                        &lt;Card key={panel.id}&gt;</span>
@@ -858,7 +858,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                     &lt;/div&gt;
                   &lt;/CardContent&gt;
                 &lt;/Card&gt;
-                
+
                 &lt;Card&gt;
                   &lt;CardHeader&gt;
                     &lt;CardTitle&gt;Quality Check Prompts&lt;/CardTitle&gt;
@@ -882,18 +882,18 @@ export default function <span class="cstat-no" title="statement not covered" ><s
               &lt;p className="text-gray-500"&gt;Select a figure to view details&lt;/p&gt;
             )}
           &lt;/TabsContent&gt;
-          
+
           &lt;TabsContent value="integrate" className="space-y-4"&gt;
             &lt;div className="space-y-4"&gt;
               &lt;h3 className="text-lg font-semibold"&gt;Integration Status&lt;/h3&gt;
-              
+
               &lt;div className="grid grid-cols-3 gap-4"&gt;
                 &lt;div className="text-center p-4 bg-blue-50 rounded-md"&gt;
                   &lt;FileText className="w-8 h-8 mx-auto mb-2 text-blue-600" /&gt;
                   &lt;p className="text-sm font-medium"&gt;Figures&lt;/p&gt;
                   &lt;p className="text-2xl font-bold text-blue-600"&gt;{figures.length}&lt;/p&gt;
                 &lt;/div&gt;
-                
+
                 &lt;div className="text-center p-4 bg-green-50 rounded-md"&gt;
                   &lt;Cpu className="w-8 h-8 mx-auto mb-2 text-green-600" /&gt;
                   &lt;p className="text-sm font-medium"&gt;Prompts&lt;/p&gt;
@@ -901,7 +901,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                     {figures.reduce(<span class="fstat-no" title="function not covered" >(s</span>um, fig) =&gt; <span class="cstat-no" title="statement not covered" >sum + fig.prompts.length,</span> 0)}
                   &lt;/p&gt;
                 &lt;/div&gt;
-                
+
                 &lt;div className="text-center p-4 bg-purple-50 rounded-md"&gt;
                   &lt;ImageIcon className="w-8 h-8 mx-auto mb-2 text-purple-600" /&gt;
                   &lt;p className="text-sm font-medium"&gt;Panels&lt;/p&gt;
@@ -910,7 +910,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                   &lt;/p&gt;
                 &lt;/div&gt;
               &lt;/div&gt;
-              
+
               &lt;div className="space-y-2"&gt;
                 {figures.map(<span class="fstat-no" title="function not covered" >(f</span>igure) =&gt; (
 <span class="cstat-no" title="statement not covered" >                  &lt;div key={figure.id} c</span>lassName="flex items-center justify-between p-4 border rounded-md"&gt;
@@ -920,7 +920,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                         {figure.panels.length} panels, {figure.qcChecks.length} QC checks
                       &lt;/p&gt;
                     &lt;/div&gt;
-                    &lt;Button 
+                    &lt;Button
                       onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >i</span>ntegrateFigure(figure)}</span>
                       size="sm"
                     &gt;
@@ -955,4 +955,3 @@ export default function <span class="cstat-no" title="statement not covered" ><s
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

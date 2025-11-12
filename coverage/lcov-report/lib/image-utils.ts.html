@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> image-utils.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/54</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/33</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/10</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/45</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -415,17 +415,17 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
   options: ImageOptions = <span class="branch-0 cbranch-no" title="branch not covered" >{}</span>
 ): string {
   const queryParams = <span class="cstat-no" title="statement not covered" >new URLSearchParams();</span>
-  
+
 <span class="cstat-no" title="statement not covered" >  if (options.type) <span class="cstat-no" title="statement not covered" >queryParams.set('type', options.type);</span></span>
 <span class="cstat-no" title="statement not covered" >  if (options.panelId) <span class="cstat-no" title="statement not covered" >queryParams.set('panel', options.panelId);</span></span>
 <span class="cstat-no" title="statement not covered" >  if (options.width) <span class="cstat-no" title="statement not covered" >queryParams.set('width', options.width.toString());</span></span>
 <span class="cstat-no" title="statement not covered" >  if (options.height) <span class="cstat-no" title="statement not covered" >queryParams.set('height', options.height.toString());</span></span>
 <span class="cstat-no" title="statement not covered" >  if (options.format) <span class="cstat-no" title="statement not covered" >queryParams.set('format', options.format);</span></span>
 <span class="cstat-no" title="statement not covered" >  if (options.apiMode) <span class="cstat-no" title="statement not covered" >queryParams.set('apiMode', 'true');</span></span>
-  
+
   const baseUrl = <span class="cstat-no" title="statement not covered" >`/api/v1/manuscripts/${manuscriptId}/figures/${figureId}/image`;</span>
   const queryString = <span class="cstat-no" title="statement not covered" >queryParams.toString();</span>
-  
+
 <span class="cstat-no" title="statement not covered" >  return queryString ? `${baseUrl}?${queryString}` : baseUrl;</span>
 }
 &nbsp;
@@ -472,7 +472,7 @@ function <span class="fstat-no" title="function not covered" >getFallbackImageUr
 <span class="cstat-no" title="statement not covered" >  if (figureId.startsWith('figure-')) {</span>
 <span class="cstat-no" title="statement not covered" >    return '/placeholder-e9mgd.png';</span>
   }
-  
+
   // Generate deterministic placeholder based on IDs
   const seed = <span class="cstat-no" title="statement not covered" >`${manuscriptId}-${figureId}-${options.panelId || 'main'}`;</span>
   const placeholderImages = <span class="cstat-no" title="statement not covered" >[</span>
@@ -498,7 +498,7 @@ function <span class="fstat-no" title="function not covered" >getFallbackImageUr
 <span class="cstat-no" title="statement not covered" >    hash = ((hash &lt;&lt; 5) - hash) + char;</span>
 <span class="cstat-no" title="statement not covered" >    hash = hash &amp; hash; /</span>/ Convert to 32-bit integer
   }
-  
+
 <span class="cstat-no" title="statement not covered" >  return placeholderImages[Math.abs(hash) % placeholderImages.length];</span>
 }
 &nbsp;
@@ -545,7 +545,7 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >  if (useApiData) {</span>
     // Try API image first, fall back to placeholder if it fails
     const apiUrl = <span class="cstat-no" title="statement not covered" >getFigureImageUrl(manuscriptId, figureId, options);</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const response = <span class="cstat-no" title="statement not covered" >await fetch(apiUrl, { method: 'HEAD' });</span>
 <span class="cstat-no" title="statement not covered" >      if (response.ok &amp;&amp; response.headers.get('content-type')?.startsWith('image/')) {</span>
@@ -555,7 +555,7 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >      console.warn(`Image fetch failed for ${figureId}, using fallback`);</span>
     }
   }
-  
+
 <span class="cstat-no" title="statement not covered" >  return getFallbackImageUrl(manuscriptId, String(figureId), options);</span>
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -577,4 +577,3 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

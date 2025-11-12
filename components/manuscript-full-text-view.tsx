@@ -84,7 +84,7 @@ export const FullTextView: React.FC<FullTextViewProps> = ({
               <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <h4 className="text-lg font-medium mb-2">API Data Required</h4>
               <p className="text-muted-foreground">
-                Full text viewing is only available when using live API data. 
+                Full text viewing is only available when using live API data.
                 Please switch to API mode to view manuscript content.
               </p>
             </div>
@@ -150,16 +150,16 @@ export const FullTextView: React.FC<FullTextViewProps> = ({
               {/* Content Display Area */}
               <div className="relative">
                 {fullTextMetadata?.contentType === 'text/html' ? (
-                  <div 
+                  <div
                     className="max-h-[600px] overflow-y-auto p-6 bg-white rounded-lg border prose prose-lg max-w-none"
-                    style={{ 
+                    style={{
                       lineHeight: '1.75',
                       fontFamily: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif'
                     }}
                     dangerouslySetInnerHTML={{ __html: fullTextContent }}
                   />
                 ) : (
-                  <div 
+                  <div
                     className="max-h-[600px] overflow-y-auto p-4 bg-white rounded-lg border font-mono text-sm whitespace-pre-wrap"
                     style={{ lineHeight: '1.6' }}
                   >

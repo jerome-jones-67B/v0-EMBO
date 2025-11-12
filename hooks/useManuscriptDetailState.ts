@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
-import type { 
-  ManuscriptDetailData, 
-  LinkedDataItem, 
-  SourceDataFile, 
-  ManuscriptDetailState 
+import type {
+  ManuscriptDetailData,
+  LinkedDataItem,
+  SourceDataFile,
+  ManuscriptDetailState
 } from '@/types/manuscript-detail'
 
 const initialLinkedData: LinkedDataItem[] = [
@@ -62,7 +62,7 @@ const initialSourceData: SourceDataFile[] = [
 
 export function useManuscriptDetailState() {
   // Core state
-  const [selectedView, setSelectedView] = useState<'manuscript' | 'list'>('manuscript')
+  const [selectedView, setSelectedView] = useState<'manuscript' | 'figure-list' | 'file-tree' | 'validation' | 'ai-qc'>('manuscript')
   const [selectedFigureIndex, setSelectedFigureIndex] = useState(0)
   const [manuscript, setManuscript] = useState<ManuscriptDetailData | null>(null)
   const [notes, setNotes] = useState('')
@@ -106,7 +106,7 @@ export function useManuscriptDetailState() {
   return {
     // State
     state,
-    
+
     // Setters
     setSelectedView,
     setSelectedFigureIndex,
@@ -117,7 +117,7 @@ export function useManuscriptDetailState() {
     setLinkedData,
     setSourceData,
     setDataAvailability,
-    
+
     // Helper functions
     addLinkedData: (item: Omit<LinkedDataItem, 'id'>) => {
       const newItem: LinkedDataItem = {
@@ -127,17 +127,17 @@ export function useManuscriptDetailState() {
       }
       setLinkedData(prev => [...prev, newItem])
     },
-    
+
     removeLinkedData: (id: string) => {
       setLinkedData(prev => prev.filter(item => item.id !== id))
     },
-    
+
     updateLinkedData: (id: string, updates: Partial<LinkedDataItem>) => {
-      setLinkedData(prev => prev.map(item => 
+      setLinkedData(prev => prev.map(item =>
         item.id === id ? { ...item, ...updates } : item
       ))
     },
-    
+
     addSourceData: (file: Omit<SourceDataFile, 'id'>) => {
       const newFile: SourceDataFile = {
         ...file,
@@ -145,22 +145,22 @@ export function useManuscriptDetailState() {
       }
       setSourceData(prev => [...prev, newFile])
     },
-    
+
     removeSourceData: (id: string) => {
       setSourceData(prev => prev.filter(file => file.id !== id))
     },
-    
+
     nextFigure: () => {
       setSelectedFigureIndex(prev => {
         if (!manuscript?.figures) return prev
         return prev < manuscript.figures.length - 1 ? prev + 1 : prev
       })
     },
-    
+
     previousFigure: () => {
       setSelectedFigureIndex(prev => prev > 0 ? prev - 1 : prev)
     },
-    
+
     clearError: () => {
       setError(null)
     }

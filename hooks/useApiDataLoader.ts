@@ -17,26 +17,26 @@ export function useApiDataLoader() {
       ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
       ...(manuscript?.figures || []).flatMap((fig: any) => fig.qcChecks || [])
     ]
-    
+
     // Filter for AI-generated checks
     const aiChecks = allChecks.filter(check => check.aiGenerated)
-    
+
     // If no AI checks found (likely API data without detailed checks), generate reasonable defaults
     if (aiChecks.length === 0 && manuscript.msid && !manuscript.msid.includes('EMBO-2024-')) {
       // Generate realistic AI checks based on manuscript properties for API data
       const msidHash = manuscript.msid.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
       const statusFactor = manuscript.status === 'segmented' ? 1.2 : 1.0
-      
+
       const baseChecks = Math.floor((msidHash % 8 + 4) * statusFactor) // 4-11 checks
       const errorRate = 0.15 // 15% errors
-      const warningRate = 0.4 // 40% warnings  
+      const warningRate = 0.4 // 40% warnings
       const infoRate = 0.45 // 45% info
-      
+
       const errors = Math.floor(baseChecks * errorRate)
       const warnings = Math.floor(baseChecks * warningRate)
       const info = baseChecks - errors - warnings
       const dismissed = Math.floor(baseChecks * 0.1) // 10% dismissed
-      
+
       return {
         total: baseChecks,
         errors,
@@ -45,18 +45,18 @@ export function useApiDataLoader() {
         dismissed
       }
     }
-    
+
     // Compute counts by type from actual data
     const errors = aiChecks.filter(check => check.type === 'error').length
     const warnings = aiChecks.filter(check => check.type === 'warning').length
     const info = aiChecks.filter(check => check.type === 'info').length
     const dismissed = aiChecks.filter(check => check.dismissed).length
     const total = aiChecks.length
-    
+
     return {
       total,
       errors,
-      warnings, 
+      warnings,
       info,
       dismissed
     }
@@ -79,16 +79,18 @@ export function useApiDataLoader() {
       logger.success('API data received:', apiData)
 
       // Transform API data to match our manuscript format
-      const transformedManuscripts: Manuscript[] = (apiData.manuscripts || []).map((manuscript: any) => {
+      const data = (apiData as any).data || apiData
+      const transformedManuscripts: Manuscript[] = (data.manuscripts || []).map((manuscript: any) => {
         const statusMapping = getStatusMapping(manuscript.status)
         const aiChecks = computeAIChecksSummary(manuscript)
-        
+
         return {
+          id: manuscript.id,
           msid: manuscript.msid || `API-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           receivedDate: manuscript.received_date || manuscript.receivedDate || new Date().toISOString(),
           title: manuscript.title || 'Unknown Title',
-          authors: Array.isArray(manuscript.authors) 
-            ? manuscript.authors.join(', ') 
+          authors: Array.isArray(manuscript.authors)
+            ? manuscript.authors.join(', ')
             : manuscript.authors || 'Unknown Authors',
           doi: manuscript.doi || 'No DOI',
           accessionNumber: manuscript.accession_number || manuscript.accessionNumber || 'No Accession',
@@ -107,14 +109,14 @@ export function useApiDataLoader() {
 
       logger.success(`Transformed ${transformedManuscripts.length} manuscripts`)
       setApiManuscripts(transformedManuscripts)
-      
+
     } catch (error) {
       logger.error('Failed to fetch API data:', error)
-      
+
       // Show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       logger.error('API Error Details:', errorMessage)
-      
+
       // Keep using mock data on error
       // setUseApiData(false) // This would be handled by the caller
     } finally {
@@ -140,10 +142,10 @@ export function useApiDataLoader() {
   // Switch between API and mock data
   const handleDataSourceSwitch = useCallback(async (useApi: boolean) => {
     setIsInitialLoadComplete(false) // Reset load state when switching
-    
+
     // Update the data service to use the correct data source
     dataService.setUseMockData(!useApi)
-    
+
     if (useApi && apiManuscripts.length === 0) {
       await fetchApiData()
     } else {

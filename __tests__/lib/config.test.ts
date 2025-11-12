@@ -34,7 +34,7 @@ describe('config', () => {
     it('should build correct API URL', () => {
       const endpoint = '/v1/manuscripts'
       const result = buildApiUrl(endpoint)
-      
+
       expect(result).toBe(`${config.api.baseUrl}${endpoint}`)
     })
 
@@ -46,14 +46,14 @@ describe('config', () => {
     it('should handle endpoint with leading slash', () => {
       const endpoint = '/v1/test'
       const result = buildApiUrl(endpoint)
-      
+
       expect(result).toBe(`${config.api.baseUrl}${endpoint}`)
     })
 
     it('should handle endpoint without leading slash', () => {
       const endpoint = 'v1/test'
       const result = buildApiUrl(endpoint)
-      
+
       expect(result).toBe(`${config.api.baseUrl}/${endpoint}`)
     })
   })

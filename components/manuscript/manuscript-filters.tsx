@@ -35,10 +35,10 @@ export function ManuscriptFilters({
 }: ManuscriptFiltersProps) {
   const uniqueStatuses = Array.from(new Set(manuscripts.map(m => m.status))).sort()
   const priorities = ['low', 'medium', 'high', 'urgent']
-  
-  const hasActiveFilters = filters.search || 
-    filters.status !== 'all' || 
-    filters.priority !== 'all' || 
+
+  const hasActiveFilters = filters.search ||
+    filters.status !== 'all' ||
+    filters.priority !== 'all' ||
     filters.assignedTo !== 'all'
 
   return (
@@ -118,7 +118,7 @@ export function ManuscriptFilters({
       {hasActiveFilters && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-muted-foreground">Active filters:</span>
-          
+
           {filters.search && (
             <Badge variant="outline" className="gap-1">
               Search: {filters.search}
@@ -132,7 +132,7 @@ export function ManuscriptFilters({
               </Button>
             </Badge>
           )}
-          
+
           {filters.status !== 'all' && (
             <Badge variant="outline" className="gap-1">
               Status: {filters.status}
@@ -146,7 +146,7 @@ export function ManuscriptFilters({
               </Button>
             </Badge>
           )}
-          
+
           {filters.priority !== 'all' && (
             <Badge variant="outline" className="gap-1">
               Priority: {filters.priority}
@@ -160,10 +160,10 @@ export function ManuscriptFilters({
               </Button>
             </Badge>
           )}
-          
+
           {filters.assignedTo !== 'all' && (
             <Badge variant="outline" className="gap-1">
-              Assignee: {filters.assignedTo === 'unassigned' ? 'Unassigned' : 
+              Assignee: {filters.assignedTo === 'unassigned' ? 'Unassigned' :
                          filters.assignedTo === 'me' ? 'Me' : filters.assignedTo}
               <Button
                 variant="ghost"
@@ -175,7 +175,7 @@ export function ManuscriptFilters({
               </Button>
             </Badge>
           )}
-          
+
           <Button
             variant="outline"
             size="sm"

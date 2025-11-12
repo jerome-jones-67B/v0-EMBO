@@ -21,7 +21,6 @@ import { dataService } from "@/lib/data-service"
 import { getValidStatusesForTab as getValidStatuses, getStatusMapping } from "@/lib/status-mapping"
 import { Info, ArrowUpDown, ArrowUp, ArrowDown, Search, Filter, AlertTriangle, Users, Check, X, Clock, Eye, Download, MoreHorizontal, ChevronRight, FileText, Archive, Image, Play, Pause, UserMinus, UserPlus, Flag, Edit2 } from "lucide-react"
 import { SortField, SortDirection } from "@/types/dashboard"
-import { initialMockManuscripts } from "@/lib/mock-dashboard-manuscripts"
 import { computeAIChecksSummary } from "@/lib/dashboard-utils"
 import { buildApiUrl } from "@/lib/config"
 
@@ -36,9 +35,8 @@ export default function ManuscriptDashboard() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
   const [activeTab, setActiveTab] = useState("ready-for-curation")
   const [selectedManuscript, setSelectedManuscript] = useState<string | null>(null)
-  const [editingAccession, setEditingAccession] = useState<string | null>(null)
-  const [editedAccessionValue, setEditedAccessionValue] = useState("")
-  const [mockManuscripts, setMockManuscripts] = useState(initialMockManuscripts)
+  // Removed: accession editing not supported by API
+  const [mockManuscripts, setMockManuscripts] = useState<any[]>([])
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [useApiData, setUseApiData] = useState(() => {
     const useMock = dataService.getUseMockData()
@@ -56,7 +54,6 @@ export default function ManuscriptDashboard() {
   const [dropdownPosition, setDropdownPosition] = useState<{top: number, left: number, right: string} | null>(null)
 
   const [visibleColumns, setVisibleColumns] = useState({
-    actions: true,
     status: true,
     received: true,
     msid: true,
@@ -64,8 +61,6 @@ export default function ManuscriptDashboard() {
     authors: true,
     doi: true,
     accession: true,
-    assignee: true,
-    aiChecks: true,
     notes: true,
   })
 
@@ -98,8 +93,8 @@ export default function ManuscriptDashboard() {
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
             const newStatus = manuscript.status === "On hold" ? "New submission" : "On hold"
-            return { 
-              ...manuscript, 
+            return {
+              ...manuscript,
               status: newStatus,
               displayStatus: newStatus,
               lastModified: new Date().toISOString()
@@ -108,12 +103,12 @@ export default function ManuscriptDashboard() {
           return manuscript
         }),
       )
-      
+
       // In a real implementation, this would call an API endpoint to update the status
       // For now, we'll just log the action and update the local state
       const manuscript = apiManuscripts.find(m => m.msid === msid)
       const newStatus = manuscript?.status === "On hold" ? "New submission" : "On hold"
-      
+
       // Show user feedback
       setTimeout(() => {
         const action = newStatus === "On hold" ? "put on hold" : "removed from hold"
@@ -125,8 +120,8 @@ export default function ManuscriptDashboard() {
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
             const newStatus = manuscript.status === "On hold" ? "New submission" : "On hold"
-            return { 
-              ...manuscript, 
+            return {
+              ...manuscript,
               status: newStatus,
               lastModified: new Date().toISOString()
             }
@@ -134,7 +129,7 @@ export default function ManuscriptDashboard() {
           return manuscript
         }),
       )
-      
+
       // Show user feedback for mock data too
       const manuscript = mockManuscripts.find(m => m.msid === msid)
       const newStatus = manuscript?.status === "On hold" ? "New submission" : "On hold"
@@ -151,8 +146,8 @@ export default function ManuscriptDashboard() {
       setApiManuscripts((prev) =>
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
-            return { 
-              ...manuscript, 
+            return {
+              ...manuscript,
               priority: newPriority,
               lastModified: new Date().toISOString()
             }
@@ -160,10 +155,10 @@ export default function ManuscriptDashboard() {
           return manuscript
         }),
       )
-      
+
       // In a real implementation, this would call an API endpoint to update the priority
       const manuscript = apiManuscripts.find(m => m.msid === msid)
-      
+
       // Show user feedback
       setTimeout(() => {
         alert(`Manuscript ${msid} priority changed to ${newPriority}.`)
@@ -173,8 +168,8 @@ export default function ManuscriptDashboard() {
       setMockManuscripts((prev) =>
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
-            return { 
-              ...manuscript, 
+            return {
+              ...manuscript,
               priority: newPriority,
               lastModified: new Date().toISOString()
             }
@@ -182,14 +177,14 @@ export default function ManuscriptDashboard() {
           return manuscript
         }),
       )
-      
+
       // Show user feedback for mock data too
       const manuscript = mockManuscripts.find(m => m.msid === msid)
       setTimeout(() => {
         alert(`Manuscript ${msid} priority changed to ${newPriority}.`)
       }, 100)
     }
-    
+
     // Close the submenu
     setShowPrioritySubmenu(null)
   }
@@ -198,14 +193,14 @@ export default function ManuscriptDashboard() {
   const assignToMe = async (msid: string) => {
     // For static builds, use a fixed user
     const userName = 'EMBO User'
-    
+
     if (useApiData) {
       // Update API manuscripts state
       setApiManuscripts((prev) =>
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
-            return { 
-              ...manuscript, 
+            return {
+              ...manuscript,
               assignedTo: userName,
               lastModified: new Date().toISOString()
             }
@@ -213,21 +208,21 @@ export default function ManuscriptDashboard() {
           return manuscript
         }),
       )
-      
+
       // In a real implementation, this would call an API endpoint to update the assignment
       // PUT /api/v1/manuscripts/{id}/assign with { assignedTo: 'user-id' }
-      
+
       // Show user feedback
       setTimeout(() => {
         alert(`Manuscript ${msid} assigned to you.`)
       }, 100)
     } else {
-      // Update the mock manuscripts state  
+      // Update the mock manuscripts state
       setMockManuscripts((prev) =>
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
-            return { 
-              ...manuscript, 
+            return {
+              ...manuscript,
               assignedTo: userName,
               lastModified: new Date().toISOString()
             }
@@ -235,7 +230,7 @@ export default function ManuscriptDashboard() {
           return manuscript
         }),
       )
-      
+
       // Show user feedback
       setTimeout(() => {
         alert(`Manuscript ${msid} assigned to you.`)
@@ -250,14 +245,14 @@ export default function ManuscriptDashboard() {
   // Function to unassign manuscript from current user
   const unassignFromMe = async (msid: string) => {
     // For static builds, always allow unassignment
-    
+
     if (useApiData) {
       // Update API manuscripts state
       setApiManuscripts((prev) =>
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
-            return { 
-              ...manuscript, 
+            return {
+              ...manuscript,
               assignedTo: "",
               lastModified: new Date().toISOString()
             }
@@ -265,21 +260,21 @@ export default function ManuscriptDashboard() {
           return manuscript
         }),
       )
-      
+
       // In a real implementation, this would call an API endpoint to update the assignment
       // DELETE /api/v1/manuscripts/{id}/assign
-      
+
       // Show user feedback
       setTimeout(() => {
         alert(`Manuscript ${msid} unassigned from you.`)
       }, 100)
     } else {
-      // Update the mock manuscripts state  
+      // Update the mock manuscripts state
       setMockManuscripts((prev) =>
         prev.map((manuscript) => {
           if (manuscript.msid === msid) {
-            return { 
-              ...manuscript, 
+            return {
+              ...manuscript,
               assignedTo: "",
               lastModified: new Date().toISOString()
             }
@@ -287,7 +282,7 @@ export default function ManuscriptDashboard() {
           return manuscript
         }),
       )
-      
+
       // Show user feedback
       setTimeout(() => {
         alert(`Manuscript ${msid} unassigned from you.`)
@@ -307,33 +302,33 @@ export default function ManuscriptDashboard() {
   }
 
   const handleDownloadFiles = async (msid: string, title: string, fileType: string = 'essential') => {
-    
+
     // Determine the manuscript ID for the API call
-    const manuscriptId = useApiData ? 
-      (apiManuscripts.find(m => m.msid === msid)?.id?.toString() || msid) : 
+    const manuscriptId = useApiData ?
+      (apiManuscripts.find(m => m.msid === msid)?.id?.toString() || msid) :
       msid;
-    
+
     // Create AbortController for this download
     const abortController = new AbortController();
     setDownloadAbortControllers(prev => ({...prev, [msid]: abortController}));
-    
+
     // Add manuscript to downloading set and show progress
     setDownloadingManuscripts(prev => new Set(prev).add(msid));
     setShowDownloadToast(prev => ({...prev, [msid]: true}));
-    
+
     // Set up Server-Sent Events connection for real-time progress
     const progressUrl = buildApiUrl(`/v1/manuscripts/${manuscriptId}/download/progress`);
     const eventSource = new EventSource(progressUrl, { withCredentials: true });
-    
+
     setDownloadConnections(prev => ({...prev, [msid]: eventSource}));
-    
+
     eventSource.onopen = () => {
     };
-    
+
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         if (data.type === 'progress') {
           setDownloadProgress(prev => ({
             ...prev,
@@ -367,7 +362,7 @@ export default function ManuscriptDashboard() {
               currentFile: data.error
             }
           }));
-          
+
           setTimeout(() => {
             alert(`Download Failed\n\nError: ${data.error}\n\nManuscript: ${title}\nMSID: ${msid}\n\nPlease try again or contact support if the problem persists.`);
           }, 500);
@@ -380,23 +375,23 @@ export default function ManuscriptDashboard() {
               currentFile: data.message || 'Download was cancelled'
             }
           }));
-          
+
         }
       } catch (parseError) {
       }
     };
-    
+
     eventSource.onerror = (error) => {
       // SSE connection error
       eventSource.close();
       setDownloadConnections(prev => ({...prev, [msid]: null}));
     };
-    
+
     try {
       // Build the download URL with specified file type
       const downloadUrl = buildApiUrl(`/v1/manuscripts/${manuscriptId}/download?format=zip&type=${fileType}`);
-      
-      
+
+
       // Make the API call (this will trigger the SSE progress updates)
       const response = await fetch(downloadUrl, {
         method: 'GET',
@@ -406,49 +401,49 @@ export default function ManuscriptDashboard() {
         credentials: 'include',
         signal: abortController.signal,
       });
-      
+
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status} ${response.statusText}`);
       }
-      
+
       // Get the filename from the response headers
       const contentDisposition = response.headers.get('Content-Disposition');
-      const filename = contentDisposition 
+      const filename = contentDisposition
         ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
         : `${msid}_files.zip`;
-      
+
       // Download the file
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      
+
       // Create a temporary download link and click it
       const downloadLink = document.createElement('a');
       downloadLink.href = url;
       downloadLink.download = filename;
       document.body.appendChild(downloadLink);
       downloadLink.click();
-      
+
       // Clean up
       document.body.removeChild(downloadLink);
       window.URL.revokeObjectURL(url);
-      
-      
+
+
     } catch (error) {
       console.error('❌ Download failed:', error);
-      
+
       // Check if this was a user cancellation
       if (error instanceof Error && error.name === 'AbortError') {
         console.log(`🛑 Download cancelled by user for ${msid}`);
         setDownloadProgress(prev => ({
-          ...prev, 
+          ...prev,
           [msid]: {status: 'Download cancelled', progress: 0}
         }));
       } else {
         setDownloadProgress(prev => ({
-          ...prev, 
+          ...prev,
           [msid]: {status: 'Download failed', progress: 0}
         }));
-        
+
         // Show error notification with fallback options (only for actual errors, not cancellations)
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         setTimeout(() => {
@@ -458,7 +453,7 @@ export default function ManuscriptDashboard() {
     } finally {
       // Clean up AbortController
       setDownloadAbortControllers(prev => ({...prev, [msid]: null}));
-      
+
       // Close SSE connection and hide progress after a delay
       setTimeout(() => {
         const connection = downloadConnections[msid];
@@ -466,7 +461,7 @@ export default function ManuscriptDashboard() {
           connection.close();
           setDownloadConnections(prev => ({...prev, [msid]: null}));
         }
-        
+
         setDownloadingManuscripts(prev => {
           const newSet = new Set(prev);
           newSet.delete(msid);
@@ -485,9 +480,9 @@ export default function ManuscriptDashboard() {
 
   const filteredAndSortedManuscripts = useMemo(() => {
     const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
-    
+
     // Enhanced manuscripts with computed aiChecks if they don't have them
-    
+
     // Enhance manuscripts with computed aiChecks if they don't have them
     const enhancedManuscripts = currentManuscripts.map(manuscript => {
       if (!manuscript.aiChecks) {
@@ -500,13 +495,13 @@ export default function ManuscriptDashboard() {
       }
       return manuscript;
     });
-    
+
     const filtered = enhancedManuscripts.filter((manuscript) => {
       // Use workflowState for tab filtering (mapped from API status)
       const workflowState = manuscript.workflowState || 'no-pipeline-results'
-      
+
       // Filter by workflow state for tab filtering
-      
+
       if (workflowState !== activeTab) return false
 
       // Use displayStatus for status filtering (consistent with statusCounts)
@@ -539,8 +534,8 @@ export default function ManuscriptDashboard() {
           manuscript.notes || "",
           manuscript.assignedTo || ""
         ]
-        
-        return fieldsToSearch.some(field => 
+
+        return fieldsToSearch.some(field =>
           field.toLowerCase().includes(searchLower)
         )
       }
@@ -600,7 +595,7 @@ export default function ManuscriptDashboard() {
     const priority = manuscript.priority || 'normal'
     const isMapped = manuscript.isMapped !== false
     const unmappedFields = manuscript.unmappedFields || []
-    
+
     let variant: "default" | "secondary" | "destructive" | "outline" = manuscript.badgeVariant || "default"
     let className = ""
     let tooltipContent = ""
@@ -726,7 +721,7 @@ export default function ManuscriptDashboard() {
   // Function to fetch API data
   const fetchApiData = async () => {
     setIsLoadingApi(true)
-    
+
     try {
       const response = await api.manuscripts.getAll({
         page: 0,
@@ -734,21 +729,21 @@ export default function ManuscriptDashboard() {
         sort: 'received_at',
         ascending: true
       })
-      
+
       // ✅ The API client returns the data directly (not wrapped in .data)
-      const data = response
-      
+      const unwrapped = (response as any).data || response
+      const data = unwrapped
+
       // ✅ Extract manuscripts array from API response
       const manuscripts = data?.manuscripts || []
-      
-      if (manuscripts.length > 0) {
-      }
-      
+
+      console.log(`📊 API Response: Received ${manuscripts.length} manuscripts`)
+
       if (!Array.isArray(manuscripts)) {
         console.error('❌ Expected manuscripts array, got:', typeof manuscripts, manuscripts)
         throw new Error('Invalid API response: manuscripts data is not an array')
       }
-      
+
       // Transform API data to match our mock data structure using proper status mapping
       const transformedManuscripts = manuscripts.map((manuscript: any, index: number) => {
         const statusMapping = getStatusMapping(manuscript.status)
@@ -760,13 +755,13 @@ export default function ManuscriptDashboard() {
           authors: manuscript.authors,
           doi: manuscript.doi,
           accessionNumber: manuscript.accession_number,
-          assignedTo: "Dr. Sarah Chen", // API doesn't have this field
+          assignedTo: manuscript.assigned_to || "", // Use API field or empty
           status: statusMapping.displayStatus,
           workflowState: statusMapping.workflowState,
           priority: statusMapping.priority,
           hasErrors: manuscript.note && manuscript.note.includes('error'),
           hasWarnings: manuscript.note && manuscript.note.includes('updating'),
-          notes: manuscript.note || "API manuscript - no additional notes",
+          notes: manuscript.note || "", // Empty if no note
           lastModified: manuscript.received_at || new Date().toISOString(),
           // Note: API response doesn't include figures/check_results - AI checks will be computed as fallback
           figures: [], // Empty for now, detailed data would come from individual manuscript endpoint
@@ -778,18 +773,22 @@ export default function ManuscriptDashboard() {
           unmappedFields: ['assignedTo'], // Fields not available in API
         }
       })
-      
-      // Remove duplicates based on msid
-      const uniqueManuscripts = transformedManuscripts.filter((manuscript: any, index: number, self: any[]) => 
-        index === self.findIndex((m: any) => m.msid === manuscript.msid)
+
+      console.log(`📊 API Response: Received ${manuscripts.length} manuscripts`)
+      console.log(`📊 After transformation: ${transformedManuscripts.length} manuscripts`)
+      console.log(`📊 Manuscripts by status:`,
+        transformedManuscripts.reduce((acc: any, m: any) => {
+          acc[m.status] = (acc[m.status] || 0) + 1
+          return acc
+        }, {})
       )
-      
-      setApiManuscripts(uniqueManuscripts)
-      
+
+      setApiManuscripts(transformedManuscripts)
+
       // ✅ FIX: Update UI state to show API data is being used
       setUseApiData(true)
       dataService.setUseMockData(false)
-      
+
     } catch (error) {
       console.error('❌ Failed to fetch API data:', error)
       if (error instanceof Error && error.name === 'AbortError') {
@@ -819,13 +818,13 @@ export default function ManuscriptDashboard() {
 
   // Switch between API and mock data
   const handleDataSourceSwitch = async (useApi: boolean) => {
-    
+
     setUseApiData(useApi)
     setIsInitialLoadComplete(false) // Reset load state when switching
-    
+
     // Update the data service to use the correct data source
     dataService.setUseMockData(!useApi)
-    
+
     if (useApi && apiManuscripts.length === 0) {
       await fetchApiData()
     } else {
@@ -836,7 +835,8 @@ export default function ManuscriptDashboard() {
 
   const getUniqueAssignees = () => {
     const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
-    const assignees = [...new Set(currentManuscripts.map((m) => m.assignedTo))]
+    // Filter out empty strings from assignees
+    const assignees = [...new Set(currentManuscripts.map((m) => m.assignedTo).filter((a) => a && a.trim() !== ''))]
     const sortedAssignees = assignees.sort()
 
     // If current user has assigned manuscripts, put them first
@@ -961,8 +961,11 @@ export default function ManuscriptDashboard() {
         return workflowState === activeTab
       })
       .forEach((manuscript) => {
-        const assignee = manuscript.assignedTo || "Unassigned"
-        counts[assignee] = (counts[assignee] || 0) + 1
+        // Only count non-empty assignees
+        const assignee = manuscript.assignedTo && manuscript.assignedTo.trim() !== '' ? manuscript.assignedTo : null
+        if (assignee) {
+          counts[assignee] = (counts[assignee] || 0) + 1
+        }
       })
 
     return counts
@@ -989,27 +992,7 @@ export default function ManuscriptDashboard() {
     )
   }
 
-  const handleEditAccession = (msid: string, currentAccession: string) => {
-    setEditingAccession(msid)
-    setEditedAccessionValue(currentAccession)
-  }
-
-  const handleSaveAccession = (msid: string) => {
-    setMockManuscripts((prev) =>
-      prev.map((manuscript) =>
-        manuscript.msid === msid
-          ? { ...manuscript, accessionNumber: editedAccessionValue, lastModified: new Date().toISOString() }
-          : manuscript,
-      ),
-    )
-    setEditingAccession(null)
-    setEditedAccessionValue("")
-  }
-
-  const handleCancelAccessionEdit = () => {
-    setEditingAccession(null)
-    setEditedAccessionValue("")
-  }
+  // Removed: accession editing not supported by API
 
   const getDeadlineRowClass = (msid: string) => {
     if (msid === "EMBO-2024-001") {
@@ -1053,6 +1036,47 @@ export default function ManuscriptDashboard() {
   const priorityCounts = getPriorityCounts()
   const assigneeCounts = getAssigneeCounts()
 
+  // Check if search has matches in other tabs
+  const getMatchesInOtherTabs = () => {
+    if (!searchTerm) return []
+
+    const currentManuscripts = useApiData ? apiManuscripts : mockManuscripts
+    const otherTabs: string[] = []
+    const searchLower = searchTerm.toLowerCase()
+
+    const tabs = [
+      { id: "ready-for-curation", name: "Ready for Curation" },
+      { id: "deposited-to-biostudies", name: "Deposited to BioStudies" },
+      { id: "no-pipeline-results", name: "No Pipeline results yet" }
+    ]
+
+    tabs.forEach(tab => {
+      if (tab.id === activeTab) return // Skip current tab
+
+      const hasMatch = currentManuscripts.some(manuscript => {
+        const workflowState = manuscript.workflowState || 'no-pipeline-results'
+        if (workflowState !== tab.id) return false
+
+        const fieldsToSearch = [
+          manuscript.msid || "",
+          manuscript.title || "",
+          manuscript.authors || "",
+          manuscript.doi || "",
+          manuscript.accessionNumber || "",
+          manuscript.notes || ""
+        ]
+
+        return fieldsToSearch.some(field =>
+          typeof field === 'string' && field.toLowerCase().includes(searchLower)
+        )
+      })
+
+      if (hasMatch) otherTabs.push(tab.name)
+    })
+
+    return otherTabs
+  }
+
 
   // Loading screen component
   const LoadingScreen = () => (
@@ -1064,24 +1088,24 @@ export default function ManuscriptDashboard() {
             <Database className="w-6 h-6 text-blue-600" />
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <h2 className="text-xl font-semibold text-gray-900">Loading EMBO Dashboard</h2>
           <p className="text-gray-600">
-            {useApiData 
+            {useApiData
               ? "Fetching manuscript data from Data4Rev API... (This may take up to 10 seconds)"
               : "Preparing dashboard interface..."
             }
           </p>
         </div>
-        
+
         {useApiData && (
           <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
             <Zap className="w-4 h-4 text-green-600" />
             <span>Connected to live API</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => handleDataSourceSwitch(false)}
               className="ml-2"
             >
@@ -1102,93 +1126,19 @@ export default function ManuscriptDashboard() {
     <TooltipProvider>
       <div className="container mx-auto p-6 space-y-6">
         {selectedManuscript ? (
-          <ManuscriptDetailRefactored 
-            msid={selectedManuscript} 
-            onBack={() => setSelectedManuscript(null)} 
+          <ManuscriptDetailRefactored
+            msid={selectedManuscript}
+            onBack={() => setSelectedManuscript(null)}
             useApiData={useApiData}
           />
         ) : (
           <div className="flex flex-col space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <div className="flex items-center gap-4 mb-2">
-                  <h1 className="text-3xl font-bold text-foreground">EMBO Dashboard</h1>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg border">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2">
-                            <Database className={`w-4 h-4 ${!useApiData ? 'text-blue-600' : 'text-gray-400'}`} />
-                            <span className="text-sm font-medium">Mock</span>
-                            <Switch
-                              checked={useApiData}
-                              onCheckedChange={handleDataSourceSwitch}
-                              disabled={isLoadingApi}
-                              className="data-[state=checked]:bg-green-600"
-                            />
-                            <span className="text-sm font-medium">API</span>
-                            <Zap className={`w-4 h-4 ${useApiData ? 'text-green-600' : 'text-gray-400'}`} />
-                            {isLoadingApi && (
-                            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                          )}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{useApiData ? 'Using live Data4Rev API data' : 'Using rich mock data for demonstration'}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {useApiData 
-                            ? `${apiManuscripts.length} real manuscripts from API`
-                            : `${mockManuscripts.length} varied mock manuscripts`}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    </div>
-                    
-                  </div>
-                </div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">EMBO Dashboard</h1>
                 <p className="text-muted-foreground">Manuscript validation and curation workflow management</p>
               </div>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-sm">
-                    {globalCounts.total} manuscripts
-                  </Badge>
-                  {globalCounts.urgent > 0 && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="destructive" className="text-sm">
-                          {globalCounts.urgent} urgent
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Manuscripts requiring immediate attention across all tabs</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                  {globalCounts.onHold > 0 && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="destructive" className="text-sm">
-                          {globalCounts.onHold} on hold
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Manuscripts on hold across all tabs</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                  <div className="flex gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {globalCounts.new} new
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                      {globalCounts.inProgress} in progress
-                    </Badge>
-                    <Badge variant="destructive" className="text-xs bg-red-50 text-red-700 border-red-200">
-                      {globalCounts.totalOnHold} on hold
-                    </Badge>
-                  </div>
-                </div>
                 <UserNav />
               </div>
             </div>
@@ -1217,13 +1167,9 @@ export default function ManuscriptDashboard() {
                           New submission ({statusCounts["New submission"]})
                         </SelectItem>
                         <SelectItem value="In Progress">In Progress ({statusCounts["In Progress"]})</SelectItem>
-                        <SelectItem value="On hold">On hold ({statusCounts["On hold"]})</SelectItem>
                         <SelectItem value="Deposited">Deposited ({statusCounts["Deposited"]})</SelectItem>
                         <SelectItem value="Failed to deposit">
                           Failed to deposit ({statusCounts["Failed to deposit"]})
-                        </SelectItem>
-                        <SelectItem value="Waiting for data">
-                          Waiting for data ({statusCounts["Waiting for data"]})
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -1249,8 +1195,8 @@ export default function ManuscriptDashboard() {
                         <SelectItem value="all">All Assignees</SelectItem>
                         {uniqueAssignees.map((assignee) => (
                           <SelectItem key={assignee} value={assignee}>
-                            {assignee === currentUser 
-                              ? `${assignee} (me) (${assigneeCounts[assignee] || 0})` 
+                            {assignee === currentUser
+                              ? `${assignee} (me) (${assigneeCounts[assignee] || 0})`
                               : `${assignee} (${assigneeCounts[assignee] || 0})`
                             }
                           </SelectItem>
@@ -1266,9 +1212,9 @@ export default function ManuscriptDashboard() {
             {Object.entries(showDownloadToast).filter(([_, show]) => show).map(([msid, _]) => {
               const progress = downloadProgress[msid];
               const manuscript = [...(useApiData ? apiManuscripts : mockManuscripts)].find(m => m.msid === msid);
-              
+
               if (!progress || !manuscript) return null;
-              
+
               return (
                 <Card key={msid} className="border-blue-200 bg-blue-50">
                   <CardContent className="p-4">
@@ -1284,7 +1230,7 @@ export default function ManuscriptDashboard() {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <h4 className="text-sm font-medium text-blue-900 truncate">
@@ -1294,15 +1240,15 @@ export default function ManuscriptDashboard() {
                             {msid}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 mb-2">
                           <div className="flex-1 bg-blue-200 rounded-full h-2">
-                            <div 
+                            <div
                               className={`h-2 rounded-full transition-all duration-300 ${
-                                progress.status.includes('failed') 
-                                  ? 'bg-red-500' 
-                                  : progress.progress === 100 
-                                    ? 'bg-green-500' 
+                                progress.status.includes('failed')
+                                  ? 'bg-red-500'
+                                  : progress.progress === 100
+                                    ? 'bg-green-500'
                                     : 'bg-blue-500'
                               }`}
                               style={{ width: `${progress.progress}%` }}
@@ -1312,7 +1258,7 @@ export default function ManuscriptDashboard() {
                             {progress.progress}%
                           </span>
                         </div>
-                        
+
                         <div className="space-y-1">
                           <p className="text-xs text-blue-700">
                             {progress.status}
@@ -1322,7 +1268,7 @@ export default function ManuscriptDashboard() {
                               </span>
                             )}
                           </p>
-                          
+
                           {progress.currentFile && (
                             <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
                               <div className="flex items-center justify-between">
@@ -1339,7 +1285,7 @@ export default function ManuscriptDashboard() {
                           )}
                         </div>
                       </div>
-                      
+
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1351,17 +1297,17 @@ export default function ManuscriptDashboard() {
                             console.log(`🛑 Aborting download for ${msid}`);
                             abortController.abort();
                           }
-                          
+
                           // Close SSE connection when manually closing
                           const connection = downloadConnections[msid];
                           if (connection) {
                             connection.close();
                             setDownloadConnections(prev => ({...prev, [msid]: null}));
                           }
-                          
+
                           // Clean up AbortController
                           setDownloadAbortControllers(prev => ({...prev, [msid]: null}));
-                          
+
                           setShowDownloadToast(prev => ({...prev, [msid]: false}));
                           setDownloadProgress(prev => {
                             const newProgress = {...prev};
@@ -1545,7 +1491,6 @@ export default function ManuscriptDashboard() {
                             <h4 className="font-medium text-sm">Toggle columns</h4>
                             <div className="space-y-2">
                               {[
-                                { key: "actions", label: "Actions" },
                                 { key: "status", label: "Status" },
                                 { key: "received", label: "Received" },
                                 { key: "msid", label: "MSID" },
@@ -1553,8 +1498,6 @@ export default function ManuscriptDashboard() {
                                 { key: "authors", label: "Authors" },
                                 { key: "doi", label: "DOI" },
                                 { key: "accession", label: "Accession" },
-                                { key: "assignee", label: "Assignee" },
-                                { key: "aiChecks", label: "AI Checks" },
                                 { key: "notes", label: "Notes" },
                               ].map((column) => (
                                 <div key={column.key} className="flex items-center space-x-2">
@@ -1579,7 +1522,6 @@ export default function ManuscriptDashboard() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            {visibleColumns.actions && <TableHead>Actions</TableHead>}
                             {visibleColumns.status && (
                               <TableHead>
                                 <Button
@@ -1589,14 +1531,6 @@ export default function ManuscriptDashboard() {
                                 >
                                   Status {getSortIcon("status")}
                                 </Button>
-                              </TableHead>
-                            )}
-                            {visibleColumns.aiChecks && (
-                              <TableHead>
-                                <div className="flex items-center gap-1">
-                                  <Zap className="w-4 h-4 text-blue-500" />
-                                  AI Checks
-                                </div>
                               </TableHead>
                             )}
                             {visibleColumns.received && (
@@ -1645,13 +1579,13 @@ export default function ManuscriptDashboard() {
                             )}
                             {visibleColumns.doi && <TableHead>DOI</TableHead>}
                             {visibleColumns.accession && <TableHead>Accession</TableHead>}
-                            {visibleColumns.assignee && <TableHead>Assignee</TableHead>}
                             {visibleColumns.notes && <TableHead>Notes</TableHead>}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {filteredAndSortedManuscripts.map((manuscript) => (
                             <TableRow key={manuscript.msid} className={getDeadlineRowClass(manuscript.msid)}>
+                              {/* @ts-ignore */}
                               {visibleColumns.actions && (
                                 <TableCell className="text-right">
                                   <div className="relative">
@@ -1662,7 +1596,7 @@ export default function ManuscriptDashboard() {
                                       onClick={(e) => {
                                         e.preventDefault()
                                         e.stopPropagation()
-                                        
+
                                         if (openDropdown === manuscript.msid) {
                                           setOpenDropdown(null)
                                           setDropdownPosition(null)
@@ -1672,34 +1606,34 @@ export default function ManuscriptDashboard() {
                                           const dropdownWidth = 192 // 48 * 4 = 192px (w-48)
                                           const viewportWidth = window.innerWidth
                                           const viewportHeight = window.innerHeight
-                                          
+
                                           // Calculate horizontal position
                                           let left = rect.left
                                           let right = 'auto'
-                                          
+
                                           // If dropdown would overflow on the right, align it to the right edge of button
                                           if (rect.left + dropdownWidth > viewportWidth) {
                                             left = rect.right - dropdownWidth
                                           }
-                                          
+
                                           // If it still overflows on the left, clamp to viewport edge
                                           if (left < 8) {
                                             left = 8
                                           }
-                                          
+
                                           // Calculate vertical position
                                           let top = rect.bottom + 4
-                                          
+
                                           // If dropdown would overflow at bottom, show it above the button
                                           if (top + 300 > viewportHeight) { // Approximate dropdown height
                                             top = rect.top - 300 - 4
                                           }
-                                          
+
                                           // Ensure it doesn't go above viewport
                                           if (top < 8) {
                                             top = 8
                                           }
-                                          
+
                                           setDropdownPosition({
                                             top,
                                             left,
@@ -1721,7 +1655,7 @@ export default function ManuscriptDashboard() {
                                           setDropdownPosition(null)
                                         }} />
 
-                                        <div 
+                                        <div
                                           className="fixed w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50"
                                           style={{
                                             top: `${dropdownPosition?.top || 0}px`,
@@ -1759,7 +1693,7 @@ export default function ManuscriptDashboard() {
                                                 Download files
                                                 <ChevronRight className="w-3 h-3 ml-auto opacity-50 group-hover:opacity-100" />
                                               </button>
-                                              
+
                                               {/* Download submenu */}
                                               <div className="absolute left-full top-0 ml-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                                                 <button
@@ -1882,7 +1816,7 @@ export default function ManuscriptDashboard() {
                                             )}
 
                                             <div className="border-t border-gray-200 my-1" />
-                                            
+
                                             <div className="relative">
                                               <button
                                                 className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer justify-between"
@@ -1898,7 +1832,7 @@ export default function ManuscriptDashboard() {
                                                 </div>
                                                 <ChevronRight className="w-4 h-4" />
                                               </button>
-                                              
+
                                               {showPrioritySubmenu === manuscript.msid && (
                                                 <div className="fixed w-40 bg-white border border-gray-200 rounded-md shadow-lg z-60"
                                                   style={{
@@ -1907,12 +1841,12 @@ export default function ManuscriptDashboard() {
                                                       const baseLeft = (dropdownPosition?.left || 0) + 192 + 4; // 192 (dropdown width) + 4 (gap)
                                                       const submenuWidth = 160; // w-40 = 160px
                                                       const viewportWidth = window.innerWidth;
-                                                      
+
                                                       // If submenu would overflow on the right, position it to the left of main dropdown
                                                       if (baseLeft + submenuWidth > viewportWidth - 8) {
                                                         return `${(dropdownPosition?.left || 0) - submenuWidth - 4}px`;
                                                       }
-                                                      
+
                                                       return `${baseLeft}px`;
                                                     })()
                                                   }}
@@ -1964,6 +1898,7 @@ export default function ManuscriptDashboard() {
                                   </div>
                                 </TableCell>
                               )}
+                              {/* @ts-ignore */}
                               {visibleColumns.aiChecks && (
                                 <TableCell className="text-sm">
                                     {manuscript.aiChecks ? (
@@ -2034,8 +1969,8 @@ export default function ManuscriptDashboard() {
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <div className="truncate cursor-help" title={typeof manuscript.authors === 'string' ? manuscript.authors : manuscript.authors.join(', ')}>
-                                        <AuthorList 
-                                          authors={manuscript.authors} 
+                                        <AuthorList
+                                          authors={manuscript.authors}
                                           searchTerm={searchTerm}
                                           className="truncate"
                                         />
@@ -2070,88 +2005,19 @@ export default function ManuscriptDashboard() {
                               )}
                               {visibleColumns.accession && (
                                 <TableCell className="text-sm">
-                                  {editingAccession === manuscript.msid ? (
-                                    <div className="flex items-center gap-1">
-                                      <Input
-                                        value={editedAccessionValue}
-                                        onChange={(e) => setEditedAccessionValue(e.target.value)}
-                                        className="h-8 text-sm w-32 min-w-fit"
-                                        onKeyDown={(e) => {
-                                          if (e.key === "Enter") {
-                                            handleSaveAccession(manuscript.msid)
-                                          } else if (e.key === "Escape") {
-                                            handleCancelAccessionEdit()
-                                          }
-                                        }}
-                                        autoFocus
-                                      />
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-green-600 hover:text-green-800"
-                                            onClick={() => handleSaveAccession(manuscript.msid)}
-                                          >
-                                            <Check className="w-4 h-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Save changes (Enter)</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-800"
-                                            onClick={handleCancelAccessionEdit}
-                                          >
-                                            <X className="w-4 h-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Cancel changes (Escape)</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1 group">
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <span className="cursor-help">
-                                            {highlightSearchTerm(manuscript.accessionNumber, searchTerm)}
-                                          </span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>EMBO repository accession number</p>
-                                          <p className="text-xs text-muted-foreground">
-                                            Last modified: {new Date(manuscript.lastModified).toLocaleString()}
-                                          </p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={() =>
-                                              handleEditAccession(manuscript.msid, manuscript.accessionNumber)
-                                            }
-                                          >
-                                            <Edit2 className="w-3 h-3" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Edit accession number</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </div>
-                                  )}
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="cursor-help">
+                                        {highlightSearchTerm(manuscript.accessionNumber, searchTerm)}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>BioStudies accession number</p>
+                                    </TooltipContent>
+                                  </Tooltip>
                                 </TableCell>
                               )}
+                              {/* @ts-ignore */}
                               {visibleColumns.assignee && (
                                 <TableCell className="text-sm">
                                   <Tooltip>
@@ -2197,13 +2063,24 @@ export default function ManuscriptDashboard() {
                       </Table>
                     </div>
 
-                    {filteredAndSortedManuscripts.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p>No manuscripts found matching your criteria.</p>
-                        <p className="text-sm mt-1">Try adjusting your filters or search terms.</p>
-                      </div>
-                    )}
+                    {filteredAndSortedManuscripts.length === 0 && (() => {
+                      const otherTabsWithMatches = getMatchesInOtherTabs()
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p>No manuscripts found matching your criteria.</p>
+                          {otherTabsWithMatches.length > 0 ? (
+                            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md text-blue-800">
+                              <p className="text-sm font-medium">Results found in other tabs:</p>
+                              <p className="text-sm mt-1">{otherTabsWithMatches.join(", ")}</p>
+                              <p className="text-xs mt-2">Switch tabs to view these manuscripts.</p>
+                            </div>
+                          ) : (
+                            <p className="text-sm mt-1">Try adjusting your filters or search terms.</p>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </CardContent>
                 </Card>
               </TabsContent>

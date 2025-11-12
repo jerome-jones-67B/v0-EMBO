@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> ai-prompt-runner.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/126</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/140</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/45</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/117</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -817,9 +817,9 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
 <span class="fstat-no" title="function not covered" >  async r</span>unPromptOnFigure(figureData: any, promptId: string): Promise&lt;PromptResult[]&gt; {
     // Simulate AI processing delay
 <span class="cstat-no" title="statement not covered" >    await new Promise(<span class="fstat-no" title="function not covered" >resolve =&gt; <span class="cstat-no" title="statement not covered" >s</span>etTimeout(resolve, 1000))</span></span>
-    
+
     const results: PromptResult[] = <span class="cstat-no" title="statement not covered" >[]</span>
-    
+
     // Process each panel with the specific prompt
 <span class="cstat-no" title="statement not covered" >    figureData.panels.forEach(<span class="fstat-no" title="function not covered" >(p</span>anel: any) =&gt; {</span>
       const result = <span class="cstat-no" title="statement not covered" >this.processPanelWithPrompt(panel, promptId, figureData.legend)</span>
@@ -832,28 +832,28 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
         })
       }
     })
-    
+
 <span class="cstat-no" title="statement not covered" >    return results</span>
   }
-  
+
 <span class="fstat-no" title="function not covered" >  async r</span>unAllPromptsOnFigure(figureData: any): Promise&lt;PromptResult[]&gt; {
     const allResults: PromptResult[] = <span class="cstat-no" title="statement not covered" >[]</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    for (const prompt of figureData.prompts) {</span>
       const results = <span class="cstat-no" title="statement not covered" >await this.runPromptOnFigure(figureData, prompt.id)</span>
 <span class="cstat-no" title="statement not covered" >      allResults.push(...results)</span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    return allResults</span>
   }
-  
+
 <span class="fstat-no" title="function not covered" >  convertPromptResultsToQCChecks(r</span>esults: PromptResult[]): any[] {
 <span class="cstat-no" title="statement not covered" >    return results.map(<span class="fstat-no" title="function not covered" >result =&gt; {</span></span>
       const qcCheck = <span class="cstat-no" title="statement not covered" >this.convertPromptResultToQCCheck(result)</span>
 <span class="cstat-no" title="statement not covered" >      return qcCheck</span>
     }).filter(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck !== null)</span>
   }
-  
+
   private <span class="fstat-no" title="function not covered" >processPanelWithPrompt(p</span>anel: any, promptId: string, fullLegend: string): any | null {
     // Simulate AI analysis based on the prompt type
 <span class="cstat-no" title="statement not covered" >    switch (promptId) {</span>
@@ -871,12 +871,12 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
 <span class="cstat-no" title="statement not covered" >        return null</span>
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >analyzeErrorBars(p</span>anel: any, fullLegend: string): any {
     // Simulate AI analysis for error bars
     const hasErrorBars = <span class="cstat-no" title="statement not covered" >this.detectErrorBarsInLegend(panel.legend, fullLegend)</span>
     const isDefined = <span class="cstat-no" title="statement not covered" >this.checkErrorBarDefinition(panel.legend, fullLegend)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       panel_label: panel.id,
       error_bar_on_figure: hasErrorBars ? "yes" : "no",
@@ -884,13 +884,13 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
       error_bar_definition: isDefined ? this.extractErrorBarDefinition(panel.legend, fullLegend) : ""
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >analyzeIndividualDataPoints(p</span>anel: any, fullLegend: string): any {
     // Simulate AI analysis for individual data points
     const isPlot = <span class="cstat-no" title="statement not covered" >this.isPlotPanel(panel.legend)</span>
     const hasAverages = <span class="cstat-no" title="statement not covered" >this.hasAverageValues(panel.legend, fullLegend)</span>
     const hasIndividualPoints = <span class="cstat-no" title="statement not covered" >this.hasIndividualDataPoints(panel.legend, fullLegend)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       panel_label: panel.id,
       plot: isPlot ? "yes" : "no",
@@ -898,13 +898,13 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
       individual_values: hasIndividualPoints ? "yes" : "not needed"
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >analyzeScaleBars(p</span>anel: any, fullLegend: string): any {
     // Simulate AI analysis for scale bars
     const isMicrograph = <span class="cstat-no" title="statement not covered" >this.isMicrographPanel(panel.legend)</span>
     const hasScaleBar = <span class="cstat-no" title="statement not covered" >this.hasScaleBar(panel.legend, fullLegend)</span>
     const isDefined = <span class="cstat-no" title="statement not covered" >this.isScaleBarDefined(panel.legend, fullLegend)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       panel_label: panel.id,
       micrograph: isMicrograph ? "yes" : "no",
@@ -913,12 +913,12 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
       from_the_caption: isDefined ? this.extractScaleBarDefinition(panel.legend, fullLegend) : ""
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >analyzeReplicates(p</span>anel: any, fullLegend: string): any {
     // Simulate AI analysis for replicates
     const involvesReplicates = <span class="cstat-no" title="statement not covered" >this.involvesReplicates(panel.legend, fullLegend)</span>
     const replicateInfo = <span class="cstat-no" title="statement not covered" >this.extractReplicateInfo(panel.legend, fullLegend)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       panel_label: panel.id,
       involves_replicates: involvesReplicates ? "yes" : "no",
@@ -926,13 +926,13 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
       type_of_replicates: replicateInfo.types
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >analyzeStatisticalTests(p</span>anel: any, fullLegend: string): any {
     // Simulate AI analysis for statistical tests
     const isPlot = <span class="cstat-no" title="statement not covered" >this.isPlotPanel(panel.legend)</span>
     const needsTest = <span class="cstat-no" title="statement not covered" >this.needsStatisticalTest(panel.legend, fullLegend)</span>
     const hasTest = <span class="cstat-no" title="statement not covered" >this.hasStatisticalTest(panel.legend, fullLegend)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       panel_label: panel.id,
       is_a_plot: isPlot ? "yes" : "no",
@@ -942,7 +942,7 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
       from_the_caption: hasTest ? this.extractStatisticalTest(panel.legend, fullLegend) : ""
     }
   }
-  
+
   // Helper methods for AI analysis simulation
   private <span class="fstat-no" title="function not covered" >detectErrorBarsInLegend(p</span>anelLegend: string, fullLegend: string): boolean {
     const errorBarKeywords = <span class="cstat-no" title="statement not covered" >['error', 'SEM', 'SD', 'standard', 'deviation', 'mean±', '±']</span>
@@ -950,104 +950,104 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
 <span class="cstat-no" title="statement not covered" >      panelLegend.toLowerCase().includes(keyword) || fullLegend.toLowerCase().includes(keyword)</span>
     )
   }
-  
+
   private <span class="fstat-no" title="function not covered" >checkErrorBarDefinition(p</span>anelLegend: string, fullLegend: string): boolean {
     const definitionKeywords = <span class="cstat-no" title="statement not covered" >['error bars', 'SEM', 'standard error', 'standard deviation', 'mean±']</span>
 <span class="cstat-no" title="statement not covered" >    return definitionKeywords.some(<span class="fstat-no" title="function not covered" >keyword =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >      panelLegend.toLowerCase().includes(keyword) || fullLegend.toLowerCase().includes(keyword)</span>
     )
   }
-  
+
   private <span class="fstat-no" title="function not covered" >extractErrorBarDefinition(p</span>anelLegend: string, fullLegend: string): string {
     // Extract error bar definition from legend
     const errorBarMatch = <span class="cstat-no" title="statement not covered" >panelLegend.match(/(error bars?[^.]*)/i) || </span>
                          fullLegend.match(/(error bars?[^.]*)/i)
 <span class="cstat-no" title="statement not covered" >    return errorBarMatch ? errorBarMatch[1] : ""</span>
   }
-  
+
   private <span class="fstat-no" title="function not covered" >isPlotPanel(p</span>anelLegend: string): boolean {
     const plotKeywords = <span class="cstat-no" title="statement not covered" >['plot', 'graph', 'chart', 'analysis', 'quantitative', 'measurement']</span>
 <span class="cstat-no" title="statement not covered" >    return plotKeywords.some(<span class="fstat-no" title="function not covered" >keyword =&gt; <span class="cstat-no" title="statement not covered" >p</span>anelLegend.toLowerCase().includes(keyword))</span></span>
   }
-  
+
   private <span class="fstat-no" title="function not covered" >hasAverageValues(p</span>anelLegend: string, fullLegend: string): boolean {
     const averageKeywords = <span class="cstat-no" title="statement not covered" >['mean', 'average', '±', 'error', 'SEM', 'SD']</span>
 <span class="cstat-no" title="statement not covered" >    return averageKeywords.some(<span class="fstat-no" title="function not covered" >keyword =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >      panelLegend.toLowerCase().includes(keyword) || fullLegend.toLowerCase().includes(keyword)</span>
     )
   }
-  
+
   private <span class="fstat-no" title="function not covered" >hasIndividualDataPoints(p</span>anelLegend: string, fullLegend: string): boolean {
     const individualKeywords = <span class="cstat-no" title="statement not covered" >['individual', 'each', 'point', 'dot', 'scatter']</span>
 <span class="cstat-no" title="statement not covered" >    return individualKeywords.some(<span class="fstat-no" title="function not covered" >keyword =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >      panelLegend.toLowerCase().includes(keyword) || fullLegend.toLowerCase().includes(keyword)</span>
     )
   }
-  
+
   private <span class="fstat-no" title="function not covered" >isMicrographPanel(p</span>anelLegend: string): boolean {
     const micrographKeywords = <span class="cstat-no" title="statement not covered" >['micrograph', 'microscopy', 'microscopic', 'scale bar', 'μm', 'μM']</span>
 <span class="cstat-no" title="statement not covered" >    return micrographKeywords.some(<span class="fstat-no" title="function not covered" >keyword =&gt; <span class="cstat-no" title="statement not covered" >p</span>anelLegend.toLowerCase().includes(keyword))</span></span>
   }
-  
+
   private <span class="fstat-no" title="function not covered" >hasScaleBar(p</span>anelLegend: string, fullLegend: string): boolean {
     const scaleBarKeywords = <span class="cstat-no" title="statement not covered" >['scale bar', 'μm', 'μM', 'micron', 'micrometer']</span>
 <span class="cstat-no" title="statement not covered" >    return scaleBarKeywords.some(<span class="fstat-no" title="function not covered" >keyword =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >      panelLegend.toLowerCase().includes(keyword) || fullLegend.toLowerCase().includes(keyword)</span>
     )
   }
-  
+
   private <span class="fstat-no" title="function not covered" >isScaleBarDefined(p</span>anelLegend: string, fullLegend: string): boolean {
     const scaleBarMatch = <span class="cstat-no" title="statement not covered" >panelLegend.match(/scale bar[^.]*/i) || fullLegend.match(/scale bar[^.]*/i)</span>
 <span class="cstat-no" title="statement not covered" >    return !!scaleBarMatch</span>
   }
-  
+
   private <span class="fstat-no" title="function not covered" >extractScaleBarDefinition(p</span>anelLegend: string, fullLegend: string): string {
     const scaleBarMatch = <span class="cstat-no" title="statement not covered" >panelLegend.match(/scale bar[^.]*/i) || fullLegend.match(/scale bar[^.]*/i)</span>
 <span class="cstat-no" title="statement not covered" >    return scaleBarMatch ? scaleBarMatch[0] : ""</span>
   }
-  
+
   private <span class="fstat-no" title="function not covered" >involvesReplicates(p</span>anelLegend: string, fullLegend: string): boolean {
     const replicateKeywords = <span class="cstat-no" title="statement not covered" >['n=', 'n =', 'experiments', 'replicates', 'samples', 'independent']</span>
 <span class="cstat-no" title="statement not covered" >    return replicateKeywords.some(<span class="fstat-no" title="function not covered" >keyword =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >      panelLegend.toLowerCase().includes(keyword) || fullLegend.toLowerCase().includes(keyword)</span>
     )
   }
-  
+
   private <span class="fstat-no" title="function not covered" >extractReplicateInfo(p</span>anelLegend: string, fullLegend: string): { numbers: string[], types: string[] } {
     const nMatch = <span class="cstat-no" title="statement not covered" >panelLegend.match(/n\s*=\s*(\d+)/i) || fullLegend.match(/n\s*=\s*(\d+)/i)</span>
     const numbers = <span class="cstat-no" title="statement not covered" >nMatch ? [nMatch[1]] : []</span>
-    
+
     const typeKeywords = <span class="cstat-no" title="statement not covered" >['independent experiments', 'technical replicates', 'samples', 'mice', 'cells']</span>
     const types = <span class="cstat-no" title="statement not covered" >typeKeywords.filter(<span class="fstat-no" title="function not covered" >keyword =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >      panelLegend.toLowerCase().includes(keyword) || fullLegend.toLowerCase().includes(keyword)</span>
     )
-    
+
 <span class="cstat-no" title="statement not covered" >    return { numbers, types }</span>
   }
-  
+
   private <span class="fstat-no" title="function not covered" >needsStatisticalTest(p</span>anelLegend: string, fullLegend: string): boolean {
     const significanceKeywords = <span class="cstat-no" title="statement not covered" >['p&lt;', 'p &lt;', 'p=', 'p =', 'significant', 'significance', '*', '***']</span>
 <span class="cstat-no" title="statement not covered" >    return significanceKeywords.some(<span class="fstat-no" title="function not covered" >keyword =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >      panelLegend.toLowerCase().includes(keyword) || fullLegend.toLowerCase().includes(keyword)</span>
     )
   }
-  
+
   private <span class="fstat-no" title="function not covered" >hasStatisticalTest(p</span>anelLegend: string, fullLegend: string): boolean {
     const testKeywords = <span class="cstat-no" title="statement not covered" >['t-test', 't test', 'ANOVA', 'Mann-Whitney', 'Wilcoxon', 'chi-square', 'Fisher']</span>
 <span class="cstat-no" title="statement not covered" >    return testKeywords.some(<span class="fstat-no" title="function not covered" >keyword =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >      panelLegend.toLowerCase().includes(keyword) || fullLegend.toLowerCase().includes(keyword)</span>
     )
   }
-  
+
   private <span class="fstat-no" title="function not covered" >extractStatisticalTest(p</span>anelLegend: string, fullLegend: string): string {
     const testMatch = <span class="cstat-no" title="statement not covered" >panelLegend.match(/(t-test|t test|ANOVA|Mann-Whitney|Wilcoxon|chi-square|Fisher)[^.]*/i) || </span>
                      fullLegend.match(/(t-test|t test|ANOVA|Mann-Whitney|Wilcoxon|chi-square|Fisher)[^.]*/i)
 <span class="cstat-no" title="statement not covered" >    return testMatch ? testMatch[0] : ""</span>
   }
-  
+
   private <span class="fstat-no" title="function not covered" >convertPromptResultToQCCheck(r</span>esult: PromptResult): any | null {
     const { panelId, promptId, result: analysis } = <span class="cstat-no" title="statement not covered" >result</span>
-    
+
     // Convert analysis result to QC check based on prompt type
 <span class="cstat-no" title="statement not covered" >    switch (promptId) {</span>
       case 'error-bars-defined':
@@ -1064,13 +1064,13 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
 <span class="cstat-no" title="statement not covered" >        return null</span>
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >convertErrorBarsResult(p</span>anelId: string, analysis: any): any {
     const hasErrorBars = <span class="cstat-no" title="statement not covered" >analysis.error_bar_on_figure === "yes"</span>
     const isDefined = <span class="cstat-no" title="statement not covered" >analysis.error_bar_defined_in_caption === "yes"</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (!hasErrorBars) <span class="cstat-no" title="statement not covered" >return null</span></span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       id: `${panelId}-error-bars-${Date.now()}`,
       type: isDefined ? "info" : "warning",
@@ -1082,14 +1082,14 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
       timestamp: new Date().toISOString()
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >convertIndividualDataPointsResult(p</span>anelId: string, analysis: any): any {
     const isPlot = <span class="cstat-no" title="statement not covered" >analysis.plot === "yes"</span>
     const hasAverages = <span class="cstat-no" title="statement not covered" >analysis.average_values === "yes"</span>
     const hasIndividual = <span class="cstat-no" title="statement not covered" >analysis.individual_values === "yes"</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (!isPlot || !hasAverages) <span class="cstat-no" title="statement not covered" >return null</span></span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       id: `${panelId}-individual-points-${Date.now()}`,
       type: hasIndividual ? "info" : "suggestion",
@@ -1101,14 +1101,14 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
       timestamp: new Date().toISOString()
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >convertScaleBarResult(p</span>anelId: string, analysis: any): any {
     const isMicrograph = <span class="cstat-no" title="statement not covered" >analysis.micrograph === "yes"</span>
     const hasScaleBar = <span class="cstat-no" title="statement not covered" >analysis.scale_bar_on_image === "yes"</span>
     const isDefined = <span class="cstat-no" title="statement not covered" >analysis.scale_bar_defined_in_caption === "yes"</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (!isMicrograph) <span class="cstat-no" title="statement not covered" >return null</span></span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       id: `${panelId}-scale-bar-${Date.now()}`,
       type: hasScaleBar &amp;&amp; isDefined ? "info" : "issue",
@@ -1120,20 +1120,20 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
       timestamp: new Date().toISOString()
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >convertReplicatesResult(p</span>anelId: string, analysis: any): any {
     const involvesReplicates = <span class="cstat-no" title="statement not covered" >analysis.involves_replicates === "yes"</span>
     const hasNumbers = <span class="cstat-no" title="statement not covered" >analysis.number_of_replicates.length &gt; 0</span>
     const hasTypes = <span class="cstat-no" title="statement not covered" >analysis.type_of_replicates.length &gt; 0</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (!involvesReplicates) <span class="cstat-no" title="statement not covered" >return null</span></span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       id: `${panelId}-replicates-${Date.now()}`,
       type: hasNumbers &amp;&amp; hasTypes ? "info" : "suggestion",
       message: hasNumbers &amp;&amp; hasTypes ? "Replicate information is clearly stated" : "Replicate information should be clearly stated",
-      details: hasNumbers &amp;&amp; hasTypes ? 
-        `n=${analysis.number_of_replicates.join(', ')} (${analysis.type_of_replicates.join(', ')})` : 
+      details: hasNumbers &amp;&amp; hasTypes ?
+        `n=${analysis.number_of_replicates.join(', ')} (${analysis.type_of_replicates.join(', ')})` :
         "The number and type of replicates should be explicitly mentioned",
       aiGenerated: true,
       dismissed: false,
@@ -1141,14 +1141,14 @@ export class <span class="cstat-no" title="statement not covered" >MockAIPromptR
       timestamp: new Date().toISOString()
     }
   }
-  
+
   private <span class="fstat-no" title="function not covered" >convertStatisticalTestResult(p</span>anelId: string, analysis: any): any {
     const isPlot = <span class="cstat-no" title="statement not covered" >analysis.is_a_plot === "yes"</span>
     const needsTest = <span class="cstat-no" title="statement not covered" >analysis.statistical_test_needed === "yes"</span>
     const hasTest = <span class="cstat-no" title="statement not covered" >analysis.statistica_test_mentioned === "yes"</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (!isPlot || !needsTest) <span class="cstat-no" title="statement not covered" >return null</span></span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       id: `${panelId}-stat-test-${Date.now()}`,
       type: hasTest ? "info" : "suggestion",
@@ -1183,4 +1183,3 @@ export const <span class="cstat-no" title="statement not covered" >aiPromptRunne
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

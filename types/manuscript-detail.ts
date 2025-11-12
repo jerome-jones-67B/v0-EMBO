@@ -13,6 +13,11 @@ export interface ManuscriptDetailData {
   lastModified: string
   figures: Figure[]
   qcChecks: QualityCheck[]
+  source_data?: Array<{
+    file_id: number
+    id: number
+  }>
+  links?: any[]
 }
 
 export interface Figure {
@@ -80,7 +85,7 @@ export interface SourceDataFile {
 }
 
 export interface ManuscriptDetailState {
-  selectedView: 'manuscript' | 'list'
+  selectedView: 'manuscript' | 'figure-list' | 'file-tree' | 'validation' | 'ai-qc'
   selectedFigureIndex: number
   linkedData: LinkedDataItem[]
   sourceData: SourceDataFile[]

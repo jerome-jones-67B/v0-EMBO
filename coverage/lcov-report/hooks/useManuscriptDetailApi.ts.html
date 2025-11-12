@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">hooks</a> useManuscriptDetailApi.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/79</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/131</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/15</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/75</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -511,7 +511,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
   const { data: session } = <span class="cstat-no" title="statement not covered" >useSession()</span>
 &nbsp;
   const fetchManuscriptDetail = <span class="cstat-no" title="statement not covered" >useCallback(<span class="fstat-no" title="function not covered" >async (</span></span>
-    msid: string, 
+    msid: string,
     isFetching: boolean,
     setIsFetching: (value: boolean) =&gt; void,
     setIsLoadingApi: (value: boolean) =&gt; void
@@ -520,17 +520,17 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="cstat-no" title="statement not covered" >    if (isFetching) {</span>
 <span class="cstat-no" title="statement not covered" >      return null</span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    setIsFetching(true)</span>
 <span class="cstat-no" title="statement not covered" >    setIsLoadingApi(true)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (!session) {</span>
 <span class="cstat-no" title="statement not covered" >      console.error('❌ No session available for API call')</span>
 <span class="cstat-no" title="statement not covered" >      setIsLoadingApi(false)</span>
 <span class="cstat-no" title="statement not covered" >      setIsFetching(false)</span>
 <span class="cstat-no" title="statement not covered" >      return null</span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const response = <span class="cstat-no" title="statement not covered" >await fetch(`${buildApiUrl(endpoints.manuscriptDetails(msid))}?apiMode=true`, {</span>
         headers: {
@@ -546,12 +546,12 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
       }
 &nbsp;
       const apiData: any = <span class="cstat-no" title="statement not covered" >await response.json()</span>
-      
+
       // Check if this is an error response from API mode
 <span class="cstat-no" title="statement not covered" >      if (apiData.error &amp;&amp; apiData.isApiMode) {</span>
 <span class="cstat-no" title="statement not covered" >        throw new Error(`Data4Rev API Error: ${apiData.error} - ${apiData.details}`)</span>
       }
-      
+
       // Fetch validation data separately
       let validationData: any = <span class="cstat-no" title="statement not covered" >null;</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
@@ -565,7 +565,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 &nbsp;
       // Transform API data to match our manuscript format
       const statusMapping = <span class="cstat-no" title="statement not covered" >getStatusMapping(apiData.status)</span>
-      
+
       // Helper function to add validation checks to figure
       const addValidationChecksToFigure = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(f</span>igure: any, figureIndex: number, validationData: any) =&gt; {</span>
         let figureChecks: QualityCheck[] = <span class="cstat-no" title="statement not covered" >(figure.check_results || []).map(<span class="fstat-no" title="function not covered" >(c</span>heck: any) =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
@@ -584,7 +584,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
           const figureValidation = <span class="cstat-no" title="statement not covered" >validationData.figures.find(<span class="fstat-no" title="function not covered" >(f</span>: any, index: number) =&gt; </span>
 <span class="cstat-no" title="statement not covered" >            f.label === figure.label || index === figureIndex</span>
           );
-          
+
 <span class="cstat-no" title="statement not covered" >          if (figureValidation) {</span>
             // Add figure label checks
 <span class="cstat-no" title="statement not covered" >            if (figureValidation.label &amp;&amp; Array.isArray(figureValidation.label)) {</span>
@@ -610,7 +610,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
       // Process figures
       const processedFigures = <span class="cstat-no" title="statement not covered" >(apiData.figures || []).map(<span class="fstat-no" title="function not covered" >(f</span>igure: any, figureIndex: number) =&gt; {</span>
         const checks = <span class="cstat-no" title="statement not covered" >addValidationChecksToFigure(figure, figureIndex, validationData);</span>
-        
+
 <span class="cstat-no" title="statement not covered" >        return {</span>
           id: figure.id || `figure-${figureIndex}`,
           label: figure.label || `Figure ${figureIndex + 1}`,
@@ -730,4 +730,3 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

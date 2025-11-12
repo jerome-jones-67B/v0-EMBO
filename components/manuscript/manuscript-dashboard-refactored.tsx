@@ -19,8 +19,9 @@ import { ColumnSettings } from "./column-settings"
 import { useManuscriptState } from "@/hooks/useManuscriptState"
 import { useManuscriptOperations } from "@/hooks/useManuscriptOperations"
 import { filterAndSortManuscripts, getUniqueAssignees, getTabCounts } from "@/lib/utils/manuscript-utils"
-import { initialMockManuscripts, WORKFLOW_TABS } from "@/lib/mock-manuscript-data"
+import { WORKFLOW_TABS } from "@/lib/constants"
 import { dataService } from '@/lib/data-service'
+import { api } from '@/lib/api-client'
 import { config } from '@/lib/config'
 import { getStatusMapping } from '@/lib/status-mapping'
 import type { Manuscript } from '@/types/manuscript'
@@ -57,10 +58,10 @@ export function ManuscriptDashboardRefactored() {
     useApiData: state.useApiData
   })
 
-  // Initialize mock data
+  // Initialize with empty array - data will be loaded from API
   useEffect(() => {
     if (state.manuscripts.length === 0) {
-      setManuscripts(initialMockManuscripts)
+      setManuscripts([])
     }
   }, [state.manuscripts.length, setManuscripts])
 
@@ -143,7 +144,7 @@ export function ManuscriptDashboardRefactored() {
   const handleDataSourceToggle = async (useApi: boolean) => {
     setUseApiData(useApi)
     dataService.setUseMockData(!useApi)
-    
+
     if (useApi && state.apiManuscripts.length === 0) {
       await fetchApiData()
     }
@@ -178,25 +179,73 @@ export function ManuscriptDashboardRefactored() {
     const manuscript = currentManuscripts.find(m => m.id === manuscriptId)
     if (!manuscript) return
 
-    // Simulate download progress
+    // Start download progress
     setDownloadProgress(prev => ({
       ...prev,
       [manuscriptId]: { progress: 0, status: 'downloading', filename: `${manuscript.msid}.pdf` }
     }))
 
-    // Simulate progress updates
-    for (let progress = 0; progress <= 100; progress += 10) {
-      await new Promise(resolve => setTimeout(resolve, 100))
+    try {
+      // Update progress to show we're fetching file info
       setDownloadProgress(prev => ({
         ...prev,
-        [manuscriptId]: { ...prev[manuscriptId], progress }
+        [manuscriptId]: { ...prev[manuscriptId], progress: 20 }
+      }))
+
+      // Fetch the manuscript files list
+      const filesResponse = await api.files.getByManuscriptId(manuscriptId)
+      const files = Array.isArray(filesResponse) ? filesResponse : (filesResponse as any)?.data || []
+
+      if (!files || files.length === 0) {
+        throw new Error('No manuscript files found to download')
+      }
+
+      // Find the main manuscript file (PDF or document)
+      const manuscriptFile = files.find((f: any) =>
+        f.content_type?.includes('pdf') ||
+        f.filename?.toLowerCase().endsWith('.pdf')
+      ) || files.find((f: any) =>
+        f.content_type?.includes('document') ||
+        f.content_type?.includes('word') ||
+        f.filename?.toLowerCase().match(/\.(doc|docx|txt)$/)
+      ) || files[0]
+
+      // Update progress
+      setDownloadProgress(prev => ({
+        ...prev,
+        [manuscriptId]: { ...prev[manuscriptId], progress: 50, filename: manuscriptFile.filename }
+      }))
+
+      // Download the file
+      const blob = await api.files.download(manuscriptId, manuscriptFile.id.toString())
+
+      // Update progress
+      setDownloadProgress(prev => ({
+        ...prev,
+        [manuscriptId]: { ...prev[manuscriptId], progress: 90 }
+      }))
+
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = manuscriptFile.filename || `manuscript_${manuscript.msid}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      setDownloadProgress(prev => ({
+        ...prev,
+        [manuscriptId]: { ...prev[manuscriptId], status: 'completed', progress: 100 }
+      }))
+    } catch (error) {
+      console.error('Download failed:', error)
+      setDownloadProgress(prev => ({
+        ...prev,
+        [manuscriptId]: { ...prev[manuscriptId], status: 'failed', progress: 0 }
       }))
     }
-
-    setDownloadProgress(prev => ({
-      ...prev,
-      [manuscriptId]: { ...prev[manuscriptId], status: 'completed', progress: 100 }
-    }))
 
     // Clear progress after 3 seconds
     setTimeout(() => {

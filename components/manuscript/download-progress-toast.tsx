@@ -40,10 +40,10 @@ export default function DownloadProgressToast({
       {activeDownloads.map(([msid, _]) => {
         const progress = downloadProgress[msid]
         const manuscript = manuscripts.find(m => m.msid === msid)
-        
+
         if (!progress || !manuscript) return null
 
-        const isError = progress.status.toLowerCase().includes('error') || 
+        const isError = progress.status.toLowerCase().includes('error') ||
                        progress.status.toLowerCase().includes('failed')
         const isComplete = progress.status.toLowerCase().includes('complete') ||
                           progress.progress >= 100
@@ -94,8 +94,8 @@ export default function DownloadProgressToast({
                   </span>
                 </div>
 
-                <Progress 
-                  value={progress.progress} 
+                <Progress
+                  value={progress.progress}
                   className={`h-2 ${isError ? 'bg-red-100' : isComplete ? 'bg-green-100' : ''}`}
                 />
 
@@ -110,11 +110,11 @@ export default function DownloadProgressToast({
                       )}
                     </p>
                   )}
-                  
+
                   {progress.currentFileSize && (
                     <p className="text-gray-500">Size: {progress.currentFileSize}</p>
                   )}
-                  
+
                   {progress.downloadSpeed && (
                     <p className="text-gray-500">Speed: {progress.downloadSpeed}</p>
                   )}

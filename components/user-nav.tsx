@@ -19,7 +19,7 @@ export function UserNav() {
     email: "user@embo.org",
     image: null
   }
-  
+
   // For static builds, auth bypass is not applicable
   const isAuthBypassed = false
 

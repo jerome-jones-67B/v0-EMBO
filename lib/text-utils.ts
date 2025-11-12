@@ -6,17 +6,17 @@
  */
 export function convertTextToHTML(text: string): string {
   if (!text) return ''
-  
+
   // Split into paragraphs (double line breaks)
   const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0)
-  
+
   return paragraphs.map(paragraph => {
     // Clean up the paragraph
     const cleanParagraph = paragraph
       .replace(/\n/g, ' ') // Convert single line breaks to spaces
       .replace(/\s+/g, ' ') // Collapse multiple spaces
       .trim()
-    
+
     // Basic formatting
     let formatted = cleanParagraph
       // Convert **bold** to <strong>
@@ -25,7 +25,7 @@ export function convertTextToHTML(text: string): string {
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       // Convert simple URLs to links
       .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>')
-    
+
     return `<p class="mb-4">${formatted}</p>`
   }).join('')
 }

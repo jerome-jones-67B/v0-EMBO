@@ -52,7 +52,7 @@ export function MultiSelect({
     onSelectionChange(selected.filter(item => item !== value))
   }
 
-  const selectedLabels = selected.map(value => 
+  const selectedLabels = selected.map(value =>
     options.find(option => option.value === value)?.label || value
   )
 

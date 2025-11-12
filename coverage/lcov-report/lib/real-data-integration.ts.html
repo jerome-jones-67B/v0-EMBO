@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> real-data-integration.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/20</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/6</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/4</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/20</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -228,17 +228,17 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >      console.error('Failed to load real data:', response.status, response.statusText)</span>
 <span class="cstat-no" title="statement not covered" >      return existingMockFigures</span>
     }
-    
+
     const data = <span class="cstat-no" title="statement not covered" >await response.json()</span>
 <span class="cstat-no" title="statement not covered" >    console.log('Real data loaded:', data)</span>
     const realFigures = <span class="cstat-no" title="statement not covered" >data.figures || []</span>
-    
+
     // Convert real figures to mock format and add to existing data
     const convertedFigures = <span class="cstat-no" title="statement not covered" >await Promise.all(realFigures.map(<span class="fstat-no" title="function not covered" >async (r</span>ealFigure: RealFigureData) =&gt; {</span>
       // Run AI prompts on the real figure data
       const promptResults = <span class="cstat-no" title="statement not covered" >await aiPromptRunner.runAllPromptsOnFigure(realFigure)</span>
       const qcChecks = <span class="cstat-no" title="statement not covered" >aiPromptRunner.convertPromptResultsToQCChecks(promptResults)</span>
-      
+
 <span class="cstat-no" title="statement not covered" >      return {</span>
         id: realFigure.id,
         title: realFigure.title,
@@ -256,7 +256,7 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
         fullImagePath: realFigure.fullImagePath
       }
     }))
-    
+
     // Add converted figures to existing mock data
     // Note: Figures will be available in the figures list, but to see them in a manuscript,
     // you need to view a manuscript that has figures. The figures are added to the global figures list.
@@ -286,4 +286,3 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

@@ -27,14 +27,14 @@ export const getQCIcon = (type: string) => {
 export const getStatusBadge = (status: string, priority: string) => {
   const statusVariants = {
     "under-review": "default",
-    "needs-revision": "destructive", 
+    "needs-revision": "destructive",
     "approved": "secondary",
     "published": "outline",
   } as const
 
   const priorityColors = {
     high: "border-red-200 bg-red-50 text-red-700",
-    medium: "border-yellow-200 bg-yellow-50 text-yellow-700", 
+    medium: "border-yellow-200 bg-yellow-50 text-yellow-700",
     low: "border-green-200 bg-green-50 text-green-700",
   } as const
 
@@ -43,8 +43,8 @@ export const getStatusBadge = (status: string, priority: string) => {
       <Badge variant={statusVariants[status as keyof typeof statusVariants] || "default"}>
         {status}
       </Badge>
-      <Badge 
-        variant="outline" 
+      <Badge
+        variant="outline"
         className={priorityColors[priority as keyof typeof priorityColors] || ""}
       >
         {priority} priority
@@ -63,10 +63,10 @@ export const getCheckId = (check: any, location: string, index: number) => {
 }
 
 // QC Actions component
-export const QCActions = ({ 
-  check, 
-  location = "general", 
-  index = 0, 
+export const QCActions = ({
+  check,
+  location = "general",
+  index = 0,
   approvedChecks,
   ignoredChecks,
   showIgnoredChecks,

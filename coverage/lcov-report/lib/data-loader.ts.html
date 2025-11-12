@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> data-loader.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/37</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/6</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/11</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/35</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -469,7 +469,7 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >  try {</span>
     // Load check4viz data
     const checkData = <span class="cstat-no" title="statement not covered" >await loadCheck4VizData(check4VizPath);</span>
-    
+
     // Process the data
     const realFigureData = <span class="cstat-no" title="statement not covered" >processCheck4VizData(</span>
       checkData,
@@ -478,10 +478,10 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
       figureLegend,
       panels
     );
-    
+
     // Load images
     const figureWithImages = <span class="cstat-no" title="statement not covered" >await loadFigureImages(realFigureData);</span>
-    
+
     // Integrate with existing data
 <span class="cstat-no" title="statement not covered" >    return integrateRealFigureData(existingFigures, figureWithImages);</span>
   } catch (error) {
@@ -495,15 +495,15 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="cstat-no" title="statement not covered" >  return {</span>
     // Step 1: Load check4viz.json
     loadCheck4Viz: <span class="fstat-no" title="function not covered" >(f</span>ilePath: string) =&gt; <span class="cstat-no" title="statement not covered" >loadCheck4VizData(filePath),</span>
-    
+
     // Step 2: Process and create figure data
-    processFigure: <span class="fstat-no" title="function not covered" >(c</span>heckData: Check4VizData[], figureInfo: any) =&gt; 
+    processFigure: <span class="fstat-no" title="function not covered" >(c</span>heckData: Check4VizData[], figureInfo: any) =&gt;
 <span class="cstat-no" title="statement not covered" >      processCheck4VizData(checkData, figureInfo.id, figureInfo.title, figureInfo.legend, figureInfo.panels),</span>
-    
+
     // Step 3: Integrate with existing data
-    integrate: <span class="fstat-no" title="function not covered" >(r</span>ealFigure: RealFigureData, existingFigures: any[]) =&gt; 
+    integrate: <span class="fstat-no" title="function not covered" >(r</span>ealFigure: RealFigureData, existingFigures: any[]) =&gt;
 <span class="cstat-no" title="statement not covered" >      integrateRealFigureData(existingFigures, realFigure),</span>
-    
+
     // Complete workflow
     loadAndIntegrate: loadAndIntegrateRealFigureData
   };
@@ -522,14 +522,14 @@ export const <span class="cstat-no" title="statement not covered" >exampleFigure
       imagePath: "/western-blot-panel.png"
     },
     {
-      id: "1B", 
+      id: "1B",
       description: "Fluorescence microscopy of protein aggregates",
       legend: "(B) Fluorescence microscopy of protein aggregates (red) and nuclei (blue) in cultured cells. Scale bar = 10 μm.",
       imagePath: "/microscopy-panel.png"
     },
     {
       id: "1C",
-      description: "Quantitative analysis of folding rates", 
+      description: "Quantitative analysis of folding rates",
       legend: "(C) Quantitative analysis of folding rates measured by fluorescence recovery after photobleaching. Error bars represent SEM from n=3 independent experiments.",
       imagePath: "/quantitative-panel.png"
     }
@@ -574,4 +574,3 @@ export const <span class="cstat-no" title="statement not covered" >exampleFigure
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

@@ -16,7 +16,7 @@ export function useManuscriptOperations({
   setApiManuscripts,
   useApiData
 }: UseManuscriptOperationsProps) {
-  
+
   const updateManuscript = useCallback((manuscriptId: string, updates: Partial<Manuscript>) => {
     const updateFn = (manuscripts: Manuscript[]) =>
       manuscripts.map(manuscript =>
@@ -35,7 +35,7 @@ export function useManuscriptOperations({
   const toggleOnHoldStatus = useCallback((manuscriptId: string) => {
     const currentManuscripts = useApiData ? apiManuscripts : manuscripts
     const manuscript = currentManuscripts.find(m => m.id === manuscriptId)
-    
+
     if (!manuscript) return
 
     const isOnHold = manuscript.workflowState === 'on-hold'
@@ -70,9 +70,9 @@ export function useManuscriptOperations({
 
   const bulkUpdateStatus = useCallback((manuscriptIds: string[], newStatus: string) => {
     manuscriptIds.forEach(id => {
-      updateManuscript(id, { 
+      updateManuscript(id, {
         status: newStatus,
-        displayStatus: newStatus 
+        displayStatus: newStatus
       })
     })
     alert(`${manuscriptIds.length} manuscripts updated to ${newStatus}`)

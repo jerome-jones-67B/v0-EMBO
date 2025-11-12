@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">components</a> manuscript-detail.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/892</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/929</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/250</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/819</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -8943,7 +8943,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// LEGACY FILE - Use components/manuscript/manuscript-detail-refactored.tsx instead  
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// LEGACY FILE - Use components/manuscript/manuscript-detail-refactored.tsx instead
 // This file is kept for reference only
 "use client"
 &nbsp;
@@ -8988,8 +8988,8 @@ import {
 import { mockLinkedData, mockSourceData } from <span class="cstat-no" title="statement not covered" >"@/lib/mock"</span>
 import { dataService } from <span class="cstat-no" title="statement not covered" >"@/lib/data-service"</span>
 import { getStatusMapping } from <span class="cstat-no" title="statement not covered" >"@/lib/status-mapping"</span>
-import { 
-  getQCIcon, 
+import {
+  getQCIcon,
   getCheckId,
 } from <span class="cstat-no" title="statement not covered" >"./manuscript-detail-utils"</span>
 import { FullTextView } from <span class="cstat-no" title="statement not covered" >"./manuscript-full-text-view"</span>
@@ -9030,7 +9030,7 @@ const mockManuscriptDetails = <span class="cstat-no" title="statement not covere
     priority: "high",
   },
   "EMBO-2024-002": {
-    id: "EMBO-2024-002", 
+    id: "EMBO-2024-002",
     title: "CRISPR-Cas9 mediated genome editing in pluripotent stem cells",
     authors: ["Brown, K.", "Davis, M.", "Wilson, P.", "Thompson, S."],
     received: "2024-12-25",
@@ -9038,7 +9038,7 @@ const mockManuscriptDetails = <span class="cstat-no" title="statement not covere
     lastModified: "2024-12-28T09:15:00Z",
     status: "in-progress",
     assignedTo: "Dr. Michael Rodriguez",
-    currentStatus: "In Progress", 
+    currentStatus: "In Progress",
     modifiedBy: "Dr. Michael Rodriguez",
     priority: "normal",
   },
@@ -9047,7 +9047,7 @@ const mockManuscriptDetails = <span class="cstat-no" title="statement not covere
     title: "Mitochondrial dynamics in neurodegeneration",
     authors: ["Garcia, L.", "Martinez, A.", "Lopez, C."],
     received: "2024-12-17",
-    doi: "10.1038/s41593-024-01567-8", 
+    doi: "10.1038/s41593-024-01567-8",
     lastModified: "2024-12-28T16:18:01Z",
     status: "new-submission",
     assignedTo: "Dr. Emily Watson",
@@ -9057,15 +9057,15 @@ const mockManuscriptDetails = <span class="cstat-no" title="statement not covere
   },
   "EMBO-2024-004": {
     id: "EMBO-2024-004",
-    title: "Molecular mechanisms of DNA repair in cancer cells", 
+    title: "Molecular mechanisms of DNA repair in cancer cells",
     authors: ["Harris, K.", "Moore, L.", "Jackson, P.", "White, S."],
     received: "2024-12-17",
     doi: "10.1038/s41467-024-45678-9",
-    lastModified: "2024-12-29T11:22:33Z", 
+    lastModified: "2024-12-29T11:22:33Z",
     status: "on-hold",
     assignedTo: "Dr. Michael Rodriguez",
     currentStatus: "On hold",
-    modifiedBy: "Dr. Michael Rodriguez", 
+    modifiedBy: "Dr. Michael Rodriguez",
     priority: "normal",
   },
   "EMBO-2024-005": {
@@ -9082,7 +9082,7 @@ const mockManuscriptDetails = <span class="cstat-no" title="statement not covere
     priority: "urgent",
   },
   "EMBO-2024-006": {
-    id: "EMBO-2024-006", 
+    id: "EMBO-2024-006",
     title: "Protein folding mechanisms in neurodegenerative disease progression",
     authors: ["Brown, T.", "White, J.", "Clark, M.", "Lewis, P."],
     received: "2024-01-03",
@@ -9262,7 +9262,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
   } catch (error) {
 <span class="cstat-no" title="statement not covered" >    console.error('❌ Error fetching manuscript from data service:', error)</span>
   }
-  
+
   // Fallback to mock data if data service fails
   const manuscriptData = <span class="cstat-no" title="statement not covered" >mockManuscriptDetails[msid as keyof typeof mockManuscriptDetails] || {</span>
     id: msid,
@@ -9277,7 +9277,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
     modifiedBy: "Dr. Sarah Chen",
     priority: "high",
   }
-  
+
   // Generate content based on manuscript title
   const generateAbstract = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(t</span>itle: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (title.includes('protein folding')) {</span>
@@ -9310,7 +9310,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
     ...manuscriptData,
     abstract: generateAbstract(manuscriptData.title),
     keywords: generateKeywords(manuscriptData.title),
-    notes: manuscriptData.id === msid ? 
+    notes: manuscriptData.id === msid ?
       (msid === "EMBO-2024-001" ? "Waiting for additional experimental data from authors" :
        msid === "EMBO-2024-002" ? "Comprehensive review in progress" :
        msid === "EMBO-2024-003" ? "Missing required metadata files" :
@@ -9324,11 +9324,11 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
     const baseId = <span class="cstat-no" title="statement not covered" >parseInt(manuscriptData.id.split('-')[2]) || 1;</span>
     const figureCount = <span class="cstat-no" title="statement not covered" >1 + (baseId % 3); /</span>/ 1-3 figures per manuscript
     const figures: any[] = <span class="cstat-no" title="statement not covered" >[];</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    for (let i = <span class="cstat-no" title="statement not covered" >1; i</span> &lt;= figureCount; i++) {</span>
       const panelCount = <span class="cstat-no" title="statement not covered" >2 + ((baseId + i) % 4); /</span>/ 2-5 panels per figure
       const panels: any[] = <span class="cstat-no" title="statement not covered" >[];</span>
-      
+
 <span class="cstat-no" title="statement not covered" >      for (let j = <span class="cstat-no" title="statement not covered" >1; j</span> &lt;= panelCount; j++) {</span>
 <span class="cstat-no" title="statement not covered" >        panels.push({</span>
           id: `${i}${String.fromCharCode(64 + j)}`, // 1A, 1B, etc.
@@ -9336,11 +9336,11 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
           hasIssues: ((baseId + i + j) % 6) === 0 // Some panels have issues
         });
       }
-      
+
       // Generate varied AI QC checks with realistic feedback
       const qcChecks = <span class="cstat-no" title="statement not covered" >[];</span>
       const aiCheckCount = <span class="cstat-no" title="statement not covered" >2 + (baseId + i) % 4; /</span>/ 2-5 AI checks per figure
-      
+
       // AI-generated checks with varied types and realistic content
       const aiCheckTypes = <span class="cstat-no" title="statement not covered" >[</span>
         {
@@ -9350,7 +9350,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
           aiGenerated: true
         },
         {
-          type: "warning", 
+          type: "warning",
           message: "Color Accessibility Issue",
           details: "AI identified potential color contrast issues that may not be accessible to colorblind readers.",
           aiGenerated: true
@@ -9404,7 +9404,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
           aiGenerated: true
         }
       ];
-      
+
       // Select random AI checks for this figure
       const selectedChecks = <span class="cstat-no" title="statement not covered" >aiCheckTypes</span>
         .sort(<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >0</span>.5 - Math.random())</span>
@@ -9414,9 +9414,9 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
           dismissed: Math.random() &lt; 0.1, // 10% chance of being dismissed
           panelId: panels[Math.floor(Math.random() * panels.length)]?.id || `panel-${i}A`
         }));
-      
+
 <span class="cstat-no" title="statement not covered" >      qcChecks.push(...selectedChecks);</span>
-      
+
       // Add some non-AI validation checks
 <span class="cstat-no" title="statement not covered" >      if ((baseId + i) % 5 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >        qcChecks.push({</span>
@@ -9428,12 +9428,12 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
           panelId: `panel-${i}A`
         });
       }
-      
+
 <span class="cstat-no" title="statement not covered" >      figures.push({</span>
         id: `fig${i}`,
-        title: `Figure ${i}: ${manuscriptData.title.includes('protein') ? 'Protein structure analysis' : 
-               manuscriptData.title.includes('CRISPR') ? 'CRISPR editing efficiency' : 
-               manuscriptData.title.includes('Mitochondrial') ? 'Mitochondrial dynamics' : 
+        title: `Figure ${i}: ${manuscriptData.title.includes('protein') ? 'Protein structure analysis' :
+               manuscriptData.title.includes('CRISPR') ? 'CRISPR editing efficiency' :
+               manuscriptData.title.includes('Mitochondrial') ? 'Mitochondrial dynamics' :
                manuscriptData.title.includes('DNA repair') ? 'DNA repair mechanisms' :
                manuscriptData.title.includes('Metabolic') ? 'T cell activation pathways' :
                manuscriptData.title.includes('Chromatin') ? 'Developmental gene expression' :
@@ -9452,14 +9452,14 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         qcChecks: qcChecks
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    return figures;</span>
   })(),
   linkedData: (<span class="fstat-no" title="function not covered" >() =&gt; {</span>
     // Generate varied linked data based on manuscript ID and research area
     const baseId = <span class="cstat-no" title="statement not covered" >parseInt(manuscriptData.id.split('-')[2]) || 1;</span>
     const linkedData = <span class="cstat-no" title="statement not covered" >[];</span>
-    
+
     // Research area specific data repositories
 <span class="cstat-no" title="statement not covered" >    if (manuscriptData.title.includes('protein') || manuscriptData.title.includes('structure')) {</span>
 <span class="cstat-no" title="statement not covered" >      linkedData.push({</span>
@@ -9475,7 +9475,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         description: "Protein sequence and functional annotation",
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    if (manuscriptData.title.includes('CRISPR') || manuscriptData.title.includes('gene')) {</span>
 <span class="cstat-no" title="statement not covered" >      linkedData.push({</span>
         type: "GEO",
@@ -9490,10 +9490,10 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         description: "Raw sequencing reads",
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    if (manuscriptData.title.includes('Metabolic') || manuscriptData.title.includes('cell')) {</span>
 <span class="cstat-no" title="statement not covered" >      linkedData.push({</span>
-        type: "GEO", 
+        type: "GEO",
         identifier: `GSE${124000 + baseId * 7}`,
         url: `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE${124000 + baseId * 7}`,
         description: "Single-cell RNA sequencing data",
@@ -9505,7 +9505,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         description: "Metabolomics experimental data",
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    if (manuscriptData.title.includes('Chromatin') || manuscriptData.title.includes('Epigenetic')) {</span>
 <span class="cstat-no" title="statement not covered" >      linkedData.push({</span>
         type: "GEO",
@@ -9520,7 +9520,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         description: "Chromatin accessibility profiling",
       });
     }
-    
+
     // Add generic repositories for other research areas
 <span class="cstat-no" title="statement not covered" >    if (linkedData.length === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      linkedData.push({</span>
@@ -9529,37 +9529,37 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         url: `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE${120000 + baseId * 15}`,
         description: "Transcriptomic analysis data",
       });
-      
+
 <span class="cstat-no" title="statement not covered" >      if (baseId % 3 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >        linkedData.push({</span>
-          type: "ProteomeXchange", 
+          type: "ProteomeXchange",
           identifier: `PXD0${20000 + baseId * 2}`,
           url: `http://proteomecentral.proteomexchange.org/cgi/GetDataset?ID=PXD0${20000 + baseId * 2}`,
           description: "Mass spectrometry proteomics data",
         });
       }
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    return linkedData;</span>
   })(),
   linkedInfo: (<span class="fstat-no" title="function not covered" >() =&gt; {</span>
     // Generate varied linked info based on manuscript ID and research area
     const baseId = <span class="cstat-no" title="statement not covered" >parseInt(manuscriptData.id.split('-')[2]) || 1;</span>
     const linkedInfo = <span class="cstat-no" title="statement not covered" >[];</span>
-    
+
     // Always include at least one protocol
     const protocolTypes = <span class="cstat-no" title="statement not covered" >[</span>
       "protein-purification", "cell-culture", "molecular-cloning", "immunofluorescence",
       "western-blot", "qpcr-analysis", "flow-cytometry", "microscopy-imaging"
     ];
     const protocolType = <span class="cstat-no" title="statement not covered" >protocolTypes[baseId % protocolTypes.length];</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    linkedInfo.push({</span>
       type: "Protocol",
       url: `https://protocols.io/view/${protocolType}-protocol-${baseId}abc`,
       description: `${protocolType.replace('-', ' ')} protocol`,
     });
-    
+
     // Add supplementary materials (varies by manuscript)
 <span class="cstat-no" title="statement not covered" >    if (baseId % 2 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      linkedInfo.push({</span>
@@ -9568,7 +9568,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         description: "Supplementary materials and methods",
       });
     }
-    
+
     // Add additional resources based on research area
 <span class="cstat-no" title="statement not covered" >    if (manuscriptData.title.includes('CRISPR') || manuscriptData.title.includes('gene')) {</span>
 <span class="cstat-no" title="statement not covered" >      linkedInfo.push({</span>
@@ -9577,7 +9577,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         description: "Analysis code and scripts",
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    if (manuscriptData.title.includes('structure') || manuscriptData.title.includes('protein')) {</span>
 <span class="cstat-no" title="statement not covered" >      linkedInfo.push({</span>
         type: "Model",
@@ -9585,14 +9585,14 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         description: "AlphaFold structure prediction",
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    return linkedInfo;</span>
   })(),
   qcChecks: (<span class="fstat-no" title="function not covered" >() =&gt; {</span>
     // Generate varied QC checks based on manuscript ID
     const baseId = <span class="cstat-no" title="statement not covered" >parseInt(manuscriptData.id.split('-')[2]) || 1;</span>
     const checks = <span class="cstat-no" title="statement not covered" >[];</span>
-    
+
     // Add errors based on manuscript ID
 <span class="cstat-no" title="statement not covered" >    if (baseId % 7 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      checks.push({</span>
@@ -9606,11 +9606,11 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         followUp: true,
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    if (baseId % 9 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      checks.push({</span>
         level: "manuscript",
-        type: "error", 
+        type: "error",
         category: "data",
         message: "Data availability statement incomplete",
         details: "Required data repository information is missing from the manuscript.",
@@ -9619,7 +9619,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         followUp: true,
       });
     }
-    
+
     // Add warnings based on manuscript ID
 <span class="cstat-no" title="statement not covered" >    if (baseId % 5 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      checks.push({</span>
@@ -9633,7 +9633,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         followUp: false,
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    if (baseId % 6 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      checks.push({</span>
         level: "manuscript",
@@ -9646,7 +9646,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         followUp: true,
       });
     }
-    
+
     // Add info checks for most manuscripts
 <span class="cstat-no" title="statement not covered" >    if (baseId % 3 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      checks.push({</span>
@@ -9660,7 +9660,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         followUp: false,
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    if (baseId % 4 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      checks.push({</span>
         level: "manuscript",
@@ -9673,7 +9673,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         followUp: false,
       });
     }
-    
+
     // Ensure at least one check exists
 <span class="cstat-no" title="statement not covered" >    if (checks.length === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      checks.push({</span>
@@ -9687,7 +9687,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         followUp: false,
       });
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    return checks;</span>
   })(),
   collaborationStatus: {
@@ -9700,7 +9700,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
     // Generate varied source data files based on manuscript ID and research area
     const baseId = <span class="cstat-no" title="statement not covered" >parseInt(manuscriptData.id.split('-')[2]) || 1;</span>
     const sourceData = <span class="cstat-no" title="statement not covered" >[];</span>
-    
+
     // File types and sizes vary by research area
 <span class="cstat-no" title="statement not covered" >    if (manuscriptData.title.includes('protein') || manuscriptData.title.includes('structure')) {</span>
 <span class="cstat-no" title="statement not covered" >      sourceData.push({</span>
@@ -9771,7 +9771,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         size: `${1.0 + (baseId % 5) * 0.4} MB`,
         type: "xlsx",
       });
-      
+
 <span class="cstat-no" title="statement not covered" >      if (baseId % 3 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >        sourceData.push({</span>
           filename: `raw_measurements_${baseId}.csv`,
@@ -9781,7 +9781,7 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
           type: "csv",
         });
       }
-      
+
 <span class="cstat-no" title="statement not covered" >      if (baseId % 4 === 0) {</span>
 <span class="cstat-no" title="statement not covered" >        sourceData.push({</span>
           filename: `statistical_analysis_${baseId}.R`,
@@ -9792,12 +9792,12 @@ const getManuscriptDetail = <span class="cstat-no" title="statement not covered"
         });
       }
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    return sourceData;</span>
   })(),
   // linkedData is already defined above in the dynamic section
   }
-  
+
 <span class="cstat-no" title="statement not covered" >  return finalManuscript</span>
 }
 &nbsp;
@@ -9876,24 +9876,24 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 &nbsp;
   // Add ref to prevent multiple simultaneous API calls
   const [isFetching, setIsFetching] = <span class="cstat-no" title="statement not covered" >useState(false)</span>
-  
+
   // Fetch API data for manuscript details (memoized to prevent recreation)
   const fetchApiManuscriptDetail = <span class="cstat-no" title="statement not covered" >useCallback(<span class="fstat-no" title="function not covered" >async () =&gt; {</span></span>
     // Prevent multiple simultaneous calls
 <span class="cstat-no" title="statement not covered" >    if (isFetching) {</span>
 <span class="cstat-no" title="statement not covered" >      return</span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    setIsFetching(true)</span>
 <span class="cstat-no" title="statement not covered" >    setIsLoadingApi(true)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (!session) {</span>
 <span class="cstat-no" title="statement not covered" >      console.error('❌ No session available for API call')</span>
 <span class="cstat-no" title="statement not covered" >      setIsLoadingApi(false)</span>
 <span class="cstat-no" title="statement not covered" >      setIsFetching(false)</span>
 <span class="cstat-no" title="statement not covered" >      return</span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const response = <span class="cstat-no" title="statement not covered" >await fetch(`${buildApiUrl(endpoints.manuscriptDetails(msid))}?apiMode=true`, {</span>
         headers: {
@@ -9907,12 +9907,12 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 <span class="cstat-no" title="statement not covered" >        throw new Error(`API request failed: ${response.status} - ${errorData.error || response.statusText}`)</span>
       }
       const apiData: any = <span class="cstat-no" title="statement not covered" >await response.json()</span>
-      
+
       // Check if this is an error response from API mode
 <span class="cstat-no" title="statement not covered" >      if (apiData.error &amp;&amp; apiData.isApiMode) {</span>
 <span class="cstat-no" title="statement not covered" >        throw new Error(`Data4Rev API Error: ${apiData.error} - ${apiData.details}`)</span>
       }
-      
+
       // Fetch validation data separately
       let validationData: any = <span class="cstat-no" title="statement not covered" >null;</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
@@ -9926,7 +9926,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 &nbsp;
       // Transform API data to match our manuscript format
       const statusMapping = <span class="cstat-no" title="statement not covered" >getStatusMapping(apiData.status)</span>
-      
+
       // Helper function to add validation checks to figure
       const addValidationChecksToFigure = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(f</span>igure: any, figureIndex: number, validationData: any) =&gt; {</span>
         let figureChecks = <span class="cstat-no" title="statement not covered" >(figure.check_results || []).map(<span class="fstat-no" title="function not covered" >(c</span>heck: any) =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
@@ -9944,7 +9944,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
           const figureValidation = <span class="cstat-no" title="statement not covered" >validationData.figures.find(<span class="fstat-no" title="function not covered" >(f</span>: any, index: number) =&gt; </span>
 <span class="cstat-no" title="statement not covered" >            f.label === figure.label || index === figureIndex</span>
           );
-          
+
 <span class="cstat-no" title="statement not covered" >          if (figureValidation) {</span>
             // Add figure label checks
 <span class="cstat-no" title="statement not covered" >            if (figureValidation.label &amp;&amp; Array.isArray(figureValidation.label)) {</span>
@@ -9961,7 +9961,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 });
               });
             }
-            
+
             // Add figure image checks
 <span class="cstat-no" title="statement not covered" >            if (figureValidation.image &amp;&amp; Array.isArray(figureValidation.image)) {</span>
 <span class="cstat-no" title="statement not covered" >              figureValidation.image.forEach(<span class="fstat-no" title="function not covered" >(c</span>heck: any) =&gt; {</span>
@@ -10041,7 +10041,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
           description: link.name
         }))
       }))
-      
+
       // Transform manuscript-level check_results to qcChecks
       let transformedQcChecks = <span class="cstat-no" title="statement not covered" >(apiData.check_results || []).map(<span class="fstat-no" title="function not covered" >(c</span>heck: any) =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
         type: check.status === 'error' ? 'error' : check.status === 'warning' ? 'warning' : 'info',
@@ -10055,7 +10055,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
       // Integrate validation data if available (for manuscript-level checks)
 <span class="cstat-no" title="statement not covered" >      if (validationData &amp;&amp; !validationData.fallback) {</span>
         const validationChecks: any[] = <span class="cstat-no" title="statement not covered" >[];</span>
-        
+
         // Process manuscript-level validation checks
 <span class="cstat-no" title="statement not covered" >        if (validationData.links &amp;&amp; Array.isArray(validationData.links)) {</span>
 <span class="cstat-no" title="statement not covered" >          validationData.links.forEach(<span class="fstat-no" title="function not covered" >(l</span>inkChecks: any[]) =&gt; {</span>
@@ -10075,7 +10075,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
             }
           });
         }
-        
+
         // Add validation checks to transformed checks
 <span class="cstat-no" title="statement not covered" >        transformedQcChecks = [...transformedQcChecks, ...validationChecks];</span>
       }
@@ -10087,7 +10087,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 <span class="cstat-no" title="statement not covered" >        console.log('Validation data:', validationData)</span>
 <span class="cstat-no" title="statement not covered" >        console.log('Transformed figures:', transformedFigures)</span>
 <span class="cstat-no" title="statement not covered" >        console.log('Figure count:', transformedFigures.length)</span>
-        
+
         // Enhanced figure logging
 <span class="cstat-no" title="statement not covered" >        transformedFigures.forEach(<span class="fstat-no" title="function not covered" >(f</span>ig: any, index: number) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >          console.log(`Figure ${index + 1} (${fig.id}):`, {</span>
@@ -10099,7 +10099,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
             validationIntegrated: fig.qcChecks?.some(<span class="fstat-no" title="function not covered" >(c</span>: any) =&gt; <span class="cstat-no" title="statement not covered" >c.validationSource)</span>
           })
         })
-        
+
 <span class="cstat-no" title="statement not covered" >        console.log('Transformed QC checks:', transformedQcChecks)</span>
 <span class="cstat-no" title="statement not covered" >        console.log('Check summary:', {</span>
           total: transformedQcChecks.length,
@@ -10108,11 +10108,11 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
           fromValidation: transformedQcChecks.filter(<span class="fstat-no" title="function not covered" >(c</span>: any) =&gt; <span class="cstat-no" title="statement not covered" >c.validationSource)</span>.length,
           manuscriptLevel: transformedQcChecks.filter(<span class="fstat-no" title="function not covered" >(c</span>: any) =&gt; <span class="cstat-no" title="statement not covered" >c.manuscriptLevel)</span>.length
         })
-        
+
 <span class="cstat-no" title="statement not covered" >        console.log('Image serving summary:', {</span>
           figuresWithImages: transformedFigures.filter(<span class="fstat-no" title="function not covered" >(f</span>: any) =&gt; <span class="cstat-no" title="statement not covered" >f.fullImagePath)</span>.length,
           imageSource: useApiData ? 'api-serving' : 'placeholder-fallback',
-          panelsWithImages: transformedFigures.reduce(<span class="fstat-no" title="function not covered" >(a</span>cc: number, fig: any) =&gt; 
+          panelsWithImages: transformedFigures.reduce(<span class="fstat-no" title="function not covered" >(a</span>cc: number, fig: any) =&gt;
 <span class="cstat-no" title="statement not covered" >            acc + (fig.panels?.filter(<span class="fstat-no" title="function not covered" >(p</span>: any) =&gt; <span class="cstat-no" title="statement not covered" >p.imagePath)</span>.length || 0), 0</span>
           ),
           sampleUrls: transformedFigures.slice(0, 2).map(<span class="fstat-no" title="function not covered" >(f</span>: any) =&gt; (<span class="cstat-no" title="statement not covered" >{</span>
@@ -10121,7 +10121,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
             thumbnail: f.thumbnailPath
           }))
         })
-        
+
         // Panel coordinate validation
         const panelsWithCoords = <span class="cstat-no" title="statement not covered" >transformedFigures.flatMap(<span class="fstat-no" title="function not covered" >(f</span>ig: any) =&gt; </span>
 <span class="cstat-no" title="statement not covered" >          fig.panels?.filter(<span class="fstat-no" title="function not covered" >(p</span>: any) =&gt; <span class="cstat-no" title="statement not covered" >p.x1 !== null &amp;&amp; p.y1 !== null) || [</span>]</span>
@@ -10129,7 +10129,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 <span class="cstat-no" title="statement not covered" >        console.log('Panels with real coordinates:', panelsWithCoords.length, '/', </span>
           transformedFigures.reduce(<span class="fstat-no" title="function not covered" >(a</span>cc: number, fig: any) =&gt; <span class="cstat-no" title="statement not covered" >acc + (fig.panels?.length || 0), 0</span>)
         );
-        
+
 <span class="cstat-no" title="statement not covered" >        console.groupEnd()</span>
       }
 &nbsp;
@@ -10169,13 +10169,13 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
         // Add fallback indicator if present
         fallback: apiData.fallback || false
       }
-      
+
 <span class="cstat-no" title="statement not covered" >      setManuscript(transformedManuscript as any)</span>
 <span class="cstat-no" title="statement not covered" >      setNotes(transformedManuscript.notes)</span>
 <span class="cstat-no" title="statement not covered" >      setDataAvailability(transformedManuscript.dataAvailability)</span>
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      console.error('Failed to fetch API manuscript details:', error)</span>
-      
+
       // In API mode, show error information instead of falling back
 <span class="cstat-no" title="statement not covered" >      setManuscript({</span>
         id: msid,
@@ -10222,7 +10222,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    setIsLoadingFullText(true)</span>
 <span class="cstat-no" title="statement not covered" >    setFullTextError(null)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const response = <span class="cstat-no" title="statement not covered" >await fetch(`/api/v1/manuscripts/${msid}/content`, {</span>
         headers: {
@@ -10231,13 +10231,13 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
         },
         credentials: 'include',
       })
-      
+
 <span class="cstat-no" title="statement not covered" >      if (!response.ok) {</span>
 <span class="cstat-no" title="statement not covered" >        throw new Error(`Failed to fetch content: ${response.status}`)</span>
       }
-      
+
       const data = <span class="cstat-no" title="statement not covered" >await response.json()</span>
-      
+
       // Always set content if it exists, regardless of fallback status
 <span class="cstat-no" title="statement not covered" >      if (data.content) {</span>
 <span class="cstat-no" title="statement not covered" >        setFullTextContent(typeof data.content === 'string' ? data.content : JSON.stringify(data.content, null, 2))</span>
@@ -10248,7 +10248,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
           wordCount: data.word_count,
           fallback: data.fallback
         })
-        
+
 <span class="cstat-no" title="statement not covered" >        if (process.env.NODE_ENV === 'development') {</span>
 <span class="cstat-no" title="statement not covered" >          console.log('📄 Full text content loaded:', {</span>
             source: data.source,
@@ -10261,12 +10261,12 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 <span class="cstat-no" title="statement not covered" >        setFullTextError(data.error || "No content available")</span>
 <span class="cstat-no" title="statement not covered" >        setFullTextContent("")</span>
 <span class="cstat-no" title="statement not covered" >        setFullTextMetadata(null)</span>
-        
+
 <span class="cstat-no" title="statement not covered" >        if (process.env.NODE_ENV === 'development') {</span>
 <span class="cstat-no" title="statement not covered" >          console.warn('📄 Full text content failed:', data.source || 'unknown');</span>
         }
       }
-      
+
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      console.error('❌ Error fetching full text content:', error)</span>
 <span class="cstat-no" title="statement not covered" >      setFullTextError("Failed to load full text content. Please try again.")</span>
@@ -10280,14 +10280,14 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
   // Load manuscript data when component mounts or when data source/msid changes
   useEffect(<span class="fstat-no" title="function not covered" >() =&gt; {</span>
     setIsDetailLoadComplete(false) // Reset load state when switching
-    
+
     // Initialize image load status when switching modes or manuscripts
 <span class="cstat-no" title="statement not covered" >    setImageLoadStatus({})</span>
     // Clear permanently failed images when switching manuscripts/modes
 <span class="cstat-no" title="statement not covered" >    setPermanentlyFailedImages(new Set())</span>
     // Clear active requests to prevent stale request tracking
 <span class="cstat-no" title="statement not covered" >    activeImageRequests.current.clear()</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (useApiData) {</span>
       // Load from API
 <span class="cstat-no" title="statement not covered" >      fetchApiManuscriptDetail()</span>
@@ -10696,10 +10696,10 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        if (response.ok) {</span>
           const createdFigure = <span class="cstat-no" title="statement not covered" >await response.json();</span>
-          
+
           // Refresh manuscript data to get the updated figure list
 <span class="cstat-no" title="statement not covered" >          await fetchApiManuscriptDetail();</span>
-          
+
 <span class="cstat-no" title="statement not covered" >          console.log('✅ Figure created via API:', createdFigure);</span>
 <span class="cstat-no" title="statement not covered" >          return;</span>
         } else {
@@ -10732,7 +10732,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
         ...prev,
         figures: [...prev.figures, newFigure],
       }))
-      
+
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      console.error('Error creating figure:', error);</span>
 <span class="cstat-no" title="statement not covered" >      alert('Failed to create figure. Please try again.');</span>
@@ -10743,7 +10743,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 <span class="cstat-no" title="statement not covered" >    if (!manuscript?.figures || figureIndex &lt; 0 || figureIndex &gt;= manuscript.figures.length) <span class="cstat-no" title="statement not covered" >return</span></span>
 &nbsp;
     const figureToDelete = <span class="cstat-no" title="statement not covered" >manuscript.figures[figureIndex];</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (window.confirm(`Are you sure you want to delete ${figureToDelete.title || figureToDelete.label}?`)) {</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
         // Use API to delete figure if using API data and figure has an ID
@@ -10755,7 +10755,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 <span class="cstat-no" title="statement not covered" >          if (response.ok) {</span>
             // Refresh manuscript data to get the updated figure list
 <span class="cstat-no" title="statement not covered" >            await fetchApiManuscriptDetail();</span>
-            
+
 <span class="cstat-no" title="statement not covered" >            console.log('✅ Figure deleted via API');</span>
 <span class="cstat-no" title="statement not covered" >            return;</span>
           } else {
@@ -10768,7 +10768,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
           ...prev,
           figures: prev.figures.filter(<span class="fstat-no" title="function not covered" >(_</span>: any, index: number) =&gt; <span class="cstat-no" title="statement not covered" >index !== figureIndex),</span>
         }))
-        
+
       } catch (error) {
 <span class="cstat-no" title="statement not covered" >        console.error('Error deleting figure:', error);</span>
 <span class="cstat-no" title="statement not covered" >        alert('Failed to delete figure. Please try again.');</span>
@@ -10808,7 +10808,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
       }
 &nbsp;
       const result = <span class="cstat-no" title="statement not covered" >await response.json()</span>
-      
+
       // Update manuscript status to deposited
 <span class="cstat-no" title="statement not covered" >      setManuscript(<span class="fstat-no" title="function not covered" >(p</span>rev: any) =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
         ...prev,
@@ -10822,7 +10822,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 &nbsp;
       // Show success message
 <span class="cstat-no" title="statement not covered" >      alert('Manuscript successfully deposited to BioStudies!')</span>
-      
+
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      console.error('Deposit failed:', error)</span>
 <span class="cstat-no" title="statement not covered" >      setDepositError(error instanceof Error ? error.message : 'Failed to deposit manuscript')</span>
@@ -10834,7 +10834,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
   // Auto-save changes to manuscript data (with debounce to prevent excessive updates)
 <span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >    if (!manuscript) <span class="cstat-no" title="statement not covered" >return</span></span>
-    
+
     const timer = <span class="cstat-no" title="statement not covered" >setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
       // Only save if the current values differ from the manuscript
 <span class="cstat-no" title="statement not covered" >      if (</span>
@@ -10921,12 +10921,12 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
       const checkId = <span class="cstat-no" title="statement not covered" >getCheckId(check, location, index)</span>
       const isApproved = <span class="cstat-no" title="statement not covered" >approvedChecks.has(checkId)</span>
       const isIgnored = <span class="cstat-no" title="statement not covered" >ignoredChecks.has(checkId)</span>
-      
+
       return (
         &lt;div className="flex gap-1"&gt;
-          &lt;Button 
-            size="sm" 
-            variant="outline" 
+          &lt;Button
+            size="sm"
+            variant="outline"
             className={`${isApproved ? 'bg-green-100 text-green-700 border-green-300' : 'text-green-600 hover:text-green-700 bg-transparent'}`}
             onClick={<span class="fstat-no" title="function not covered" >() =&gt; {</span>
               const newApprovedChecks = <span class="cstat-no" title="statement not covered" >new Set(approvedChecks)</span>
@@ -10945,9 +10945,9 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
             &lt;Check className="w-3 h-3" /&gt;
             &lt;span className="sr-only"&gt;{isApproved ? 'Unapprove' : 'Approve'}&lt;/span&gt;
           &lt;/Button&gt;
-          &lt;Button 
-            size="sm" 
-            variant="outline" 
+          &lt;Button
+            size="sm"
+            variant="outline"
             className={`${isIgnored ? 'bg-gray-100 text-gray-700 border-gray-300' : 'text-gray-600 hover:text-gray-700 bg-transparent'}`}
             onClick={<span class="fstat-no" title="function not covered" >() =&gt; {</span>
               const newIgnoredChecks = <span class="cstat-no" title="statement not covered" >new Set(ignoredChecks)</span>
@@ -11105,15 +11105,15 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
   const validationIssues = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >() =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >    allQCChecks.filter(<span class="fstat-no" title="function not covered" >(c</span>heck) =&gt; <span class="cstat-no" title="statement not covered" >!check.aiGenerated)</span>, [</span>allQCChecks]
   )
-  
+
   const aiChecks = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >() =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >    allQCChecks.filter(<span class="fstat-no" title="function not covered" >(c</span>heck) =&gt; <span class="cstat-no" title="statement not covered" >check.aiGenerated)</span>, [</span>allQCChecks]
   )
-  
+
   const errorCount = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >() =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >    validationIssues.filter(<span class="fstat-no" title="function not covered" >(c</span>heck) =&gt; <span class="cstat-no" title="statement not covered" >check.type === "error").l</span>ength,</span> [validationIssues]
   )
-  
+
   const warningCount = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >() =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >    validationIssues.filter(<span class="fstat-no" title="function not covered" >(c</span>heck) =&gt; <span class="cstat-no" title="statement not covered" >check.type === "warning").l</span>ength,</span> [validationIssues]
   )
@@ -11417,13 +11417,13 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
               &lt;div className="text-center py-8"&gt;
                 &lt;FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" /&gt;
                 &lt;p className="text-muted-foreground mb-2"&gt;
-                  {useApiData ? 
-                    "No figures found in API data for this manuscript." : 
+                  {useApiData ?
+                    "No figures found in API data for this manuscript." :
                     "No figures available for this manuscript."
                   }
                 &lt;/p&gt;
                 &lt;p className="text-xs text-gray-500 mb-4"&gt;
-                  {useApiData 
+                  {useApiData
                     ? "Check if the manuscript includes figure data in the API response."
                     : "Add figures to start the review process."
                   }
@@ -11457,7 +11457,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                   {visibleAiChecks.map(<span class="fstat-no" title="function not covered" >(c</span>heck, index) =&gt; {
                     const isIgnored = <span class="cstat-no" title="statement not covered" >ignoredChecks.has(check.checkId);</span>
                     const isApproved = <span class="cstat-no" title="statement not covered" >approvedChecks.has(check.checkId);</span>
-                      
+
 <span class="cstat-no" title="statement not covered" >                      return (</span>
                         &lt;div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${
                           isApproved ? 'bg-green-50 border-green-200' :
@@ -11617,7 +11617,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                           &lt;/Button&gt;
                         &lt;/div&gt;
                       &lt;/div&gt;
-                      
+
                         &lt;div className="relative"&gt;
                           &lt;img
                           src={getImageUrl(msid, selectedFigure.id, { type: 'full' }, useApiData)}
@@ -11630,7 +11630,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                               const isFromAPI = <span class="cstat-no" title="statement not covered" >target.src.includes('/api/v1/manuscripts/') &amp;&amp; !target.src.includes('/public/');</span>
                               const figureId = <span class="cstat-no" title="statement not covered" >String(selectedFigure.id);</span>
                             const newStatus = <span class="cstat-no" title="statement not covered" >isFromAPI ? 'api' : 'fallback';</span>
-                            
+
                             // Only update if status has changed to prevent endless loops
 <span class="cstat-no" title="statement not covered" >                            setImageLoadStatus(<span class="fstat-no" title="function not covered" >prev =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >                              if (prev[figureId] === newStatus) {</span>
@@ -11641,7 +11641,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                                 [figureId]: newStatus
                               };
                             });
-                              
+
                             // Only log once per image load
 <span class="cstat-no" title="statement not covered" >                            if (!target.hasAttribute('data-loaded')) {</span>
 <span class="cstat-no" title="statement not covered" >                              console.log(`🖼️ Figure ${selectedFigure.id} image loaded successfully:`, {</span>
@@ -11651,7 +11651,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                                 naturalHeight: target.naturalHeight,
                                 currentSrc: target.currentSrc
                               });
-                              
+
                               // Mark as loaded to prevent duplicate logs
 <span class="cstat-no" title="statement not covered" >                              target.setAttribute('data-loaded', 'true');</span>
 <span class="cstat-no" title="statement not covered" >                              target.setAttribute('data-source', isFromAPI ? 'api' : 'fallback');</span>
@@ -11661,37 +11661,37 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                               const target = <span class="cstat-no" title="statement not covered" >e.target </span>as HTMLImageElement;
                               const figureId = <span class="cstat-no" title="statement not covered" >String(selectedFigure.id);</span>
                               const imageKey = <span class="cstat-no" title="statement not covered" >`${figureId}-full`;</span>
-                              
+
 <span class="cstat-no" title="statement not covered" >                              if (!target.src.includes('placeholder') &amp;&amp; !target.src.includes('/public/') &amp;&amp; useApiData) {</span>
                                 // Check if this image is already marked as permanently failed
 <span class="cstat-no" title="statement not covered" >                                if (permanentlyFailedImages.has(imageKey)) {</span>
 <span class="cstat-no" title="statement not covered" >                                  console.log(`⚠️ Skipping retry for permanently failed image: ${imageKey}`);</span>
 <span class="cstat-no" title="statement not covered" >                                  return;</span>
                                 }
-                                
+
                                 // Mark as permanently failed (likely unsupported format like EPS)
 <span class="cstat-no" title="statement not covered" >                                console.warn(`🚫 Marking image as permanently failed: ${imageKey} (likely unsupported format)`);</span>
 <span class="cstat-no" title="statement not covered" >                                setPermanentlyFailedImages(<span class="fstat-no" title="function not covered" >prev =&gt; <span class="cstat-no" title="statement not covered" >n</span>ew Set(prev).add(imageKey));</span></span>
 <span class="cstat-no" title="statement not covered" >                                console.warn(`❌ API image failed to load: ${target.src}, falling back to placeholder`);</span>
-                                
+
                                 // Update status to fallback when API image fails
 <span class="cstat-no" title="statement not covered" >                                setImageLoadStatus(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span></span>
                                   ...prev,
                                   [figureId]: 'fallback'
                                 }));
-                                
+
 <span class="cstat-no" title="statement not covered" >                                target.src = getImageUrl(msid, selectedFigure.id, { type: 'full' }, false);</span>
 <span class="cstat-no" title="statement not covered" >                                target.setAttribute('data-source', 'placeholder-fallback');</span>
                               }
                             }}
                           /&gt;
-                          
+
                           {/* Image Source Indicator */}
                         &lt;div className="absolute top-3 right-3"&gt;
                             {(<span class="fstat-no" title="function not covered" >() =&gt; {</span>
                               const figureId = <span class="cstat-no" title="statement not covered" >String(selectedFigure.id);</span>
                               const actualLoadStatus = <span class="cstat-no" title="statement not covered" >imageLoadStatus[figureId];</span>
-                              
+
 <span class="cstat-no" title="statement not covered" >                              if (actualLoadStatus === 'api') {</span>
                                 return (
                                 &lt;Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-300 shadow-sm"&gt;
@@ -11713,7 +11713,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                               }
                             })()}
                         &lt;/div&gt;
-                        
+
                         {/* Panel Overlays */}
                         {overlayVisibility[selectedFigure.id] &amp;&amp; (selectedFigure.panels || []).map(<span class="fstat-no" title="function not covered" >(p</span>anel: any, panelIndex: number) =&gt; (
 <span class="cstat-no" title="statement not covered" >                            &lt;div</span>
@@ -11773,17 +11773,17 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                             &lt;/Button&gt;
                           &lt;/div&gt;
                         &lt;/div&gt;
-                        
+
                         {selectedFigure.panels &amp;&amp; selectedFigure.panels.length &gt; 0 ? (
 <span class="branch-0 cbranch-no" title="branch not covered" >                          &lt;div className="space-y-3 max-h-64 overflow-y-auto"&gt;</span>
                               {selectedFigure.panels.map(<span class="fstat-no" title="function not covered" >(p</span>anel: any, panelIndex: number) =&gt; {
                                 const panelChecks = <span class="cstat-no" title="statement not covered" >(selectedFigure.qcChecks as any)?.filter(<span class="fstat-no" title="function not covered" >(c</span>heck: any) =&gt; </span>
 <span class="cstat-no" title="statement not covered" >                                check.panelId === panel.id || check.panelId === panel.label</span>
                                 ) || []
-                                
+
 <span class="cstat-no" title="statement not covered" >                                return (</span>
-                                &lt;div 
-                                  key={panel.id} 
+                                &lt;div
+                                  key={panel.id}
                                   className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                                   onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >h</span>andlePanelClick(panel.id)}</span>
                                         onMouseEnter={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etHoveredPanel(panel.id)}</span>
@@ -11832,7 +11832,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                                         )}
                                       &lt;/div&gt;
                                     &lt;/div&gt;
-                                    
+
                     {/* Additional Sections Grid */}
                     &lt;div className="grid grid-cols-1 lg:grid-cols-2 gap-6"&gt;
                       {/* Figure QC Checks Section */}
@@ -11844,7 +11844,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                               QC Checks ({selectedFigure.qcChecks.length})
                             &lt;/h4&gt;
                                         &lt;/div&gt;
-                          
+
                           &lt;div className="space-y-3 max-h-64 overflow-y-auto"&gt;
                             {selectedFigure.qcChecks.map(<span class="fstat-no" title="function not covered" >(c</span>heck: any, checkIndex: number) =&gt; (
 <span class="cstat-no" title="statement not covered" >                              &lt;div key={checkIndex} c</span>lassName={`p-3 rounded-lg border ${
@@ -11885,7 +11885,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                             Add Data Link
                           &lt;/Button&gt;
                                       &lt;/div&gt;
-                        
+
                         {selectedFigure.linkedData &amp;&amp; selectedFigure.linkedData.length &gt; 0 ? (
 <span class="branch-0 cbranch-no" title="branch not covered" >                          &lt;div className="space-y-3 max-h-64 overflow-y-auto"&gt;</span>
                             {selectedFigure.linkedData.map(<span class="fstat-no" title="function not covered" >(d</span>ata: any, dataIndex: number) =&gt; (
@@ -11977,9 +11977,9 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                         &lt;td className="p-2 text-sm"&gt;{data.identifier}&lt;/td&gt;
                         &lt;td className="p-2 text-sm text-gray-600"&gt;{data.description}&lt;/td&gt;
                         &lt;td className="p-2 text-sm"&gt;
-                          &lt;a 
-                            href={data.url} 
-                            target="_blank" 
+                          &lt;a
+                            href={data.url}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-800 truncate block max-w-xs"
                           &gt;
@@ -12186,7 +12186,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                     placeholder="Enter filename"
                   /&gt;
                 &lt;/div&gt;
-                
+
                 &lt;div className="space-y-2"&gt;
                   &lt;Label className="text-sm font-medium"&gt;File Type&lt;/Label&gt;
                   &lt;Select
@@ -12361,7 +12361,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
           &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"&gt;
             {(figuresData || []).map(<span class="fstat-no" title="function not covered" >(f</span>igure: any, figureIndex: number) =&gt; (
 <span class="cstat-no" title="statement not covered" >            &lt;div </span>
-              key={figure.id} 
+              key={figure.id}
               className="border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer"
               onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >h</span>andleFigureSelect(figureIndex)}</span>
             &gt;
@@ -12459,7 +12459,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
       ...check,
       location: check.figureId ? `Figure ${check.figureId}` : "General Manuscript"
     }))
-    
+
     const aiChecksWithLocation = <span class="cstat-no" title="statement not covered" >aiChecks.map(<span class="fstat-no" title="function not covered" >(c</span>heck: any) =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
       ...check,
       location: check.figureId ? `Figure ${check.figureId}` : "General Manuscript"
@@ -12694,7 +12694,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 &lt;AuthorList authors={manuscript.authors} /&gt;
               &lt;/div&gt;
             &lt;/div&gt;
-            
+
             &lt;div className="space-y-1.5"&gt;
               &lt;h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide"&gt;
                 DOI
@@ -12710,7 +12710,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 &lt;/a&gt;
               &lt;/div&gt;
             &lt;/div&gt;
-            
+
             &lt;div className="space-y-1.5"&gt;
               &lt;div className="flex items-center justify-between"&gt;
                 &lt;h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide"&gt;
@@ -12727,7 +12727,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 &lt;/Badge&gt;
               &lt;/div&gt;
             &lt;/div&gt;
-            
+
             &lt;div className="space-y-1.5"&gt;
               &lt;h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide"&gt;
                 Assigned To
@@ -12752,7 +12752,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 &lt;/div&gt;
               &lt;/div&gt;
             &lt;/div&gt;
-            
+
             &lt;div className="space-y-1.5"&gt;
               &lt;h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide"&gt;
                 Journal
@@ -12761,7 +12761,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 &lt;p className="text-sm text-gray-900"&gt;{manuscript.journal || 'Not specified'}&lt;/p&gt;
               &lt;/div&gt;
             &lt;/div&gt;
-            
+
             &lt;div className="space-y-1.5"&gt;
               &lt;h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide"&gt;
                 Accession
@@ -12770,7 +12770,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 &lt;p className="text-sm text-gray-900 font-mono"&gt;{manuscript.accessionNumber || 'Not assigned'}&lt;/p&gt;
               &lt;/div&gt;
             &lt;/div&gt;
-            
+
             &lt;div className="space-y-1.5"&gt;
               &lt;h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide"&gt;
                 Modified By
@@ -12780,7 +12780,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
               &lt;/div&gt;
             &lt;/div&gt;
           &lt;/div&gt;
-          
+
           {/* API Validation Errors */}
           {<span class="branch-0 cbranch-no" title="branch not covered" >manuscript.errors </span>&amp;&amp; (
             &lt;div className="border rounded-lg p-4 bg-red-50 border-red-200"&gt;
@@ -12804,7 +12804,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                   &lt;Users className="w-4 h-4 text-gray-700" /&gt;
                   &lt;h3 className="text-sm font-semibold text-gray-700"&gt;Assignment &amp; Actions&lt;/h3&gt;
                 &lt;/div&gt;
-                
+
                 {/* Compact Assignment Status */}
                 &lt;div className="flex items-center gap-2 ml-2"&gt;
                   {manuscript.assignedTo &amp;&amp; manuscript.assignedTo !== "" ? (
@@ -12822,7 +12822,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                   ) : (
                     &lt;span className="text-xs text-gray-500 italic"&gt;Unassigned&lt;/span&gt;
                   )}
-                  
+
                   {/* Status Indicators */}
                   &lt;div className="flex items-center gap-1"&gt;
               {<span class="branch-0 cbranch-no" title="branch not covered" >session?.user &amp;&amp; (</span>
@@ -12836,7 +12836,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 &lt;/div&gt;
                 &lt;/div&gt;
               &lt;/div&gt;
-              
+
               &lt;div className="flex items-center gap-2"&gt;
                 &lt;span className="text-xs text-gray-500"&gt;
                   {assignmentAccordionOpen ? 'Less' : 'More'}
@@ -12875,7 +12875,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                     )}
                   &lt;/div&gt;
                 &lt;/div&gt;
-                
+
                 {<span class="branch-0 cbranch-no" title="branch not covered" >manuscript.lastModified </span>&amp;&amp; (
                   &lt;div&gt;
                     &lt;label className="text-xs font-medium text-gray-600 block mb-1"&gt;Last Change&lt;/label&gt;
@@ -12898,7 +12898,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                       &lt;/div&gt;
                     )}
               &lt;/div&gt;
-              
+
               {/* Right Column - Actions */}
               &lt;div className="space-y-3"&gt;
                 &lt;div&gt;
@@ -12906,8 +12906,8 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                   &lt;div className="space-y-2"&gt;
                     {session?.user ? (
 <span class="branch-0 cbranch-no" title="branch not covered" >                      &lt;&gt;</span>
-                        {manuscript.assignedTo &amp;&amp; 
-                         manuscript.assignedTo !== "" &amp;&amp; 
+                        {manuscript.assignedTo &amp;&amp;
+                         manuscript.assignedTo !== "" &amp;&amp;
                          (session.user.name === manuscript.assignedTo || session.user.email === manuscript.assignedTo) ? (
 <span class="branch-0 cbranch-no" title="branch not covered" >                          &lt;Button</span>
                             variant="outline"
@@ -12959,7 +12959,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                         )}
                       &lt;/div&gt;
                     &lt;/div&gt;
-                    
+
                     {/* Deposit to BioStudies Section */}
                     &lt;div className="border-t pt-3"&gt;
                       &lt;label className="text-xs font-medium text-gray-600 block mb-2"&gt;Workflow Actions&lt;/label&gt;
@@ -13011,7 +13011,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                   &lt;FileText className="w-4 h-4 text-gray-700" /&gt;
                   &lt;h3 className="text-sm font-semibold text-gray-700"&gt;Notes &amp; Comments&lt;/h3&gt;
                 &lt;/div&gt;
-                
+
                 {/* Compact Notes Status */}
                 &lt;div className="flex items-center gap-2 ml-2"&gt;
                   {notes &amp;&amp; notes.trim() ? (
@@ -13025,7 +13025,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                   ) : (
                     &lt;span className="text-xs text-gray-500 italic"&gt;No notes added&lt;/span&gt;
                   )}
-                  
+
                   {<span class="branch-0 cbranch-no" title="branch not covered" >lastSaved &amp;&amp; (</span>
                     &lt;span className="text-xs text-gray-400"&gt;
                       Saved {lastSaved.toLocaleTimeString()}
@@ -13033,7 +13033,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                   )}
                 &lt;/div&gt;
               &lt;/div&gt;
-              
+
               &lt;div className="flex items-center gap-2"&gt;
                 &lt;span className="text-xs text-gray-500"&gt;
                   {notesAccordionOpen ? 'Less' : 'More'}
@@ -13073,8 +13073,8 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                         &gt;
                           Cancel
                         &lt;/Button&gt;
-                        &lt;Button 
-                          size="sm" 
+                        &lt;Button
+                          size="sm"
                           onClick={handleSaveNotes}
                           className="hover:bg-blue-600 cursor-pointer transition-colors"
                         &gt;
@@ -13099,7 +13099,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                           {notes ? "Edit Notes" : "Add Notes"}
                         &lt;/Button&gt;
                       &lt;/div&gt;
-                      
+
                       {notes &amp;&amp; notes.trim() ? (
 <span class="branch-0 cbranch-no" title="branch not covered" >                        &lt;div className="p-3 bg-white rounded-lg border"&gt;</span>
                           &lt;p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-900"&gt;{notes}&lt;/p&gt;
@@ -13111,7 +13111,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                           &lt;p className="text-xs mt-1"&gt;Click "Add Notes" to add comments or observations&lt;/p&gt;
                         &lt;/div&gt;
                       )}
-                      
+
                       {<span class="branch-0 cbranch-no" title="branch not covered" >lastSaved &amp;&amp; (</span>
                         &lt;p className="text-xs text-gray-500"&gt;
                           Last saved: {lastSaved.toLocaleString()}
@@ -13126,26 +13126,26 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 &nbsp;
           {/* Main Review Tabs - Enhanced Visibility */}
           &lt;div className="border-t bg-white"&gt;
-            &lt;Tabs 
-              value={selectedView} 
+            &lt;Tabs
+              value={selectedView}
               onValueChange={<span class="fstat-no" title="function not covered" >(v</span>alue) =&gt; <span class="cstat-no" title="statement not covered" >setSelectedView(value as "manuscript" | "list" | "fulltext")} </span>
               className="w-full"
             &gt;
               &lt;TabsList className="h-12 p-1 bg-gray-100 rounded-none border-b w-full justify-start"&gt;
-                &lt;TabsTrigger 
-                  value="manuscript" 
+                &lt;TabsTrigger
+                  value="manuscript"
                   className="flex-1 h-10 text-base font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border-blue-500 data-[state=active]:text-blue-700"
                 &gt;
                   📊 Manuscript Review
                 &lt;/TabsTrigger&gt;
-                &lt;TabsTrigger 
-                  value="list" 
+                &lt;TabsTrigger
+                  value="list"
                   className="flex-1 h-10 text-base font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 &gt;
                   📋 List Review
                 &lt;/TabsTrigger&gt;
-                &lt;TabsTrigger 
-                  value="fulltext" 
+                &lt;TabsTrigger
+                  value="fulltext"
                   disabled={!useApiData}
                   title={!useApiData ? "Full text viewing is only available when using API data" : "View the complete manuscript text"}
                   className="flex-1 h-10 text-base font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm disabled:opacity-50"
@@ -13191,7 +13191,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                   &lt;X className="w-4 h-4" /&gt;
                   &lt;/Button&gt;
                 &lt;/div&gt;
-              
+
               {/* Main content */}
               &lt;div className="flex-1 overflow-hidden p-6"&gt;
                 {/* Top section - Image and Caption side by side */}
@@ -13203,7 +13203,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                         // Use the same main figure image that's displayed in the main view
                         const selectedFigure = <span class="cstat-no" title="statement not covered" >manuscript?.figures?.[0];</span> // Use the currently selected figure
                         const mainImageSrc = <span class="cstat-no" title="statement not covered" >getImageUrl(msid, selectedFigure?.id || '', { type: 'full' }, useApiData);</span>
-                        
+
                         return (
                           &lt;&gt;
                             &lt;img
@@ -13243,7 +13243,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                       })()}
             &lt;/div&gt;
           &lt;/div&gt;
-                  
+
                   {/* Right side - Panel Caption */}
                   &lt;div className="w-96"&gt;
                     &lt;div className="bg-gray-50 p-4 rounded-lg h-full"&gt;
@@ -13253,8 +13253,8 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                           // Find the specific panel that was clicked
                           const selectedFigure = <span class="cstat-no" title="statement not covered" >manuscript?.figures?.[0];</span>
                           const panel = <span class="cstat-no" title="statement not covered" >selectedFigure?.panels?.find(<span class="fstat-no" title="function not covered" >(p</span>: any) =&gt; <span class="cstat-no" title="statement not covered" >p.id === showPanelPopup.panelId)</span>;</span>
-                          
-                          
+
+
                           // Check for caption in multiple possible properties
                           // Note: Real data from local files stores captions in 'legend' property
 <span class="cstat-no" title="statement not covered" >                          if (panel?.legend) {</span>
@@ -13266,7 +13266,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
 <span class="cstat-no" title="statement not covered" >                          if (panel?.description) {</span>
 <span class="cstat-no" title="statement not covered" >                            return panel.description;</span>
                           }
-                          
+
                           // Fallback to main figure caption if panel caption not found
 <span class="cstat-no" title="statement not covered" >                          return selectedFigure?.caption || "No caption available for this panel.";</span>
                         })()}
@@ -13274,18 +13274,18 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 &lt;/div&gt;
                 &lt;/div&gt;
                 &lt;/div&gt;
-                
+
                 {/* Bottom section - AI and QC checks */}
                 &lt;div className="bg-gray-50 rounded-lg p-4"&gt;
                   &lt;h3 className="font-medium text-gray-900 mb-4"&gt;AI and QC Checks&lt;/h3&gt;
                   &lt;div className="max-h-64 overflow-y-auto"&gt;
-                
+
                 {/* Use pre-computed AI/QC checks to avoid duplicate calculations */}
                 &lt;div className="space-y-4"&gt;
                   {/* AI Checks - Use top-level computation */}
                 {(<span class="fstat-no" title="function not covered" >() =&gt; {</span>
                     const panelAiChecks = <span class="cstat-no" title="statement not covered" >aiChecks;</span>
-                    
+
                     return <span class="branch-0 cbranch-no" title="branch not covered" >panelAiChecks.length &gt; 0 &amp;&amp; (</span>
                         &lt;div&gt;
                           &lt;h4 className="font-medium text-blue-600 mb-2 flex items-center gap-2"&gt;
@@ -13297,9 +13297,9 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                               const checkId = <span class="cstat-no" title="statement not covered" >getCheckId(check, "ai-quality", index);</span>
                               const isIgnored = <span class="cstat-no" title="statement not covered" >ignoredChecks.has(checkId);</span>
                               const isApproved = <span class="cstat-no" title="statement not covered" >approvedChecks.has(checkId);</span>
-                              
+
 <span class="cstat-no" title="statement not covered" >                              if (isIgnored &amp;&amp; !showIgnoredChecks) <span class="cstat-no" title="statement not covered" >return null;</span></span>
-                              
+
 <span class="cstat-no" title="statement not covered" >                              return (</span>
                                 &lt;div key={index} className={`p-3 rounded-lg border ${
                                   isApproved ? 'bg-green-50 border-green-200' :
@@ -13329,7 +13329,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                   {/* QC Checks - Use top-level computation */}
                   {(<span class="fstat-no" title="function not covered" >() =&gt; {</span>
                     const panelQcChecks = <span class="cstat-no" title="statement not covered" >validationIssues;</span>
-                    
+
                     return <span class="branch-0 cbranch-no" title="branch not covered" >panelQcChecks.length &gt; 0 &amp;&amp; (</span>
                         &lt;div&gt;
                           &lt;h4 className="font-medium text-orange-600 mb-2 flex items-center gap-2"&gt;
@@ -13352,7 +13352,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                 &lt;/div&gt;
                     );
                   })()}
-                  
+
                   {(<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >() =&gt; {</span></span>
                     const panelAllChecks = <span class="cstat-no" title="statement not covered" >[</span>
                       ...(Array.isArray(manuscript?.qcChecks) ? manuscript.qcChecks : []),
@@ -13360,7 +13360,7 @@ const ManuscriptDetail = <span class="cstat-no" title="statement not covered" ><
                     ];
                     const panelAiChecks = <span class="cstat-no" title="statement not covered" >panelAllChecks.filter(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck.aiGenerated)</span>;</span>
                     const panelQcChecks = <span class="cstat-no" title="statement not covered" >panelAllChecks.filter(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >!</span>check.aiGenerated)</span>;</span>
-                    
+
 <span class="cstat-no" title="statement not covered" >                    return panelAiChecks.length === 0 &amp;&amp; panelQcChecks.length === 0;</span>
                   })() &amp;&amp; (
                         &lt;div className="text-center text-gray-500 py-8"&gt;
@@ -13402,4 +13402,3 @@ export { <span class="cstat-no" title="statement not covered" >ManuscriptDetail 
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

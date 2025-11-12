@@ -22,28 +22,28 @@ export { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 export { Checkbox } from './ui/checkbox'
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
-export { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuSub, 
-  DropdownMenuSubContent, 
-  DropdownMenuSubTrigger, 
-  DropdownMenuTrigger 
+export {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger
 } from './ui/dropdown-menu'
-export { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+export {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from './ui/select'
-export { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
+export {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
 } from './ui/popover'
 export { ScrollArea } from './ui/scroll-area'
 export { Separator } from './ui/separator'

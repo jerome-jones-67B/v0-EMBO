@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> auth.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/27</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/26</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/5</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/26</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -349,7 +349,7 @@ export const <span class="cstat-no" title="statement not covered" >authOptions: 
         },
       },
     }),
-    
+
     // Credentials provider for EMBO staff/fallback
     CredentialsProvider({
       id: "credentials",
@@ -379,7 +379,7 @@ export const <span class="cstat-no" title="statement not covered" >authOptions: 
             role: "editorial_assistant",
           },
           {
-            id: "2", 
+            id: "2",
             email: "admin@embo.org",
             name: "EMBO Admin",
             role: "admin",
@@ -403,7 +403,7 @@ export const <span class="cstat-no" title="statement not covered" >authOptions: 
       },
     }),
   ],
-  
+
   callbacks: {
 <span class="fstat-no" title="function not covered" >    async j</span>wt({ token, user, account }) {
       // Persist user role and other data to token
@@ -413,7 +413,7 @@ export const <span class="cstat-no" title="statement not covered" >authOptions: 
       }
 <span class="cstat-no" title="statement not covered" >      return token</span>
     },
-    
+
 <span class="fstat-no" title="function not covered" >    async s</span>ession({ session, token }) {
       // Send user role and id to the client
 <span class="cstat-no" title="statement not covered" >      if (session.user) {</span>
@@ -422,7 +422,7 @@ export const <span class="cstat-no" title="statement not covered" >authOptions: 
       }
 <span class="cstat-no" title="statement not covered" >      return session</span>
     },
-    
+
 <span class="fstat-no" title="function not covered" >    async s</span>ignIn({ user, account, profile }) {
       // Allow sign in for Google accounts from specific domains
 <span class="cstat-no" title="statement not covered" >      if (account?.provider === "google") {</span>
@@ -430,36 +430,36 @@ export const <span class="cstat-no" title="statement not covered" >authOptions: 
           "embo.org",
           "gmail.com", // For demo purposes
         ]
-        
+
         const emailDomain = <span class="cstat-no" title="statement not covered" >user.email?.split("@")[1]</span>
 <span class="cstat-no" title="statement not covered" >        return allowedDomains.includes(emailDomain || "")</span>
       }
-      
+
       // Allow credential sign ins
 <span class="cstat-no" title="statement not covered" >      if (account?.provider === "credentials") {</span>
 <span class="cstat-no" title="statement not covered" >        return true</span>
       }
-      
+
 <span class="cstat-no" title="statement not covered" >      return false</span>
     },
   },
-  
+
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
   },
-  
+
   session: {
     strategy: "jwt",
     maxAge: 8 * 60 * 60, // 8 hours
   },
-  
+
   secret: process.env.NEXTAUTH_SECRET,
-  
+
   // Dynamic URL handling for Vercel deployments
   // Vercel automatically sets NEXTAUTH_URL from VERCEL_URL
   // This works for production, preview, and branch deployments
-  
+
   debug: process.env.NODE_ENV === "development",
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -481,4 +481,3 @@ export const <span class="cstat-no" title="statement not covered" >authOptions: 
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    
