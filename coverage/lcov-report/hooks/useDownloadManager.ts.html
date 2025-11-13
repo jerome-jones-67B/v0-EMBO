@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">hooks</a> useDownloadManager.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/112</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/30</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/31</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/95</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -577,36 +577,36 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
   }
 &nbsp;
   const handleDownloadFiles = <span class="cstat-no" title="statement not covered" >useCallback(<span class="fstat-no" title="function not covered" >async (</span></span>
-    msid: string, 
-    title: string, 
+    msid: string,
+    title: string,
     fileType: string = <span class="branch-0 cbranch-no" title="branch not covered" >'essential',</span>
     useApiData: boolean = <span class="branch-0 cbranch-no" title="branch not covered" >false</span>
   ) =&gt; {
     // Determine the manuscript ID for the API call
     const manuscriptId = <span class="cstat-no" title="statement not covered" >useApiData ? msid : msid</span>
-    
+
     // Create AbortController for this download
     const abortController = <span class="cstat-no" title="statement not covered" >new AbortController()</span>
 <span class="cstat-no" title="statement not covered" >    setDownloadAbortControllers(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: abortController}))</span></span>
-    
+
     // Add manuscript to downloading set and show progress
 <span class="cstat-no" title="statement not covered" >    setDownloadingManuscripts(<span class="fstat-no" title="function not covered" >prev =&gt; <span class="cstat-no" title="statement not covered" >n</span>ew Set(prev).add(msid))</span></span>
 <span class="cstat-no" title="statement not covered" >    setShowDownloadToast(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: true}))</span></span>
-    
+
     // Set up Server-Sent Events connection for real-time progress
     const progressUrl = <span class="cstat-no" title="statement not covered" >buildApiUrl(`/v1/manuscripts/${manuscriptId}/download/progress`)</span>
     const eventSource = <span class="cstat-no" title="statement not covered" >new EventSource(progressUrl, { withCredentials: true })</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    setDownloadConnections(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: eventSource}))</span></span>
-    
+
 <span class="cstat-no" title="statement not covered" >    eventSource.onopen = <span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >      console.log(`📡 SSE connection opened for ${msid}`)</span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    eventSource.onmessage = <span class="fstat-no" title="function not covered" >(e</span>vent) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
         const data = <span class="cstat-no" title="statement not covered" >JSON.parse(event.data)</span>
-        
+
 <span class="cstat-no" title="statement not covered" >        if (data.type === 'progress') {</span>
 <span class="cstat-no" title="statement not covered" >          setDownloadProgress(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span></span>
             ...prev,
@@ -640,7 +640,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
               currentFile: data.error
             }
           }))
-          
+
 <span class="cstat-no" title="statement not covered" >          setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >            alert(`Download Failed\n\nError: ${data.error}\n\nManuscript: ${title}\nMSID: ${msid}\n\nPlease try again or contact support if the problem persists.`)</span>
           }, 500)
@@ -653,7 +653,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
               currentFile: data.message || 'Download was cancelled'
             }
           }))
-          
+
 <span class="cstat-no" title="statement not covered" >          console.log(`🛑 Download cancelled for ${msid}: ${data.message}`)</span>
         }
       } catch (parseError) {
@@ -676,7 +676,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="cstat-no" title="statement not covered" >    try {</span>
       // Build the download URL with specified file type
       const downloadUrl = <span class="cstat-no" title="statement not covered" >buildApiUrl(`/v1/manuscripts/${manuscriptId}/download?format=zip&amp;type=${fileType}`)</span>
-      
+
       // Make the API call (this will trigger the SSE progress updates)
       const response = <span class="cstat-no" title="statement not covered" >await fetch(downloadUrl, {</span>
         method: 'GET',
@@ -694,28 +694,28 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
       // Get the blob data
       const blob = <span class="cstat-no" title="statement not covered" >await response.blob()</span>
       const url = <span class="cstat-no" title="statement not covered" >window.URL.createObjectURL(blob)</span>
-      
+
       // Extract filename from response headers or use default
       const contentDisposition = <span class="cstat-no" title="statement not covered" >response.headers.get('Content-Disposition')</span>
       const filename = <span class="cstat-no" title="statement not covered" >contentDisposition?.match(/filename="?([^"]+)"?/)?.[1] || `${msid}_${fileType}_files.zip`</span>
-      
+
       // Create a temporary download link and click it
       const downloadLink = <span class="cstat-no" title="statement not covered" >document.createElement('a')</span>
 <span class="cstat-no" title="statement not covered" >      downloadLink.href = url</span>
 <span class="cstat-no" title="statement not covered" >      downloadLink.download = filename</span>
 <span class="cstat-no" title="statement not covered" >      document.body.appendChild(downloadLink)</span>
 <span class="cstat-no" title="statement not covered" >      downloadLink.click()</span>
-      
+
       // Clean up
 <span class="cstat-no" title="statement not covered" >      document.body.removeChild(downloadLink)</span>
 <span class="cstat-no" title="statement not covered" >      window.URL.revokeObjectURL(url)</span>
-      
+
     } catch (error: any) {
 <span class="cstat-no" title="statement not covered" >      if (error.name === 'AbortError') {</span>
 <span class="cstat-no" title="statement not covered" >        console.log(`🛑 Download aborted for ${msid}`)</span>
 <span class="cstat-no" title="statement not covered" >        return</span>
       }
-      
+
 <span class="cstat-no" title="statement not covered" >      console.error('❌ Download failed:', error)</span>
 <span class="cstat-no" title="statement not covered" >      setDownloadProgress(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span></span>
         ...prev,
@@ -725,7 +725,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
           currentFile: `Error: ${error.message}`
         }
       }))
-      
+
 <span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >        alert(`Download Failed\n\nError: ${error.message}\n\nManuscript: ${title}\nMSID: ${msid}\n\nPlease try again or contact support if the problem persists.`)</span>
       }, 500)
@@ -737,15 +737,15 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="cstat-no" title="statement not covered" >          connection.close()</span>
 <span class="cstat-no" title="statement not covered" >          setDownloadConnections(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: null}))</span></span>
         }
-        
+
 <span class="cstat-no" title="statement not covered" >        setDownloadingManuscripts(<span class="fstat-no" title="function not covered" >prev =&gt; {</span></span>
           const newSet = <span class="cstat-no" title="statement not covered" >new Set(prev)</span>
 <span class="cstat-no" title="statement not covered" >          newSet.delete(msid)</span>
 <span class="cstat-no" title="statement not covered" >          return newSet</span>
         })
-        
+
 <span class="cstat-no" title="statement not covered" >        setDownloadAbortControllers(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: null}))</span></span>
-        
+
         // Hide toast after 5 seconds
 <span class="cstat-no" title="statement not covered" >        setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >          setShowDownloadToast(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: false}))</span></span>
@@ -761,14 +761,14 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="cstat-no" title="statement not covered" >      console.log(`🛑 Aborting download for ${msid}`)</span>
 <span class="cstat-no" title="statement not covered" >      abortController.abort()</span>
     }
-    
+
     // Close SSE connection when manually closing
     const connection = <span class="cstat-no" title="statement not covered" >downloadConnections[msid]</span>
 <span class="cstat-no" title="statement not covered" >    if (connection) {</span>
 <span class="cstat-no" title="statement not covered" >      connection.close()</span>
 <span class="cstat-no" title="statement not covered" >      setDownloadConnections(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: null}))</span></span>
     }
-    
+
     // Remove from downloading set and hide toast
 <span class="cstat-no" title="statement not covered" >    setDownloadingManuscripts(<span class="fstat-no" title="function not covered" >prev =&gt; {</span></span>
       const newSet = <span class="cstat-no" title="statement not covered" >new Set(prev)</span>
@@ -811,4 +811,3 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

@@ -40,14 +40,14 @@ export function filterAndSortManuscripts(
 
   // Status filter
   if (filters.status !== 'all') {
-    filtered = filtered.filter(manuscript => 
+    filtered = filtered.filter(manuscript =>
       manuscript.status.toLowerCase() === filters.status.toLowerCase()
     )
   }
 
   // Priority filter
   if (filters.priority !== 'all') {
-    filtered = filtered.filter(manuscript => 
+    filtered = filtered.filter(manuscript =>
       manuscript.priority === filters.priority
     )
   }

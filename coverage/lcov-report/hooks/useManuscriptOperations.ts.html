@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">hooks</a> useManuscriptOperations.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">70.76% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>46/65</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">41.93% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>13/31</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">70% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>14/20</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">69.84% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>44/63</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -367,7 +367,7 @@ export function useManuscriptOperations(
       setApiManuscripts(updateFunction)
       const manuscript = apiManuscripts.find(m =&gt; m.msid === msid)
       const newStatus = manuscript?.status === 'On hold' ? <span class="branch-0 cbranch-no" title="branch not covered" >'New submission' : '</span>On hold'
-      
+
       setTimeout(() =&gt; {
         const action = newStatus === 'On hold' ? 'put on hold' : <span class="branch-1 cbranch-no" title="branch not covered" >'removed from hold'</span>
         alert(`Manuscript ${msid} has been ${action}.`)
@@ -376,7 +376,7 @@ export function useManuscriptOperations(
       setMockManuscripts(updateFunction)
       const manuscript = mockManuscripts.find(m =&gt; m.msid === msid)
       const newStatus = manuscript?.status === 'On hold' ? <span class="branch-0 cbranch-no" title="branch not covered" >'New submission' : '</span>On hold'
-      
+
       setTimeout(() =&gt; {
         const action = newStatus === 'On hold' ? 'put on hold' : <span class="branch-1 cbranch-no" title="branch not covered" >'removed from hold'</span>
         alert(`Manuscript ${msid} has been ${action}.`)
@@ -490,4 +490,3 @@ export function useManuscriptOperations(
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

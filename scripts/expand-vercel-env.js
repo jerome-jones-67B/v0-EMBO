@@ -2,10 +2,10 @@
 
 /**
  * 🔧 Vercel Environment Variables - Full Configuration
- * 
+ *
  * This script shows the complete environment configuration
  * for production deployments when you need more than the demo setup.
- * 
+ *
  * Usage: node scripts/expand-vercel-env.js
  */
 
@@ -17,10 +17,10 @@ function generateSecret(length = 32) {
 
 function showFullConfiguration() {
   const nextAuthSecret = generateSecret(32);
-  
+
   console.log('🔧 Full Production Environment Variables for vercel.json');
   console.log('='.repeat(70));
-  
+
   console.log('\n📋 Replace the minimal vercel.json "env" section with this for production:');
   console.log('\n```json');
   console.log('"env": {');
@@ -52,13 +52,13 @@ function showFullConfiguration() {
   console.log('  "NEXT_PUBLIC_MAX_FILE_SIZE": "52428800"');
   console.log('}');
   console.log('```');
-  
+
   console.log('\n📝 What each does:');
   console.log('✅ Current minimal config works for: Demo, Mock Data, Basic Auth');
   console.log('🔗 Add API tokens when: Using real Data4Rev API');
   console.log('🌐 Add Google OAuth when: Using Google Sign-In');
   console.log('⚙️ Add app settings when: Need custom timeouts/limits');
-  
+
   console.log('\n🎯 Demo vs Production:');
   console.log('DEMO:        NEXT_PUBLIC_USE_MOCK_DATA: "true"');
   console.log('PRODUCTION:  NEXT_PUBLIC_USE_MOCK_DATA: "false" + DATA4REV_AUTH_TOKEN');

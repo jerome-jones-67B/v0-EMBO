@@ -29,7 +29,7 @@ export function useApi<T>(
       setLoading(true);
       setError(null);
       const response = await apiCall();
-      
+
       if ('pagination' in response) {
         setData(response.data);
       } else {

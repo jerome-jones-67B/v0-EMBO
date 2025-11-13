@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> status-mapping.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">23.33% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>7/30</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/21</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">50% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>3/6</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">25% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>7/28</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -543,7 +543,7 @@ export function getValidStatusesForTab(tab: string): string[] {
   const statuses = Object.values(STATUS_MAPPINGS)
     .filter(mapping =&gt; mapping.workflowState === tab)
     .map(mapping =&gt; mapping.displayStatus);
-  
+
   return statuses;
 }
 &nbsp;
@@ -566,23 +566,23 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 // Get unmapped fields for highlighting
 export function <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >getUnmappedFields(</span></span>manuscript: any): string[] {
   const unmappedFields: string[] = <span class="cstat-no" title="statement not covered" >[];</span>
-  
+
 <span class="cstat-no" title="statement not covered" >  if (!isFieldMapped('status', manuscript.status)) {</span>
 <span class="cstat-no" title="statement not covered" >    unmappedFields.push('status');</span>
   }
-  
+
 <span class="cstat-no" title="statement not covered" >  if (manuscript.priority &amp;&amp; !isFieldMapped('priority', manuscript.priority)) {</span>
 <span class="cstat-no" title="statement not covered" >    unmappedFields.push('priority');</span>
   }
-  
+
 <span class="cstat-no" title="statement not covered" >  if (manuscript.qcStatus &amp;&amp; !isFieldMapped('qcStatus', manuscript.qcStatus)) {</span>
 <span class="cstat-no" title="statement not covered" >    unmappedFields.push('qcStatus');</span>
   }
-  
+
 <span class="cstat-no" title="statement not covered" >  if (manuscript.workflowState &amp;&amp; !isFieldMapped('workflowState', manuscript.workflowState)) {</span>
 <span class="cstat-no" title="statement not covered" >    unmappedFields.push('workflowState');</span>
   }
-  
+
 <span class="cstat-no" title="statement not covered" >  return unmappedFields;</span>
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -604,4 +604,3 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

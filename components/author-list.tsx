@@ -12,12 +12,12 @@ export function AuthorList({ authors, className = "", searchTerm }: AuthorListPr
     if (Array.isArray(authors)) {
       return authors
     }
-    
+
     // If it's already a comma-separated string, split it
     if (typeof authors === 'string') {
       return authors.split(',').map(author => author.trim()).filter(Boolean)
     }
-    
+
     return []
   }, [authors])
 

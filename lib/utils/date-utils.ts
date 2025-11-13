@@ -15,7 +15,7 @@ export function getRelativeTime(date: string | Date): string {
   if (isNaN(d.getTime())) {
     return 'Invalid Date'
   }
-  
+
   const now = new Date()
   const diffInMs = now.getTime() - d.getTime()
   const diffInHours = diffInMs / (1000 * 60 * 60)

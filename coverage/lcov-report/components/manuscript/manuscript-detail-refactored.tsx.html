@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">components/manuscript</a> manuscript-detail-refactored.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/71</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/48</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/14</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/69</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -675,7 +675,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="fstat-no" title="function not covered" >            (v</span>alue) =&gt; <span class="cstat-no" title="statement not covered" >updateDetailState({ isFetching: value }),</span>
 <span class="fstat-no" title="function not covered" >            (v</span>alue) =&gt; <span class="cstat-no" title="statement not covered" >updateDetailState({ isLoadingApi: value })</span>
           )
-          
+
 <span class="cstat-no" title="statement not covered" >          if (apiData) {</span>
 <span class="cstat-no" title="statement not covered" >            setManuscript(apiData)</span>
 <span class="cstat-no" title="statement not covered" >            updateDetailState({ </span>
@@ -683,7 +683,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
               notes: apiData.notes || "",
               dataAvailability: apiData.dataAvailability || ""
             })
-            
+
 <span class="cstat-no" title="statement not covered" >            if (apiData.linkedData) {</span>
 <span class="cstat-no" title="statement not covered" >              setLinkedData(apiData.linkedData)</span>
             }
@@ -720,7 +720,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="cstat-no" title="statement not covered" >    if (!manuscript) <span class="cstat-no" title="statement not covered" >return</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    updateDetailState({ isDepositing: true, depositError: null })</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await depositManuscript(msid)</span>
       // Handle successful deposit
@@ -761,10 +761,10 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 &nbsp;
   const handlePanelClick = <span class="cstat-no" title="statement not covered" >useCallback(<span class="fstat-no" title="function not covered" >(p</span>anelId: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    updateDetailState({ </span>
-      showPanelPopup: { 
-        panelId, 
-        position: { x: 0, y: 0 } 
-      } 
+      showPanelPopup: {
+        panelId,
+        position: { x: 0, y: 0 }
+      }
     })
   }, [updateDetailState])
 &nbsp;
@@ -778,7 +778,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="cstat-no" title="statement not covered" >    if (!useApiData) <span class="cstat-no" title="statement not covered" >return</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    updateDetailState({ isLoadingFullText: true, fullTextError: null })</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const fullTextData = <span class="cstat-no" title="statement not covered" >await fetchFullText(msid)</span>
 <span class="cstat-no" title="statement not covered" >      updateDetailState({</span>
@@ -809,7 +809,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
           &lt;p className="text-gray-600 mb-6"&gt;
             Could not load manuscript data for MSID: {msid}
           &lt;/p&gt;
-          &lt;button 
+          &lt;button
             onClick={onBack}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           &gt;
@@ -835,26 +835,26 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 &nbsp;
       {/* Main Review Tabs */}
       &lt;div className="border-t bg-white"&gt;
-        &lt;Tabs 
-          value={detailState.selectedView} 
-          onValueChange={handleViewChange} 
+        &lt;Tabs
+          value={detailState.selectedView}
+          onValueChange={handleViewChange}
           className="w-full"
         &gt;
           &lt;TabsList className="h-12 p-1 bg-gray-100 rounded-none border-b w-full justify-start"&gt;
-            &lt;TabsTrigger 
-              value="manuscript" 
+            &lt;TabsTrigger
+              value="manuscript"
               className="flex-1 h-10 text-base font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border-blue-500 data-[state=active]:text-blue-700"
             &gt;
               📊 Manuscript Review
             &lt;/TabsTrigger&gt;
-            &lt;TabsTrigger 
-              value="list" 
+            &lt;TabsTrigger
+              value="list"
               className="flex-1 h-10 text-base font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
             &gt;
               📋 List Review
             &lt;/TabsTrigger&gt;
-            &lt;TabsTrigger 
-              value="fulltext" 
+            &lt;TabsTrigger
+              value="fulltext"
               disabled={!useApiData}
               title={!useApiData ? "Full text viewing is only available when using API data" : "View the complete manuscript text"}
               className="flex-1 h-10 text-base font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm disabled:opacity-50"
@@ -931,4 +931,3 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
-    

@@ -36,7 +36,7 @@ export function sortItems<T extends SortableItem>(
       return sortByNumber(aValue, bValue, direction)
     }
 
-    if ((aValue as any) instanceof Date || (bValue as any) instanceof Date || 
+    if ((aValue as any) instanceof Date || (bValue as any) instanceof Date ||
         (typeof aValue === 'string' && !isNaN(Date.parse(aValue)))) {
       return sortByDate(aValue, bValue, direction)
     }

@@ -27,7 +27,7 @@ export const ManuscriptLoadingScreen: React.FC<ManuscriptLoadingScreenProps> = (
         <div className="space-y-2">
           <h2 className="text-xl font-semibold text-gray-900">Loading Manuscript Details</h2>
           <p className="text-gray-600">
-            {useApiData 
+            {useApiData
               ? "Fetching detailed manuscript data from Data4Rev API..."
               : "Preparing manuscript review interface..."
             }

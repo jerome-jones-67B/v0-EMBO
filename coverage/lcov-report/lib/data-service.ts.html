@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> data-service.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/159</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/186</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/48</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/144</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -1341,25 +1341,25 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      console.log('🔧 Adding real figures to manuscript:', manuscript.id)</span>
 <span class="cstat-no" title="statement not covered" >      console.log('📊 Real figures available:', realFigures.length)</span>
-      
+
       // Add real figures to specific manuscripts
 <span class="cstat-no" title="statement not covered" >      if (manuscript.id === 'EMBO-2024-001') {</span>
         // Add your real figures to this manuscript
 <span class="cstat-no" title="statement not covered" >        console.log('✅ Adding real figures to EMBO-2024-001')</span>
 <span class="cstat-no" title="statement not covered" >        console.log('📋 Real figures data:', realFigures)</span>
-        
+
         const result = <span class="cstat-no" title="statement not covered" >{</span>
           ...manuscript,
           figures: realFigures,
           figureCount: realFigures.length
         };
-        
+
 <span class="cstat-no" title="statement not covered" >        console.log('🎯 Final manuscript with figures:', result)</span>
 <span class="cstat-no" title="statement not covered" >        console.log('📊 Final figures count:', result.figures?.length || 0)</span>
-        
+
 <span class="cstat-no" title="statement not covered" >        return result;</span>
       }
-      
+
       // For other manuscripts, add some mock figures
 <span class="cstat-no" title="statement not covered" >      console.log('⚠️ Not EMBO-2024-001, using mock figures for:', manuscript.id)</span>
       const mockFiguresForManuscript = <span class="cstat-no" title="statement not covered" >mockFigures.slice(0, manuscript.figureCount || 2);</span>
@@ -1380,7 +1380,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
   private <span class="fstat-no" title="function not covered" >transformManuscript(m</span>anuscript: ManuscriptOverview): Manuscript {
     const statusMapping = <span class="cstat-no" title="statement not covered" >getStatusMapping(manuscript.status);</span>
     const unmappedFields = <span class="cstat-no" title="statement not covered" >getUnmappedFields(manuscript);</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       // Data4Rev API fields (keep as-is)
       msid: manuscript.msid,
@@ -1393,7 +1393,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
       received_at: manuscript.received_at,
       status: manuscript.status,
       note: manuscript.note,
-      
+
       // Backward compatibility fields (mapped with proper status mapping)
       received: manuscript.received_at,
       lastModified: manuscript.received_at,
@@ -1401,7 +1401,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
       priority: statusMapping.priority,
       figureCount: 0, // Will be populated when we have figure data
       qcStatus: statusMapping.qcStatus,
-      
+
       // UI-specific fields for dashboard
       displayStatus: statusMapping.displayStatus,
       workflowState: statusMapping.workflowState,
@@ -1446,14 +1446,14 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
       doi: mockManuscript.doi || `10.1038/s41586-${Date.now()}`,
       accession_number: mockManuscript.accessionNumber || `ACC-${mockManuscript.id}`,
       title: mockManuscript.title,
-      authors: Array.isArray(mockManuscript.authors) 
-        ? mockManuscript.authors.join(', ') 
+      authors: Array.isArray(mockManuscript.authors)
+        ? mockManuscript.authors.join(', ')
         : mockManuscript.authors || 'Unknown Author',
       id: parseInt(mockManuscript.id.replace(/\D/g, '')) || Date.now(),
       received_at: mockManuscript.received ? `${mockManuscript.received}T08:00:00Z` : new Date().toISOString(),
       status: mockManuscript.status?.toLowerCase().replace(' ', '_') || 'submitted',
       note: mockManuscript.abstract || null,
-      
+
       // Backward compatibility fields
       received: mockManuscript.received || new Date().toISOString().split('T')[0],
       lastModified: mockManuscript.lastModified || new Date().toISOString().split('T')[0],
@@ -1509,10 +1509,10 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
     };
 &nbsp;
     const response = <span class="cstat-no" title="statement not covered" >await api.manuscripts.getAll(data4revParams);</span>
-    
+
     // Transform the response to match our format
     const transformedManuscripts = <span class="cstat-no" title="statement not covered" >response.data.manuscripts.map(<span class="fstat-no" title="function not covered" >(m</span>: any) =&gt; <span class="cstat-no" title="statement not covered" >this.transformManuscript(m));</span></span>
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       data: transformedManuscripts,
       pagination: {
@@ -1532,7 +1532,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
 <span class="cstat-no" title="statement not covered" >      if (!manuscript) {</span>
 <span class="cstat-no" title="statement not covered" >        throw new Error(`Manuscript ${id} not found`);</span>
       }
-      
+
       // Add real figures to specific manuscripts
       const manuscriptWithFigures = <span class="cstat-no" title="statement not covered" >await this.addRealFiguresToManuscript(manuscript);</span>
 <span class="cstat-no" title="statement not covered" >      return createMockResponse(this.transformMockManuscript(manuscriptWithFigures));</span>
@@ -1540,7 +1540,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
 &nbsp;
     // Call Data4Rev API
     const response = <span class="cstat-no" title="statement not covered" >await api.manuscripts.getById(id);</span>
-    
+
     // Transform the detailed manuscript data
     const transformedManuscript: Manuscript = <span class="cstat-no" title="statement not covered" >{</span>
       ...this.transformManuscript(response.data),
@@ -1570,7 +1570,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
         received_at: new Date().toISOString(),
         status: data.status || 'submitted',
         note: null,
-        
+
         // Backward compatibility fields
         received: new Date().toISOString().split('T')[0],
         lastModified: new Date().toISOString().split('T')[0],
@@ -1667,7 +1667,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
         details: c.details,
         id: Date.now()
       })) || [],
-      
+
       // Backward compatibility fields
       title: mockFigure.title,
       legend: mockFigure.legend,
@@ -1687,7 +1687,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
       links: figure.links,
       source_data: figure.source_data,
       check_results: figure.check_results,
-      
+
       // Backward compatibility fields
       title: figure.label,
       legend: figure.caption,
@@ -1790,7 +1790,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
         m.authors.toLowerCase().includes(query.toLowerCase()) ||
         m.msid.toLowerCase().includes(query.toLowerCase())
       );
-    
+
 <span class="cstat-no" title="statement not covered" >    return createMockPaginatedResponse(filteredData);</span>
   }
 &nbsp;
@@ -1818,7 +1818,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
     // Get statistics from Data4Rev API
     const response = <span class="cstat-no" title="statement not covered" >await api.manuscripts.getAll();</span>
     const manuscripts = <span class="cstat-no" title="statement not covered" >response.data.manuscripts.map(<span class="fstat-no" title="function not covered" >(m</span>: any) =&gt; <span class="cstat-no" title="statement not covered" >this.transformManuscript(m));</span></span>
-    
+
     const stats = <span class="cstat-no" title="statement not covered" >{</span>
       totalManuscripts: response.data.total,
       manuscriptsByStatus: manuscripts.reduce(<span class="fstat-no" title="function not covered" >(a</span>cc: any, m: any) =&gt; {
@@ -1834,7 +1834,7 @@ export class <span class="cstat-no" title="statement not covered" >DataService <
       pendingTasks: 0, // Not available in Data4Rev API
       unreadNotifications: 0, // Not available in Data4Rev API
     };
-    
+
 <span class="cstat-no" title="statement not covered" >    return createMockResponse(stats);</span>
   }
 }
@@ -1873,4 +1873,3 @@ export const {
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

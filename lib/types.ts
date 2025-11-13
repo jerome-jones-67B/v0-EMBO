@@ -47,7 +47,7 @@ export interface Manuscript {
   received_at: string;
   status: string;
   note: string | null;
-  
+
   // Backward compatibility fields (mapped from above)
   received: string; // maps to received_at
   lastModified: string; // maps to received_at for now
@@ -60,7 +60,7 @@ export interface Manuscript {
   submissionType?: string;
   wordCount?: number;
   collaborators?: string[];
-  
+
   // UI-specific fields for proper status mapping
   displayStatus?: string; // mapped display status
   workflowState?: string; // mapped workflow state
@@ -122,6 +122,28 @@ export interface FileDetails {
   content_type: string;
   size: number;
   id: number;
+  assigned_to?: {
+    figure_id: number | null;
+    panel_id: number | null;
+  }[];
+}
+
+// File structure from the /manuscripts/{id}/files endpoint
+export interface ManuscriptFileDetails {
+  id: number;
+  name: string;
+  source: string;
+  path?: string; // File path for tree structure
+  assigned_to: {
+    figure: {
+      id: number;
+      label: string;
+    };
+    panel: {
+      id: number;
+      label: string;
+    };
+  }[];
 }
 
 export interface DepositionEventDetails {
@@ -320,4 +342,9 @@ export interface CheckResultCreate {
   status: string;
   message?: string | null;
   details?: string | null;
+}
+
+export interface SortOrderUpdate {
+  id: number;
+  sort_order: number;
 }

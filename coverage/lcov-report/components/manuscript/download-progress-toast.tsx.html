@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">components/manuscript</a> download-progress-toast.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/20</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/25</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/6</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/16</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -389,7 +389,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
       {activeDownloads.map(<span class="fstat-no" title="function not covered" >([</span>msid, _]) =&gt; {
         const progress = <span class="cstat-no" title="statement not covered" >downloadProgress[msid]</span>
         const manuscript = <span class="cstat-no" title="statement not covered" >manuscripts.find(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.msid === msid)</span></span>
-        
+
 <span class="cstat-no" title="statement not covered" >        if (!progress || !manuscript) <span class="cstat-no" title="statement not covered" >return null</span></span>
 &nbsp;
         const isError = <span class="cstat-no" title="statement not covered" >progress.status.toLowerCase().includes('error') || </span>
@@ -443,8 +443,8 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                   &lt;/span&gt;
                 &lt;/div&gt;
 &nbsp;
-                &lt;Progress 
-                  value={progress.progress} 
+                &lt;Progress
+                  value={progress.progress}
                   className={`h-2 ${isError ? 'bg-red-100' : isComplete ? 'bg-green-100' : ''}`}
                 /&gt;
 &nbsp;
@@ -459,11 +459,11 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                       )}
                     &lt;/p&gt;
                   )}
-                  
+
                   {<span class="branch-0 cbranch-no" title="branch not covered" >progress.currentFileSize </span>&amp;&amp; (
                     &lt;p className="text-gray-500"&gt;Size: {progress.currentFileSize}&lt;/p&gt;
                   )}
-                  
+
                   {<span class="branch-0 cbranch-no" title="branch not covered" >progress.downloadSpeed </span>&amp;&amp; (
                     &lt;p className="text-gray-500"&gt;Speed: {progress.downloadSpeed}&lt;/p&gt;
                   )}
@@ -508,4 +508,3 @@ export default function <span class="cstat-no" title="statement not covered" ><s
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
-    

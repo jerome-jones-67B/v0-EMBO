@@ -48,14 +48,14 @@ export function ManuscriptTableRow({
   onUnassignFromMe
 }: ManuscriptTableRowProps) {
   const [isDownloading, setIsDownloading] = useState(false)
-  
+
   const progress = downloadProgress[manuscript.id]
   const isAssignedToMe = manuscript.assignedTo === 'Dr. Sarah Chen'
   const isOnHold = manuscript.workflowState === 'on-hold'
 
   const handleDownload = async () => {
     if (isDownloading || progress?.status === 'downloading') return
-    
+
     setIsDownloading(true)
     try {
       await onDownload(manuscript.id)
@@ -94,7 +94,7 @@ export function ManuscriptTableRow({
         </TooltipProvider>
       )
     }
-    
+
     if (manuscript.hasWarnings) {
       return (
         <TooltipProvider>
@@ -109,7 +109,7 @@ export function ManuscriptTableRow({
         </TooltipProvider>
       )
     }
-    
+
     return (
       <CheckCircle className="h-4 w-4 text-success" />
     )
@@ -137,8 +137,8 @@ export function ManuscriptTableRow({
       {columnVisibility.title && (
         <TableCell className="max-w-[300px]">
           <div className="space-y-1">
-            <Link 
-              href={`/manuscript/${manuscript.id}`} 
+            <Link
+              href={`/manuscript/${manuscript.id}`}
               className="font-medium hover:underline line-clamp-2"
             >
               {manuscript.title}
@@ -161,7 +161,7 @@ export function ManuscriptTableRow({
       {columnVisibility.doi && (
         <TableCell className="text-sm">
           {manuscript.doi ? (
-            <a 
+            <a
               href={`https://doi.org/${manuscript.doi}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -229,9 +229,9 @@ export function ManuscriptTableRow({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={handleDownload}
                     disabled={isDownloading || progress?.status === 'downloading'}
                   >
@@ -254,7 +254,7 @@ export function ManuscriptTableRow({
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                
+
                 {/* Assignment Actions */}
                 {isAssignedToMe ? (
                   <DropdownMenuItem onClick={() => onUnassignFromMe(manuscript.id)}>
@@ -283,7 +283,7 @@ export function ManuscriptTableRow({
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
                     {(['urgent', 'high', 'medium', 'low'] as Priority[]).map(priority => (
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         key={priority}
                         onClick={() => onChangePriority(manuscript.id, priority)}
                         disabled={manuscript.priority === priority}

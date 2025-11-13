@@ -25,7 +25,7 @@ export function ManuscriptTableHeader({
   onSelectAll,
   onClearSelection
 }: ManuscriptTableHeaderProps) {
-  const isAllSelected = filteredManuscripts.length > 0 && 
+  const isAllSelected = filteredManuscripts.length > 0 &&
     filteredManuscripts.every(m => selectedManuscripts.has(m.id))
   const isPartiallySelected = selectedManuscripts.size > 0 && !isAllSelected
 
@@ -40,7 +40,7 @@ export function ManuscriptTableHeader({
   const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => {
     const isActive = sort.field === field
     const direction = isActive ? sort.direction : 'asc'
-    
+
     return (
       <Button
         variant="ghost"

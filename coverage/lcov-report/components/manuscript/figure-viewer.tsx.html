@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">components/manuscript</a> figure-viewer.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">76.74% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>33/43</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">82.85% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>29/35</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">66.66% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>14/21</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">78.94% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>30/38</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -629,7 +629,7 @@ export default function FigureViewer({
     const bgColor = check.type === 'error' ? 'bg-red-100 text-red-800' :
                    check.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
 <span class="branch-1 cbranch-no" title="branch not covered" >                   'bg-blue-100 text-blue-800'</span>
-    
+
     return (
       &lt;Badge key={getCheckId(check, 'figure', index)} className={`${bgColor} mb-1 mr-1`}&gt;
         {check.type === 'error' ? (
@@ -669,10 +669,10 @@ export default function FigureViewer({
       &lt;div className="absolute inset-0 pointer-events-none"&gt;
         {figure.panels.map((panel) =&gt; {
           <span class="missing-if-branch" title="if path not taken" >I</span>if (!panel.coordinates) <span class="cstat-no" title="statement not covered" >return null</span>
-          
+
           const { x, y, width, height } = panel.coordinates
           const isHovered = hoveredPanel === panel.id
-          
+
           return (
             &lt;div
               key={panel.id}
@@ -707,7 +707,7 @@ export default function FigureViewer({
   // Render expanded figure modal
   const renderExpandedFigure = () =&gt; {
     if (!showExpandedFigure) return null
-    
+
     const expandedFigure = figures.find(f =&gt; f.id === showExpandedFigure)
     <span class="missing-if-branch" title="if path not taken" >I</span>if (!expandedFigure) <span class="cstat-no" title="statement not covered" >return null</span>
 &nbsp;
@@ -776,7 +776,7 @@ export default function FigureViewer({
         &lt;/CardHeader&gt;
         &lt;CardContent&gt;
           {renderFigureNavigation()}
-          
+
           {selectedFigure &amp;&amp; (
             &lt;div className="space-y-4"&gt;
               {/* Figure Image */}
@@ -868,4 +868,3 @@ export default function FigureViewer({
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
-    

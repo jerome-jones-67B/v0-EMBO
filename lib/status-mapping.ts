@@ -15,7 +15,7 @@ export const STATUS_MAPPINGS: Record<string, StatusMapping> = {
   'received': {
     apiStatus: 'received',
     displayStatus: 'New submission',
-    workflowState: 'ready-for-curation',
+    workflowState: 'no-pipeline-results',
     priority: 'normal',
     qcStatus: 'needs-validation',
     badgeVariant: 'outline',
@@ -33,7 +33,7 @@ export const STATUS_MAPPINGS: Record<string, StatusMapping> = {
   'submitted': {
     apiStatus: 'submitted',
     displayStatus: 'New submission',
-    workflowState: 'ready-for-curation',
+    workflowState: 'no-pipeline-results',
     priority: 'medium',
     qcStatus: 'needs-validation',
     badgeVariant: 'default',
@@ -105,7 +105,7 @@ export const STATUS_MAPPINGS: Record<string, StatusMapping> = {
   'incomplete': {
     apiStatus: 'incomplete',
     displayStatus: 'New submission',
-    workflowState: 'ready-for-curation',
+    workflowState: 'no-pipeline-results',
     priority: 'urgent',
     qcStatus: 'needs-validation',
     badgeVariant: 'destructive',
@@ -148,7 +148,7 @@ export function getValidStatusesForTab(tab: string): string[] {
   const statuses = Object.values(STATUS_MAPPINGS)
     .filter(mapping => mapping.workflowState === tab)
     .map(mapping => mapping.displayStatus);
-  
+
   return statuses;
 }
 
@@ -171,22 +171,22 @@ export function isFieldMapped(fieldName: string, value: any): boolean {
 // Get unmapped fields for highlighting
 export function getUnmappedFields(manuscript: any): string[] {
   const unmappedFields: string[] = [];
-  
+
   if (!isFieldMapped('status', manuscript.status)) {
     unmappedFields.push('status');
   }
-  
+
   if (manuscript.priority && !isFieldMapped('priority', manuscript.priority)) {
     unmappedFields.push('priority');
   }
-  
+
   if (manuscript.qcStatus && !isFieldMapped('qcStatus', manuscript.qcStatus)) {
     unmappedFields.push('qcStatus');
   }
-  
+
   if (manuscript.workflowState && !isFieldMapped('workflowState', manuscript.workflowState)) {
     unmappedFields.push('workflowState');
   }
-  
+
   return unmappedFields;
 }

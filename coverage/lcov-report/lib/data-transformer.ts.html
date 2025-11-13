@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> data-transformer.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/36</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/59</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/18</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/29</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -449,11 +449,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// Data transformation utilities for converting API data to UI data structures
 &nbsp;
-import { 
-  ManuscriptDetails, 
-  FigureDetails, 
-  PanelDetails, 
-  CheckResultDetails, 
+import {
+  ManuscriptDetails,
+  FigureDetails,
+  PanelDetails,
+  CheckResultDetails,
   LinkDetails,
   SourceDataDetails,
   Manuscript,
@@ -479,20 +479,20 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
     currentStatus: mapStatusToDisplay(apiManuscript.status),
     modifiedBy: "Dr. Sarah Chen", // Not available in API
     priority: derivePriorityFromStatus(apiManuscript.status).toLowerCase(),
-    
+
     // Content fields
     abstract: apiManuscript.note || "No abstract available",
     keywords: [], // Not in API, will be empty
     notes: apiManuscript.note || "No additional notes",
     dataAvailability: "Available", // Not in API
-    
+
     // Transform figures to match expected structure
     figures: apiManuscript.figures?.map(transformApiFigureToUI) || [],
-    
+
     // Transform other data
     linkedData: transformLinksToLinkedData(apiManuscript.links || []),
     linkedInfo: transformLinksToLinkedData(apiManuscript.links || []),
-    
+
     // Status mapping
     displayStatus: mapStatusToDisplay(apiManuscript.status),
     workflowState: mapStatusToWorkflow(apiManuscript.status),
@@ -511,7 +511,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
     legend: apiFigure.caption,
     panels: apiFigure.panels?.map(transformApiPanelToUI) || [],
     qcChecks: transformCheckResultsToQCChecks(apiFigure.check_results || []),
-    
+
     // API fields for compatibility
     label: apiFigure.label,
     caption: apiFigure.caption,
@@ -531,7 +531,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
     description: apiPanel.label,
     legend: apiPanel.caption,
     hasIssues: hasPanelIssues(apiPanel.check_results || []),
-    
+
     // API fields for compatibility
     label: apiPanel.label,
     caption: apiPanel.caption,
@@ -582,10 +582,10 @@ function <span class="fstat-no" title="function not covered" >derivePriorityFrom
 &nbsp;
 function <span class="fstat-no" title="function not covered" >deriveQCStatusFromCheckResults(c</span>heckResults: CheckResultDetails[]): string {
 <span class="cstat-no" title="statement not covered" >  if (!checkResults || checkResults.length === 0) <span class="cstat-no" title="statement not covered" >return 'Pending';</span></span>
-  
+
   const hasErrors = <span class="cstat-no" title="statement not covered" >checkResults.some(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck.status === 'error');</span></span>
   const hasWarnings = <span class="cstat-no" title="statement not covered" >checkResults.some(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck.status === 'warning');</span></span>
-  
+
 <span class="cstat-no" title="statement not covered" >  if (hasErrors) <span class="cstat-no" title="statement not covered" >return 'Issues Found';</span></span>
 <span class="cstat-no" title="statement not covered" >  if (hasWarnings) <span class="cstat-no" title="statement not covered" >return 'Warnings';</span></span>
 <span class="cstat-no" title="statement not covered" >  return 'Passed';</span>
@@ -658,4 +658,3 @@ function <span class="fstat-no" title="function not covered" >hasPanelIssues(c</
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

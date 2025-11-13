@@ -9,10 +9,6 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jsdom',
-  moduleNameMapping: {
-    // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
-    '^@/(.*)$': '<rootDir>/$1',
-  },
   testMatch: [
     '**/__tests__/**/*.test.{js,jsx,ts,tsx}',
     '**/*.test.{js,jsx,ts,tsx}'
@@ -40,7 +36,7 @@ const customJestConfig = {
     '^.+\\.module\\.(css|sass|scss)$',
   ],
   // Handle CSS imports (with CSS modules)
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     // Handle CSS imports
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',

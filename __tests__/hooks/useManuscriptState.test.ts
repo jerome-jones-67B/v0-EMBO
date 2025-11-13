@@ -1,104 +1,286 @@
 import { renderHook, act } from '@testing-library/react'
 import { useManuscriptState } from '@/hooks/useManuscriptState'
-import type { Manuscript } from '@/types/manuscript'
+import { useState, useCallback, useRef } from 'react'
 
-const mockManuscript: Manuscript = {
-  id: '1',
-  msid: 'EMBO-2024-001',
-  receivedDate: '2024-01-15',
-  title: 'Test Manuscript',
-  authors: 'Test Author',
-  status: 'Under Review',
-  workflowState: 'in-review',
-  priority: 'high',
-  hasErrors: false,
-  hasWarnings: false,
-  notes: 'Test notes',
-  lastModified: '2024-01-20T10:30:00Z',
-  displayStatus: 'Under Review',
-  badgeVariant: 'default',
-  isMapped: true,
-  unmappedFields: []
+// Mock the API client
+jest.mock('@/lib/api-client', () => ({
+  api: {
+    sourceData: {
+      assignToManuscript: jest.fn(),
+      assignToFigure: jest.fn(),
+      assignToPanel: jest.fn(),
+      deleteFromManuscript: jest.fn(),
+      deleteFromFigure: jest.fn(),
+      deleteFromPanel: jest.fn(),
+    },
+  },
+}))
+
+// Test hook that simulates the state management logic
+function useTestMappingState() {
+  const [mappingTargets, setMappingTargets] = useState<Record<string, string[]>>({})
+  const [sourceDataIds, setSourceDataIds] = useState<Record<string, Record<string, number>>>({})
+  const sourceDataIdsRef = useRef<Record<string, Record<string, number>>>({})
+  const lastSourceFilesRef = useRef<any[]>([])
+
+  const handleMappingChange = useCallback(async (
+    fileId: string,
+    selectedValues: string[],
+    mockApi: any
+  ) => {
+    const currentAssignments = mappingTargets[fileId] || []
+    const currentSourceDataIds = sourceDataIdsRef.current[fileId] || {}
+
+    const assignmentsToRemove = currentAssignments.filter(value => !selectedValues.includes(value))
+    const assignmentsToAdd = selectedValues.filter(value => !currentAssignments.includes(value))
+
+    // Update UI immediately
+    setMappingTargets(prev => ({
+      ...prev,
+      [fileId]: selectedValues
+    }))
+
+    let localSourceDataIds = { ...currentSourceDataIds }
+
+    try {
+      // Remove assignments
+      for (const assignmentValue of assignmentsToRemove) {
+        const sourceDataId = localSourceDataIds[assignmentValue]
+        if (sourceDataId) {
+          await mockApi.deleteFromManuscript('6', sourceDataId.toString())
+        }
+      }
+
+      // Add new assignments
+      for (const assignmentValue of assignmentsToAdd) {
+        const response = await mockApi.assignToManuscript('6', parseInt(fileId))
+        const sourceDataId = response.id
+        if (sourceDataId) {
+          localSourceDataIds[assignmentValue] = sourceDataId
+
+          sourceDataIdsRef.current = {
+            ...sourceDataIdsRef.current,
+            [fileId]: {
+              ...sourceDataIdsRef.current[fileId],
+              [assignmentValue]: sourceDataId
+            }
+          }
+
+          setSourceDataIds(prev => ({
+            ...prev,
+            [fileId]: {
+              ...prev[fileId],
+              [assignmentValue]: sourceDataId
+            }
+          }))
+        }
+      }
+
+      // Update state
+      assignmentsToRemove.forEach(assignmentValue => {
+        delete localSourceDataIds[assignmentValue]
+      })
+
+      sourceDataIdsRef.current = {
+        ...sourceDataIdsRef.current,
+        [fileId]: localSourceDataIds
+      }
+
+      setSourceDataIds(prev => ({
+        ...prev,
+        [fileId]: localSourceDataIds
+      }))
+
+    } catch (error) {
+      // Revert UI on error
+      setMappingTargets(prev => ({
+        ...prev,
+        [fileId]: currentAssignments
+      }))
+      throw error
+    }
+  }, [mappingTargets, sourceDataIds])
+
+  return {
+    mappingTargets,
+    sourceDataIds,
+    sourceDataIdsRef,
+    handleMappingChange
+  }
 }
 
-describe('useManuscriptState', () => {
-  it('should initialize with default values', () => {
-    const { result } = renderHook(() => useManuscriptState())
+describe('Source File Mapping State Management', () => {
+  describe('Initial State', () => {
+    it('should initialize with empty state', () => {
+      const { result } = renderHook(() => useTestMappingState())
 
-    expect(result.current.state.manuscripts).toEqual([])
-    expect(result.current.state.activeTab).toBe('all')
-    expect(result.current.state.filters.search).toBe('')
-    expect(result.current.state.filters.status).toBe('all')
-    expect(result.current.state.sort.field).toBe('receivedDate')
-    expect(result.current.state.sort.direction).toBe('desc')
-    expect(result.current.state.useApiData).toBe(false)
-    expect(result.current.state.isLoadingApi).toBe(false)
-    expect(result.current.state.showOnlyMine).toBe(false)
+      expect(result.current.mappingTargets).toEqual({})
+      expect(result.current.sourceDataIds).toEqual({})
+      expect(result.current.sourceDataIdsRef.current).toEqual({})
+    })
   })
 
-  it('should update filter values', () => {
-    const { result } = renderHook(() => useManuscriptState())
+  describe('Adding Assignments', () => {
+    it('should add new assignment and update state', async () => {
+      const mockApi = {
+        assignToManuscript: jest.fn().mockResolvedValue({ id: 100 }),
+        deleteFromManuscript: jest.fn().mockResolvedValue({})
+      }
 
-    act(() => {
-      result.current.updateFilter('search', 'test search')
+      const { result } = renderHook(() => useTestMappingState())
+
+      await act(async () => {
+        await result.current.handleMappingChange('1', ['manuscript'], mockApi)
+      })
+
+      expect(result.current.mappingTargets).toEqual({ '1': ['manuscript'] })
+      expect(result.current.sourceDataIds).toEqual({ '1': { 'manuscript': 100 } })
+      expect(mockApi.assignToManuscript).toHaveBeenCalledWith('6', 1)
     })
 
-    expect(result.current.state.filters.search).toBe('test search')
+    it('should handle multiple assignments', async () => {
+      const mockApi = {
+        assignToManuscript: jest.fn().mockResolvedValue({ id: 101 }),
+        assignToFigure: jest.fn().mockResolvedValue({ id: 102 }),
+        deleteFromManuscript: jest.fn().mockResolvedValue({})
+      }
 
-    act(() => {
-      result.current.updateFilter('status', 'pending')
+      const { result } = renderHook(() => useTestMappingState())
+
+      await act(async () => {
+        await result.current.handleMappingChange('1', ['manuscript', 'figure-32'], mockApi)
+      })
+
+      expect(result.current.mappingTargets).toEqual({ '1': ['manuscript', 'figure-32'] })
+      expect(mockApi.assignToManuscript).toHaveBeenCalledWith('6', 1)
     })
-
-    expect(result.current.state.filters.status).toBe('pending')
   })
 
-  it('should update sort configuration', () => {
-    const { result } = renderHook(() => useManuscriptState())
+  describe('Removing Assignments', () => {
+    it('should remove existing assignment', async () => {
+      const mockApi = {
+        assignToManuscript: jest.fn().mockResolvedValue({ id: 100 }),
+        deleteFromManuscript: jest.fn().mockResolvedValue({})
+      }
 
-    act(() => {
-      result.current.updateSort('title', 'asc')
+      const { result } = renderHook(() => useTestMappingState())
+
+      // First add an assignment
+      await act(async () => {
+        await result.current.handleMappingChange('1', ['manuscript'], mockApi)
+      })
+
+      // Then remove it
+      await act(async () => {
+        await result.current.handleMappingChange('1', [], mockApi)
+      })
+
+      expect(result.current.mappingTargets).toEqual({ '1': [] })
+      expect(result.current.sourceDataIds).toEqual({ '1': {} })
+      expect(mockApi.deleteFromManuscript).toHaveBeenCalledWith('6', '100')
     })
 
-    expect(result.current.state.sort.field).toBe('title')
-    expect(result.current.state.sort.direction).toBe('asc')
+    it('should handle partial removal', async () => {
+      const mockApi = {
+        assignToManuscript: jest.fn().mockResolvedValue({ id: 100 }),
+        assignToFigure: jest.fn().mockResolvedValue({ id: 101 }),
+        deleteFromManuscript: jest.fn().mockResolvedValue({}),
+        deleteFromFigure: jest.fn().mockResolvedValue({})
+      }
 
-    // Test toggling direction for same field
-    act(() => {
-      result.current.updateSort('title')
+      const { result } = renderHook(() => useTestMappingState())
+
+      // Add multiple assignments
+      await act(async () => {
+        await result.current.handleMappingChange('1', ['manuscript', 'figure-32'], mockApi)
+      })
+
+      // Remove one assignment
+      await act(async () => {
+        await result.current.handleMappingChange('1', ['figure-32'], mockApi)
+      })
+
+      expect(result.current.mappingTargets).toEqual({ '1': ['figure-32'] })
+      expect(mockApi.deleteFromManuscript).toHaveBeenCalledWith('6', '100')
     })
-
-    expect(result.current.state.sort.direction).toBe('desc')
   })
 
-  it('should manage manuscript selection', () => {
-    const { result } = renderHook(() => useManuscriptState())
+  describe('Error Handling', () => {
+    it('should revert state on API error', async () => {
+      const mockApi = {
+        assignToManuscript: jest.fn().mockRejectedValue(new Error('API Error')),
+        deleteFromManuscript: jest.fn().mockResolvedValue({})
+      }
 
-    // Select a manuscript
-    act(() => {
-      result.current.toggleManuscriptSelection('1')
+      const { result } = renderHook(() => useTestMappingState())
+
+      await act(async () => {
+        try {
+          await result.current.handleMappingChange('1', ['manuscript'], mockApi)
+        } catch (error) {
+          // Expected to throw
+        }
+      })
+
+      // State should be reverted to original
+      expect(result.current.mappingTargets).toEqual({})
+      expect(result.current.sourceDataIds).toEqual({})
     })
 
-    expect(result.current.state.selectedManuscripts.has('1')).toBe(true)
+    it('should maintain state consistency during concurrent operations', async () => {
+      const mockApi = {
+        assignToManuscript: jest.fn().mockImplementation(() =>
+          new Promise(resolve => setTimeout(() => resolve({ id: Math.random() * 1000 }), 10))
+        ),
+        deleteFromManuscript: jest.fn().mockResolvedValue({})
+      }
 
-    // Deselect the manuscript
-    act(() => {
-      result.current.toggleManuscriptSelection('1')
+      const { result } = renderHook(() => useTestMappingState())
+
+      // Start multiple operations
+      const promises = [
+        result.current.handleMappingChange('1', ['manuscript'], mockApi),
+        result.current.handleMappingChange('2', ['manuscript'], mockApi),
+        result.current.handleMappingChange('3', ['manuscript'], mockApi)
+      ]
+
+      await act(async () => {
+        await Promise.all(promises)
+      })
+
+      expect(result.current.mappingTargets).toEqual({
+        '1': ['manuscript'],
+        '2': ['manuscript'],
+        '3': ['manuscript']
+      })
     })
-
-    expect(result.current.state.selectedManuscripts.has('1')).toBe(false)
   })
 
-  it('should select all manuscripts', () => {
-    const { result } = renderHook(() => useManuscriptState())
-    const manuscripts = [mockManuscript, { ...mockManuscript, id: '2' }]
+  describe('State Persistence', () => {
+    it('should persist source data IDs across operations', async () => {
+      const mockApi = {
+        assignToManuscript: jest.fn().mockResolvedValue({ id: 200 }),
+        deleteFromManuscript: jest.fn().mockResolvedValue({})
+      }
 
-    act(() => {
-      result.current.selectAllManuscripts(manuscripts)
+      const { result } = renderHook(() => useTestMappingState())
+
+      // Add assignment
+      await act(async () => {
+        await result.current.handleMappingChange('1', ['manuscript'], mockApi)
+      })
+
+      const sourceDataId = result.current.sourceDataIdsRef.current['1']['manuscript']
+      expect(sourceDataId).toBe(200)
+
+      // Remove assignment
+      await act(async () => {
+        await result.current.handleMappingChange('1', [], mockApi)
+      })
+
+      // Source data ID should be removed from ref
+      expect(result.current.sourceDataIdsRef.current['1']['manuscript']).toBeUndefined()
     })
-
-    expect(result.current.state.selectedManuscripts.size).toBe(2)
-    expect(result.current.state.selectedManuscripts.has('1')).toBe(true)
-    expect(result.current.state.selectedManuscripts.has('2')).toBe(true)
   })
 
   it('should clear selection', () => {

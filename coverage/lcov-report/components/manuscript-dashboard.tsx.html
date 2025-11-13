@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">components</a> manuscript-dashboard.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/702</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/509</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/168</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/642</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -5917,26 +5917,26 @@ function <span class="fstat-no" title="function not covered" >computeAIChecksSum
     ...(Array.isArray(manuscript.qcChecks) ? manuscript.qcChecks : []),
     ...(manuscript?.figures || []).flatMap(<span class="fstat-no" title="function not covered" >(f</span>ig: any) =&gt; <span class="cstat-no" title="statement not covered" >fig.qcChecks || [])</span>
   ];
-  
+
   // Filter for AI-generated checks
   const aiChecks = <span class="cstat-no" title="statement not covered" >allChecks.filter(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck.aiGenerated)</span>;</span>
-  
+
   // If no AI checks found (likely API data without detailed checks), generate reasonable defaults
 <span class="cstat-no" title="statement not covered" >  if (aiChecks.length === 0 &amp;&amp; manuscript.msid &amp;&amp; !manuscript.msid.includes('EMBO-2024-')) {</span>
     // Generate realistic AI checks based on manuscript properties for API data
     const msidHash = <span class="cstat-no" title="statement not covered" >manuscript.msid.split('').reduce(<span class="fstat-no" title="function not covered" >(a</span>cc: number, char: string) =&gt; <span class="cstat-no" title="statement not covered" >acc + char.charCodeAt(0), 0</span>);</span>
     const statusFactor = <span class="cstat-no" title="statement not covered" >manuscript.status === 'segmented' ? 1.2 : 1.0;</span>
-    
+
     const baseChecks = <span class="cstat-no" title="statement not covered" >Math.floor((msidHash % 8 + 4) * statusFactor); /</span>/ 4-11 checks
     const errorRate = <span class="cstat-no" title="statement not covered" >0.15; /</span>/ 15% errors
-    const warningRate = <span class="cstat-no" title="statement not covered" >0.4; /</span>/ 40% warnings  
+    const warningRate = <span class="cstat-no" title="statement not covered" >0.4; /</span>/ 40% warnings
     const infoRate = <span class="cstat-no" title="statement not covered" >0.45; /</span>/ 45% info
-    
+
     const errors = <span class="cstat-no" title="statement not covered" >Math.floor(baseChecks * errorRate);</span>
     const warnings = <span class="cstat-no" title="statement not covered" >Math.floor(baseChecks * warningRate);</span>
     const info = <span class="cstat-no" title="statement not covered" >baseChecks - errors - warnings;</span>
     const dismissed = <span class="cstat-no" title="statement not covered" >Math.floor(baseChecks * 0.1); /</span>/ 10% dismissed
-    
+
 <span class="cstat-no" title="statement not covered" >    return {</span>
       total: baseChecks,
       errors,
@@ -5945,18 +5945,18 @@ function <span class="fstat-no" title="function not covered" >computeAIChecksSum
       dismissed
     };
   }
-  
+
   // Compute counts by type from actual data
   const errors = <span class="cstat-no" title="statement not covered" >aiChecks.filter(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck.type === 'error').l</span>ength;</span>
   const warnings = <span class="cstat-no" title="statement not covered" >aiChecks.filter(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck.type === 'warning').l</span>ength;</span>
   const info = <span class="cstat-no" title="statement not covered" >aiChecks.filter(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck.type === 'info').l</span>ength;</span>
   const dismissed = <span class="cstat-no" title="statement not covered" >aiChecks.filter(<span class="fstat-no" title="function not covered" >check =&gt; <span class="cstat-no" title="statement not covered" >c</span>heck.dismissed)</span>.length;</span>
   const total = <span class="cstat-no" title="statement not covered" >aiChecks.length;</span>
-  
+
 <span class="cstat-no" title="statement not covered" >  return {</span>
     total,
     errors,
-    warnings, 
+    warnings,
     info,
     dismissed
   };
@@ -6033,7 +6033,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
             const newStatus = <span class="cstat-no" title="statement not covered" >manuscript.status === "On hold" ? "New submission" : "On hold"</span>
 <span class="cstat-no" title="statement not covered" >            console.log(`📝 Toggling manuscript ${msid} status: ${manuscript.status} → ${newStatus}`)</span>
 <span class="cstat-no" title="statement not covered" >            return { </span>
-              ...manuscript, 
+              ...manuscript,
               status: newStatus,
               displayStatus: newStatus,
               lastModified: new Date().toISOString()
@@ -6042,12 +6042,12 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          return manuscript</span>
         }),
       )
-      
+
       // In a real implementation, this would call an API endpoint to update the status
       // For now, we'll just log the action and update the local state
       const manuscript = <span class="cstat-no" title="statement not covered" >apiManuscripts.find(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.msid === msid)</span></span>
       const newStatus = <span class="cstat-no" title="statement not covered" >manuscript?.status === "On hold" ? "New submission" : "On hold"</span>
-      
+
       // Show user feedback
 <span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
         const action = <span class="cstat-no" title="statement not covered" >newStatus === "On hold" ? "put on hold" : "removed from hold"</span>
@@ -6061,7 +6061,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
             const newStatus = <span class="cstat-no" title="statement not covered" >manuscript.status === "On hold" ? "New submission" : "On hold"</span>
 <span class="cstat-no" title="statement not covered" >            console.log(`📝 Toggling manuscript ${msid} status: ${manuscript.status} → ${newStatus}`)</span>
 <span class="cstat-no" title="statement not covered" >            return { </span>
-              ...manuscript, 
+              ...manuscript,
               status: newStatus,
               lastModified: new Date().toISOString()
             }
@@ -6069,7 +6069,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          return manuscript</span>
         }),
       )
-      
+
       // Show user feedback for mock data too
       const manuscript = <span class="cstat-no" title="statement not covered" >mockManuscripts.find(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.msid === msid)</span></span>
       const newStatus = <span class="cstat-no" title="statement not covered" >manuscript?.status === "On hold" ? "New submission" : "On hold"</span>
@@ -6088,7 +6088,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          if (manuscript.msid === msid) {</span>
 <span class="cstat-no" title="statement not covered" >            console.log(`📝 Changing manuscript ${msid} priority: ${manuscript.priority} → ${newPriority}`)</span>
 <span class="cstat-no" title="statement not covered" >            return { </span>
-              ...manuscript, 
+              ...manuscript,
               priority: newPriority,
               lastModified: new Date().toISOString()
             }
@@ -6096,10 +6096,10 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          return manuscript</span>
         }),
       )
-      
+
       // In a real implementation, this would call an API endpoint to update the priority
       const manuscript = <span class="cstat-no" title="statement not covered" >apiManuscripts.find(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.msid === msid)</span></span>
-      
+
       // Show user feedback
 <span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >        alert(`Manuscript ${msid} priority changed to ${newPriority}.`)</span>
@@ -6111,7 +6111,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          if (manuscript.msid === msid) {</span>
 <span class="cstat-no" title="statement not covered" >            console.log(`📝 Changing manuscript ${msid} priority: ${manuscript.priority} → ${newPriority}`)</span>
 <span class="cstat-no" title="statement not covered" >            return { </span>
-              ...manuscript, 
+              ...manuscript,
               priority: newPriority,
               lastModified: new Date().toISOString()
             }
@@ -6119,14 +6119,14 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          return manuscript</span>
         }),
       )
-      
+
       // Show user feedback for mock data too
       const manuscript = <span class="cstat-no" title="statement not covered" >mockManuscripts.find(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.msid === msid)</span></span>
 <span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >        alert(`Manuscript ${msid} priority changed to ${newPriority}.`)</span>
       }, 100)
     }
-    
+
     // Close the submenu
 <span class="cstat-no" title="statement not covered" >    setShowPrioritySubmenu(null)</span>
   }
@@ -6139,14 +6139,14 @@ export default function <span class="cstat-no" title="statement not covered" ><s
     }
 &nbsp;
     const userName = <span class="cstat-no" title="statement not covered" >session.user.name || session.user.email || 'Unknown User'</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (useApiData) {</span>
       // Update API manuscripts state
 <span class="cstat-no" title="statement not covered" >      setApiManuscripts(<span class="fstat-no" title="function not covered" >(p</span>rev) =&gt;</span>
 <span class="cstat-no" title="statement not covered" >        prev.map(<span class="fstat-no" title="function not covered" >(m</span>anuscript) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >          if (manuscript.msid === msid) {</span>
 <span class="cstat-no" title="statement not covered" >            return { </span>
-              ...manuscript, 
+              ...manuscript,
               assignedTo: userName,
               lastModified: new Date().toISOString()
             }
@@ -6154,21 +6154,21 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          return manuscript</span>
         }),
       )
-      
+
       // In a real implementation, this would call an API endpoint to update the assignment
       // PUT /api/v1/manuscripts/{id}/assign with { assignedTo: session.user.id }
-      
+
       // Show user feedback
 <span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >        alert(`Manuscript ${msid} assigned to you.`)</span>
       }, 100)
     } else {
-      // Update the mock manuscripts state  
+      // Update the mock manuscripts state
 <span class="cstat-no" title="statement not covered" >      setMockManuscripts(<span class="fstat-no" title="function not covered" >(p</span>rev) =&gt;</span>
 <span class="cstat-no" title="statement not covered" >        prev.map(<span class="fstat-no" title="function not covered" >(m</span>anuscript) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >          if (manuscript.msid === msid) {</span>
 <span class="cstat-no" title="statement not covered" >            return { </span>
-              ...manuscript, 
+              ...manuscript,
               assignedTo: userName,
               lastModified: new Date().toISOString()
             }
@@ -6176,7 +6176,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          return manuscript</span>
         }),
       )
-      
+
       // Show user feedback
 <span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >        alert(`Manuscript ${msid} assigned to you.`)</span>
@@ -6194,14 +6194,14 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >      alert('You must be logged in to unassign manuscripts.')</span>
 <span class="cstat-no" title="statement not covered" >      return</span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    if (useApiData) {</span>
       // Update API manuscripts state
 <span class="cstat-no" title="statement not covered" >      setApiManuscripts(<span class="fstat-no" title="function not covered" >(p</span>rev) =&gt;</span>
 <span class="cstat-no" title="statement not covered" >        prev.map(<span class="fstat-no" title="function not covered" >(m</span>anuscript) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >          if (manuscript.msid === msid) {</span>
 <span class="cstat-no" title="statement not covered" >            return { </span>
-              ...manuscript, 
+              ...manuscript,
               assignedTo: "",
               lastModified: new Date().toISOString()
             }
@@ -6209,21 +6209,21 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          return manuscript</span>
         }),
       )
-      
+
       // In a real implementation, this would call an API endpoint to update the assignment
       // DELETE /api/v1/manuscripts/{id}/assign
-      
+
       // Show user feedback
 <span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >        alert(`Manuscript ${msid} unassigned from you.`)</span>
       }, 100)
     } else {
-      // Update the mock manuscripts state  
+      // Update the mock manuscripts state
 <span class="cstat-no" title="statement not covered" >      setMockManuscripts(<span class="fstat-no" title="function not covered" >(p</span>rev) =&gt;</span>
 <span class="cstat-no" title="statement not covered" >        prev.map(<span class="fstat-no" title="function not covered" >(m</span>anuscript) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >          if (manuscript.msid === msid) {</span>
 <span class="cstat-no" title="statement not covered" >            return { </span>
-              ...manuscript, 
+              ...manuscript,
               assignedTo: "",
               lastModified: new Date().toISOString()
             }
@@ -6231,7 +6231,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          return manuscript</span>
         }),
       )
-      
+
       // Show user feedback
 <span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >        alert(`Manuscript ${msid} unassigned from you.`)</span>
@@ -6251,33 +6251,33 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   }
 &nbsp;
   const handleDownloadFiles = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async (m</span>sid: string, title: string, fileType: string = <span class="branch-0 cbranch-no" title="branch not covered" >'essential')</span> =&gt; {</span>
-    
+
     // Determine the manuscript ID for the API call
     const manuscriptId = <span class="cstat-no" title="statement not covered" >useApiData ? </span>
-      (apiManuscripts.find(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.msid === msid)?.i</span>d?.toString() || msid) : 
+      (apiManuscripts.find(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.msid === msid)?.i</span>d?.toString() || msid) :
       msid;
-    
+
     // Create AbortController for this download
     const abortController = <span class="cstat-no" title="statement not covered" >new AbortController();</span>
 <span class="cstat-no" title="statement not covered" >    setDownloadAbortControllers(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: abortController}));</span></span>
-    
+
     // Add manuscript to downloading set and show progress
 <span class="cstat-no" title="statement not covered" >    setDownloadingManuscripts(<span class="fstat-no" title="function not covered" >prev =&gt; <span class="cstat-no" title="statement not covered" >n</span>ew Set(prev).add(msid));</span></span>
 <span class="cstat-no" title="statement not covered" >    setShowDownloadToast(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: true}));</span></span>
-    
+
     // Set up Server-Sent Events connection for real-time progress
     const progressUrl = <span class="cstat-no" title="statement not covered" >buildApiUrl(`/v1/manuscripts/${manuscriptId}/download/progress`);</span>
     const eventSource = <span class="cstat-no" title="statement not covered" >new EventSource(progressUrl, { withCredentials: true });</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    setDownloadConnections(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: eventSource}));</span></span>
-    
+
 <span class="cstat-no" title="statement not covered" >    eventSource.onopen = <span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
     };
-    
+
 <span class="cstat-no" title="statement not covered" >    eventSource.onmessage = <span class="fstat-no" title="function not covered" >(e</span>vent) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
         const data = <span class="cstat-no" title="statement not covered" >JSON.parse(event.data);</span>
-        
+
 <span class="cstat-no" title="statement not covered" >        if (data.type === 'progress') {</span>
 <span class="cstat-no" title="statement not covered" >          setDownloadProgress(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span></span>
             ...prev,
@@ -6311,7 +6311,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
               currentFile: data.error
             }
           }));
-          
+
 <span class="cstat-no" title="statement not covered" >          setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >            alert(`Download Failed\n\nError: ${data.error}\n\nManuscript: ${title}\nMSID: ${msid}\n\nPlease try again or contact support if the problem persists.`);</span>
           }, 500);
@@ -6324,25 +6324,25 @@ export default function <span class="cstat-no" title="statement not covered" ><s
               currentFile: data.message || 'Download was cancelled'
             }
           }));
-          
+
 <span class="cstat-no" title="statement not covered" >          console.log(`🛑 Download cancelled for ${msid}: ${data.message}`);</span>
         }
       } catch (parseError) {
 <span class="cstat-no" title="statement not covered" >        console.error('❌ Failed to parse SSE message:', parseError);</span>
       }
     };
-    
+
 <span class="cstat-no" title="statement not covered" >    eventSource.onerror = <span class="fstat-no" title="function not covered" >(e</span>rror) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      console.error(`❌ SSE connection error for ${msid}:`, error);</span>
 <span class="cstat-no" title="statement not covered" >      eventSource.close();</span>
 <span class="cstat-no" title="statement not covered" >      setDownloadConnections(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: null}));</span></span>
     };
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
       // Build the download URL with specified file type
       const downloadUrl = <span class="cstat-no" title="statement not covered" >buildApiUrl(`/v1/manuscripts/${manuscriptId}/download?format=zip&amp;type=${fileType}`);</span>
-      
-      
+
+
       // Make the API call (this will trigger the SSE progress updates)
       const response = <span class="cstat-no" title="statement not covered" >await fetch(downloadUrl, {</span>
         method: 'GET',
@@ -6352,49 +6352,49 @@ export default function <span class="cstat-no" title="statement not covered" ><s
         credentials: 'include',
         signal: abortController.signal,
       });
-      
+
 <span class="cstat-no" title="statement not covered" >      if (!response.ok) {</span>
 <span class="cstat-no" title="statement not covered" >        throw new Error(`Download failed: ${response.status} ${response.statusText}`);</span>
       }
-      
+
       // Get the filename from the response headers
       const contentDisposition = <span class="cstat-no" title="statement not covered" >response.headers.get('Content-Disposition');</span>
       const filename = <span class="cstat-no" title="statement not covered" >contentDisposition </span>
         ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
         : `${msid}_files.zip`;
-      
+
       // Download the file
       const blob = <span class="cstat-no" title="statement not covered" >await response.blob();</span>
       const url = <span class="cstat-no" title="statement not covered" >window.URL.createObjectURL(blob);</span>
-      
+
       // Create a temporary download link and click it
       const downloadLink = <span class="cstat-no" title="statement not covered" >document.createElement('a');</span>
 <span class="cstat-no" title="statement not covered" >      downloadLink.href = url;</span>
 <span class="cstat-no" title="statement not covered" >      downloadLink.download = filename;</span>
 <span class="cstat-no" title="statement not covered" >      document.body.appendChild(downloadLink);</span>
 <span class="cstat-no" title="statement not covered" >      downloadLink.click();</span>
-      
+
       // Clean up
 <span class="cstat-no" title="statement not covered" >      document.body.removeChild(downloadLink);</span>
 <span class="cstat-no" title="statement not covered" >      window.URL.revokeObjectURL(url);</span>
-      
-      
+
+
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      console.error('❌ Download failed:', error);</span>
-      
+
       // Check if this was a user cancellation
 <span class="cstat-no" title="statement not covered" >      if (error instanceof Error &amp;&amp; error.name === 'AbortError') {</span>
 <span class="cstat-no" title="statement not covered" >        console.log(`🛑 Download cancelled by user for ${msid}`);</span>
 <span class="cstat-no" title="statement not covered" >        setDownloadProgress(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span></span>
-          ...prev, 
+          ...prev,
           [msid]: {status: 'Download cancelled', progress: 0}
         }));
       } else {
 <span class="cstat-no" title="statement not covered" >        setDownloadProgress(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span></span>
-          ...prev, 
+          ...prev,
           [msid]: {status: 'Download failed', progress: 0}
         }));
-        
+
         // Show error notification with fallback options (only for actual errors, not cancellations)
         const errorMessage = <span class="cstat-no" title="statement not covered" >error instanceof Error ? error.message : 'Unknown error occurred';</span>
 <span class="cstat-no" title="statement not covered" >        setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
@@ -6404,7 +6404,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
     } finally {
       // Clean up AbortController
 <span class="cstat-no" title="statement not covered" >      setDownloadAbortControllers(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: null}));</span></span>
-      
+
       // Close SSE connection and hide progress after a delay
 <span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
         const connection = <span class="cstat-no" title="statement not covered" >downloadConnections[msid];</span>
@@ -6412,7 +6412,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >          connection.close();</span>
 <span class="cstat-no" title="statement not covered" >          setDownloadConnections(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: null}));</span></span>
         }
-        
+
 <span class="cstat-no" title="statement not covered" >        setDownloadingManuscripts(<span class="fstat-no" title="function not covered" >prev =&gt; {</span></span>
           const newSet = <span class="cstat-no" title="statement not covered" >new Set(prev);</span>
 <span class="cstat-no" title="statement not covered" >          newSet.delete(msid);</span>
@@ -6431,7 +6431,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 &nbsp;
   const filteredAndSortedManuscripts = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
     const currentManuscripts = <span class="cstat-no" title="statement not covered" >useApiData ? apiManuscripts : mockManuscripts</span>
-    
+
     // Enhance manuscripts with computed aiChecks if they don't have them
     const enhancedManuscripts = <span class="cstat-no" title="statement not covered" >currentManuscripts.map(<span class="fstat-no" title="function not covered" >manuscript =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >      if (!manuscript.aiChecks) {</span>
@@ -6444,7 +6444,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
       }
 <span class="cstat-no" title="statement not covered" >      return manuscript;</span>
     });
-    
+
     const filtered = <span class="cstat-no" title="statement not covered" >enhancedManuscripts.filter(<span class="fstat-no" title="function not covered" >(m</span>anuscript) =&gt; {</span>
       // Use workflowState for tab filtering (mapped from API status)
       const workflowState = <span class="cstat-no" title="statement not covered" >manuscript.workflowState || 'no-pipeline-results'</span>
@@ -6489,7 +6489,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
           manuscript.notes || "",
           manuscript.assignedTo || ""
         ]
-        
+
 <span class="cstat-no" title="statement not covered" >        return fieldsToSearch.some(<span class="fstat-no" title="function not covered" >field =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >          field.toLowerCase().includes(searchLower)</span>
         )
@@ -6559,7 +6559,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
     const priority = <span class="cstat-no" title="statement not covered" >manuscript.priority || 'normal'</span>
     const isMapped = <span class="cstat-no" title="statement not covered" >manuscript.isMapped !== false</span>
     const unmappedFields = <span class="cstat-no" title="statement not covered" >manuscript.unmappedFields || []</span>
-    
+
     let variant: "default" | "secondary" | "destructive" | "outline" = <span class="cstat-no" title="statement not covered" >manuscript.badgeVariant || "default"</span>
     let className = <span class="cstat-no" title="statement not covered" >""</span>
     let tooltipContent = <span class="cstat-no" title="statement not covered" >""</span>
@@ -6685,13 +6685,13 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   // Function to fetch API data
   const fetchApiData = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async () =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >    setIsLoadingApi(true)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (!session) {</span>
 <span class="cstat-no" title="statement not covered" >      console.error('❌ No session available for API call')</span>
 <span class="cstat-no" title="statement not covered" >      setIsLoadingApi(false)</span>
 <span class="cstat-no" title="statement not covered" >      return</span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    try {</span>
       // Build URL with explicit pagination parameters to ensure first page
       const url = <span class="cstat-no" title="statement not covered" >new URL(buildApiUrl(endpoints.manuscripts), window.location.origin)</span>
@@ -6699,7 +6699,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
       url.searchParams.set('pagesize', '100') // Get more items to show full list
 <span class="cstat-no" title="statement not covered" >      url.searchParams.set('sort', 'received_at')</span>
 <span class="cstat-no" title="statement not covered" >      url.searchParams.set('ascending', 'true')</span>
-      
+
       const response = <span class="cstat-no" title="statement not covered" >await fetch(url.toString(), {</span>
         headers: {
           'Content-Type': 'application/json',
@@ -6707,13 +6707,13 @@ export default function <span class="cstat-no" title="statement not covered" ><s
         },
         credentials: 'include', // Include cookies in the request
       })
-      
+
 <span class="cstat-no" title="statement not covered" >      if (!response.ok) {</span>
 <span class="cstat-no" title="statement not covered" >        throw new Error(`API request failed: ${response.status}`)</span>
       }
-      
+
       const data = <span class="cstat-no" title="statement not covered" >await response.json()</span>
-      
+
       // Transform API data to match our mock data structure using proper status mapping
       const transformedManuscripts = <span class="cstat-no" title="statement not covered" >data.manuscripts.map(<span class="fstat-no" title="function not covered" >(m</span>anuscript: any) =&gt; {</span>
         const statusMapping = <span class="cstat-no" title="statement not covered" >getStatusMapping(manuscript.status)</span>
@@ -6743,7 +6743,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
           unmappedFields: ['assignedTo'], // Fields not available in API
         }
       })
-      
+
 <span class="cstat-no" title="statement not covered" >      setApiManuscripts(transformedManuscripts)</span>
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      console.error('❌ Failed to fetch API data:', error)</span>
@@ -6772,10 +6772,10 @@ export default function <span class="cstat-no" title="statement not covered" ><s
   const handleDataSourceSwitch = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async (u</span>seApi: boolean) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setUseApiData(useApi)</span>
     setIsInitialLoadComplete(false) // Reset load state when switching
-    
+
     // Update the data service to use the correct data source
 <span class="cstat-no" title="statement not covered" >    dataService.setUseMockData(!useApi)</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    if (useApi &amp;&amp; apiManuscripts.length === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      await fetchApiData()</span>
     } else {
@@ -7011,7 +7011,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
         const workflowState = <span class="cstat-no" title="statement not covered" >manuscript.workflowState || 'no-pipeline-results'</span>
 <span class="cstat-no" title="statement not covered" >        return workflowState === activeTab</span>
       })
-      
+
 <span class="cstat-no" title="statement not covered" >      console.log(`📋 Manuscripts in "${activeTab}" tab:`, manuscriptsInCurrentTab.map(<span class="fstat-no" title="function not covered" >m =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span></span>
         msid: m.msid,
         status: m.status,
@@ -7031,17 +7031,17 @@ export default function <span class="cstat-no" title="statement not covered" ><s
             &lt;Database className="w-6 h-6 text-blue-600" /&gt;
           &lt;/div&gt;
         &lt;/div&gt;
-        
+
         &lt;div className="space-y-2"&gt;
           &lt;h2 className="text-xl font-semibold text-gray-900"&gt;Loading EMBO Dashboard&lt;/h2&gt;
           &lt;p className="text-gray-600"&gt;
-            {useApiData 
+            {useApiData
               ? "Fetching manuscript data from Data4Rev API..."
               : "Preparing dashboard interface..."
             }
           &lt;/p&gt;
         &lt;/div&gt;
-        
+
         {<span class="branch-0 cbranch-no" title="branch not covered" >useApiData &amp;&amp; (</span>
           &lt;div className="flex items-center justify-center gap-2 text-sm text-gray-500"&gt;
             &lt;Zap className="w-4 h-4 text-green-600" /&gt;
@@ -7062,7 +7062,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
       &lt;div className="container mx-auto p-6 space-y-6"&gt;
         {selectedManuscript ? (
 <span class="branch-0 cbranch-no" title="branch not covered" >          &lt;ManuscriptDetail </span>
-            msid={selectedManuscript} 
+            msid={selectedManuscript}
             onBack={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etSelectedManuscript(null)} </span>
             useApiData={useApiData}
           /&gt;
@@ -7095,14 +7095,14 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                       &lt;TooltipContent&gt;
                         &lt;p&gt;{useApiData ? 'Using live Data4Rev API data' : 'Using rich mock data for demonstration'}&lt;/p&gt;
                         &lt;p className="text-xs text-muted-foreground mt-1"&gt;
-                          {useApiData 
+                          {useApiData
                             ? `${apiManuscripts.length} real manuscripts from API`
                             : `${mockManuscripts.length} varied mock manuscripts`}
                         &lt;/p&gt;
                       &lt;/TooltipContent&gt;
                     &lt;/Tooltip&gt;
                     &lt;/div&gt;
-                    
+
                   &lt;/div&gt;
                 &lt;/div&gt;
                 &lt;p className="text-muted-foreground"&gt;Manuscript validation and curation workflow management&lt;/p&gt;
@@ -7208,8 +7208,8 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                         &lt;SelectItem value="all"&gt;All Assignees&lt;/SelectItem&gt;
                         {uniqueAssignees.map(<span class="fstat-no" title="function not covered" >(a</span>ssignee) =&gt; (
 <span class="cstat-no" title="statement not covered" >                          &lt;SelectItem key={assignee} v</span>alue={assignee}&gt;
-                            {assignee === currentUser 
-                              ? `${assignee} (me) (${assigneeCounts[assignee] || 0})` 
+                            {assignee === currentUser
+                              ? `${assignee} (me) (${assigneeCounts[assignee] || 0})`
                               : `${assignee} (${assigneeCounts[assignee] || 0})`
                             }
                           &lt;/SelectItem&gt;
@@ -7225,9 +7225,9 @@ export default function <span class="cstat-no" title="statement not covered" ><s
             {Object.entries(showDownloadToast).filter(<span class="fstat-no" title="function not covered" >([</span>_, show]) =&gt; <span class="cstat-no" title="statement not covered" >show).m</span>ap(<span class="fstat-no" title="function not covered" >([</span>msid, _]) =&gt; {
               const progress = <span class="cstat-no" title="statement not covered" >downloadProgress[msid];</span>
               const manuscript = <span class="cstat-no" title="statement not covered" >[...(useApiData ? apiManuscripts : mockManuscripts)].find(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.msid === msid);</span></span>
-              
+
 <span class="cstat-no" title="statement not covered" >              if (!progress || !manuscript) <span class="cstat-no" title="statement not covered" >return null;</span></span>
-              
+
 <span class="cstat-no" title="statement not covered" >              return (</span>
                 &lt;Card key={msid} className="border-blue-200 bg-blue-50"&gt;
                   &lt;CardContent className="p-4"&gt;
@@ -7243,7 +7243,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                           )}
                         &lt;/div&gt;
                       &lt;/div&gt;
-                      
+
                       &lt;div className="flex-1 min-w-0"&gt;
                         &lt;div className="flex items-center justify-between mb-1"&gt;
                           &lt;h4 className="text-sm font-medium text-blue-900 truncate"&gt;
@@ -7253,15 +7253,15 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                             {msid}
                           &lt;/span&gt;
                         &lt;/div&gt;
-                        
+
                         &lt;div className="flex items-center gap-2 mb-2"&gt;
                           &lt;div className="flex-1 bg-blue-200 rounded-full h-2"&gt;
-                            &lt;div 
+                            &lt;div
                               className={`h-2 rounded-full transition-all duration-300 ${
-                                progress.status.includes('failed') 
-                                  ? 'bg-red-500' 
-                                  : progress.progress === 100 
-                                    ? 'bg-green-500' 
+                                progress.status.includes('failed')
+                                  ? 'bg-red-500'
+                                  : progress.progress === 100
+                                    ? 'bg-green-500'
                                     : 'bg-blue-500'
                               }`}
                               style={{ width: `${progress.progress}%` }}
@@ -7271,7 +7271,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                             {progress.progress}%
                           &lt;/span&gt;
                         &lt;/div&gt;
-                        
+
                         &lt;div className="space-y-1"&gt;
                           &lt;p className="text-xs text-blue-700"&gt;
                             {progress.status}
@@ -7281,7 +7281,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                               &lt;/span&gt;
                             )}
                           &lt;/p&gt;
-                          
+
                           {<span class="branch-0 cbranch-no" title="branch not covered" >progress.currentFile </span>&amp;&amp; (
                             &lt;div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded"&gt;
                               &lt;div className="flex items-center justify-between"&gt;
@@ -7298,7 +7298,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                           )}
                         &lt;/div&gt;
                       &lt;/div&gt;
-                      
+
                       &lt;Button
                         variant="ghost"
                         size="sm"
@@ -7310,17 +7310,17 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >                            console.log(`🛑 Aborting download for ${msid}`);</span>
 <span class="cstat-no" title="statement not covered" >                            abortController.abort();</span>
                           }
-                          
+
                           // Close SSE connection when manually closing
                           const connection = <span class="cstat-no" title="statement not covered" >downloadConnections[msid];</span>
 <span class="cstat-no" title="statement not covered" >                          if (connection) {</span>
 <span class="cstat-no" title="statement not covered" >                            connection.close();</span>
 <span class="cstat-no" title="statement not covered" >                            setDownloadConnections(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: null}));</span></span>
                           }
-                          
+
                           // Clean up AbortController
 <span class="cstat-no" title="statement not covered" >                          setDownloadAbortControllers(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: null}));</span></span>
-                          
+
 <span class="cstat-no" title="statement not covered" >                          setShowDownloadToast(<span class="fstat-no" title="function not covered" >prev =&gt; (<span class="cstat-no" title="statement not covered" >{</span>...prev, [msid]: false}));</span></span>
 <span class="cstat-no" title="statement not covered" >                          setDownloadProgress(<span class="fstat-no" title="function not covered" >prev =&gt; {</span></span>
                             const newProgress = <span class="cstat-no" title="statement not covered" >{...prev};</span>
@@ -7621,7 +7621,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                                       onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; {
 <span class="cstat-no" title="statement not covered" >                                        e.preventDefault()</span>
 <span class="cstat-no" title="statement not covered" >                                        e.stopPropagation()</span>
-                                        
+
 <span class="cstat-no" title="statement not covered" >                                        if (openDropdown === manuscript.msid) {</span>
 <span class="cstat-no" title="statement not covered" >                                          setOpenDropdown(null)</span>
 <span class="cstat-no" title="statement not covered" >                                          setDropdownPosition(null)</span>
@@ -7631,34 +7631,34 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                                           const dropdownWidth = <span class="cstat-no" title="statement not covered" >192 /</span>/ 48 * 4 = 192px (w-48)
                                           const viewportWidth = <span class="cstat-no" title="statement not covered" >window.innerWidth</span>
                                           const viewportHeight = <span class="cstat-no" title="statement not covered" >window.innerHeight</span>
-                                          
+
                                           // Calculate horizontal position
                                           let left = <span class="cstat-no" title="statement not covered" >rect.left</span>
                                           let right = <span class="cstat-no" title="statement not covered" >'auto'</span>
-                                          
+
                                           // If dropdown would overflow on the right, align it to the right edge of button
 <span class="cstat-no" title="statement not covered" >                                          if (rect.left + dropdownWidth &gt; viewportWidth) {</span>
 <span class="cstat-no" title="statement not covered" >                                            left = rect.right - dropdownWidth</span>
                                           }
-                                          
+
                                           // If it still overflows on the left, clamp to viewport edge
 <span class="cstat-no" title="statement not covered" >                                          if (left &lt; 8) {</span>
 <span class="cstat-no" title="statement not covered" >                                            left = 8</span>
                                           }
-                                          
+
                                           // Calculate vertical position
                                           let top = <span class="cstat-no" title="statement not covered" >rect.bottom + 4</span>
-                                          
+
                                           // If dropdown would overflow at bottom, show it above the button
 <span class="cstat-no" title="statement not covered" >                                          if (top + 300 &gt; viewportHeight) { // Approximate dropdown height</span>
 <span class="cstat-no" title="statement not covered" >                                            top = rect.top - 300 - 4</span>
                                           }
-                                          
+
                                           // Ensure it doesn't go above viewport
 <span class="cstat-no" title="statement not covered" >                                          if (top &lt; 8) {</span>
 <span class="cstat-no" title="statement not covered" >                                            top = 8</span>
                                           }
-                                          
+
 <span class="cstat-no" title="statement not covered" >                                          setDropdownPosition({</span>
                                             top,
                                             left,
@@ -7680,7 +7680,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >                                          setDropdownPosition(null)</span>
                                         }} /&gt;
 &nbsp;
-                                        &lt;div 
+                                        &lt;div
                                           className="fixed w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50"
                                           style={{
                                             top: `${dropdownPosition?.top || 0}px`,
@@ -7718,7 +7718,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                                                 Download files
                                                 &lt;ChevronRight className="w-3 h-3 ml-auto opacity-50 group-hover:opacity-100" /&gt;
                                               &lt;/button&gt;
-                                              
+
                                               {/* Download submenu */}
                                               &lt;div className="absolute left-full top-0 ml-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"&gt;
                                                 &lt;button
@@ -7841,7 +7841,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                                             )}
 &nbsp;
                                             &lt;div className="border-t border-gray-200 my-1" /&gt;
-                                            
+
                                             &lt;div className="relative"&gt;
                                               &lt;button
                                                 className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer justify-between"
@@ -7857,7 +7857,7 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                                                 &lt;/div&gt;
                                                 &lt;ChevronRight className="w-4 h-4" /&gt;
                                               &lt;/button&gt;
-                                              
+
                                               {<span class="branch-0 cbranch-no" title="branch not covered" >showPrioritySubmenu === manuscript.msid </span>&amp;&amp; (
                                                 &lt;div className="fixed w-40 bg-white border border-gray-200 rounded-md shadow-lg z-60"
                                                   style={{
@@ -7866,12 +7866,12 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                                                       const baseLeft = <span class="cstat-no" title="statement not covered" >(dropdownPosition?.left || 0) + 192 + 4; /</span>/ 192 (dropdown width) + 4 (gap)
                                                       const submenuWidth = <span class="cstat-no" title="statement not covered" >160; /</span>/ w-40 = 160px
                                                       const viewportWidth = <span class="cstat-no" title="statement not covered" >window.innerWidth;</span>
-                                                      
+
                                                       // If submenu would overflow on the right, position it to the left of main dropdown
 <span class="cstat-no" title="statement not covered" >                                                      if (baseLeft + submenuWidth &gt; viewportWidth - 8) {</span>
 <span class="cstat-no" title="statement not covered" >                                                        return `${(dropdownPosition?.left || 0) - submenuWidth - 4}px`;</span>
                                                       }
-                                                      
+
 <span class="cstat-no" title="statement not covered" >                                                      return `${baseLeft}px`;</span>
                                                     })()
                                                   }}
@@ -7993,8 +7993,8 @@ export default function <span class="cstat-no" title="statement not covered" ><s
                                   &lt;Tooltip&gt;
                                     &lt;TooltipTrigger asChild&gt;
                                       &lt;div className="truncate cursor-help" title={typeof manuscript.authors === 'string' ? manuscript.authors : manuscript.authors.join(', ')}&gt;
-                                        &lt;AuthorList 
-                                          authors={manuscript.authors} 
+                                        &lt;AuthorList
+                                          authors={manuscript.authors}
                                           searchTerm={searchTerm}
                                           className="truncate"
                                         /&gt;
@@ -8194,4 +8194,3 @@ export { <span class="cstat-no" title="statement not covered" >ManuscriptDashboa
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

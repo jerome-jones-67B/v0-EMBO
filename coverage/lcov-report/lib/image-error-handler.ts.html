@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">lib</a> image-error-handler.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/91</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/44</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/15</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/91</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -628,7 +628,7 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
   useApiData: boolean = <span class="branch-0 cbranch-no" title="branch not covered" >false</span>
 ): Promise&lt;ImageLoadResult&gt; {
   const imageKey = <span class="cstat-no" title="statement not covered" >`${manuscriptId}-${figureId}-${options.type || 'full'}${options.panelId ? `-${options.panelId}` : ''}`;</span>
-  
+
   // Check if image has permanently failed
 <span class="cstat-no" title="statement not covered" >  if (errorTracker.failedImages.has(imageKey)) {</span>
     const fallbackSrc = <span class="cstat-no" title="statement not covered" >getImageUrl(manuscriptId, figureId, options, false);</span>
@@ -668,7 +668,7 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >    if (useApiData) {</span>
       const apiSrc = <span class="cstat-no" title="statement not covered" >getImageUrl(manuscriptId, figureId, options, true);</span>
       const isValid = <span class="cstat-no" title="statement not covered" >await validateImage(apiSrc);</span>
-      
+
 <span class="cstat-no" title="statement not covered" >      if (isValid) {</span>
         // Reset error count on success
 <span class="cstat-no" title="statement not covered" >        errorTracker.retryCount.delete(imageKey);</span>
@@ -685,7 +685,7 @@ export async function <span class="cstat-no" title="statement not covered" ><spa
     // Track failure
 <span class="cstat-no" title="statement not covered" >    errorTracker.retryCount.set(imageKey, retryCount + 1);</span>
 <span class="cstat-no" title="statement not covered" >    errorTracker.lastAttempt.set(imageKey, now);</span>
-    
+
 <span class="cstat-no" title="statement not covered" >    console.warn(`Image load attempt ${retryCount + 1} failed for ${imageKey}:`, error);</span>
   }
 &nbsp;
@@ -707,14 +707,14 @@ async function <span class="fstat-no" title="function not covered" >validateImag
       method: 'HEAD',
       signal: AbortSignal.timeout(5000) // 5 second timeout
     });
-    
+
 <span class="cstat-no" title="statement not covered" >    if (!response.ok) {</span>
 <span class="cstat-no" title="statement not covered" >      return false;</span>
     }
 &nbsp;
     const contentType = <span class="cstat-no" title="statement not covered" >response.headers.get('content-type');</span>
 <span class="cstat-no" title="statement not covered" >    return contentType ? contentType.startsWith('image/') : false;</span>
-    
+
   } catch (error) {
 <span class="cstat-no" title="statement not covered" >    console.warn('Image validation failed:', error);</span>
 <span class="cstat-no" title="statement not covered" >    return false;</span>
@@ -727,28 +727,28 @@ async function <span class="fstat-no" title="function not covered" >validateImag
 export function <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >preloadImage(</span></span>src: string): Promise&lt;boolean&gt; {
 <span class="cstat-no" title="statement not covered" >  return new Promise(<span class="fstat-no" title="function not covered" >(r</span>esolve) =&gt; {</span>
     const img = <span class="cstat-no" title="statement not covered" >new Image();</span>
-    
+
     const cleanup = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >      img.onload = null;</span>
 <span class="cstat-no" title="statement not covered" >      img.onerror = null;</span>
     };
-    
+
 <span class="cstat-no" title="statement not covered" >    img.onload = <span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >      cleanup();</span>
 <span class="cstat-no" title="statement not covered" >      resolve(true);</span>
     };
-    
+
 <span class="cstat-no" title="statement not covered" >    img.onerror = <span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >      cleanup();</span>
 <span class="cstat-no" title="statement not covered" >      resolve(false);</span>
     };
-    
+
     // Set timeout for loading
 <span class="cstat-no" title="statement not covered" >    setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >      cleanup();</span>
 <span class="cstat-no" title="statement not covered" >      resolve(false);</span>
     }, 10000); // 10 second timeout
-    
+
 <span class="cstat-no" title="statement not covered" >    img.src = src;</span>
   });
 }
@@ -772,11 +772,11 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
   onError?: (error: string) =&gt; void
 ): HTMLImageElement {
   const img = <span class="cstat-no" title="statement not covered" >new Image();</span>
-  
+
 <span class="cstat-no" title="statement not covered" >  if (options.className) {</span>
 <span class="cstat-no" title="statement not covered" >    img.className = options.className;</span>
   }
-  
+
 <span class="cstat-no" title="statement not covered" >  if (options.alt) {</span>
 <span class="cstat-no" title="statement not covered" >    img.alt = options.alt;</span>
   }
@@ -786,23 +786,23 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
     .then(<span class="fstat-no" title="function not covered" >(r</span>esult) =&gt; {
 <span class="cstat-no" title="statement not covered" >      img.src = result.src;</span>
 <span class="cstat-no" title="statement not covered" >      img.setAttribute('data-source', result.source);</span>
-      
+
 <span class="cstat-no" title="statement not covered" >      if (result.error) {</span>
 <span class="cstat-no" title="statement not covered" >        img.setAttribute('data-error', result.error);</span>
       }
-      
+
 <span class="cstat-no" title="statement not covered" >      if (onLoad) {</span>
 <span class="cstat-no" title="statement not covered" >        onLoad(result);</span>
       }
     })
     .catch(<span class="fstat-no" title="function not covered" >(e</span>rror) =&gt; {
 <span class="cstat-no" title="statement not covered" >      console.error('Failed to load image:', error);</span>
-      
+
       // Final fallback to placeholder
 <span class="cstat-no" title="statement not covered" >      img.src = '/placeholder-e9mgd.png';</span>
 <span class="cstat-no" title="statement not covered" >      img.setAttribute('data-source', 'placeholder');</span>
 <span class="cstat-no" title="statement not covered" >      img.setAttribute('data-error', error.message);</span>
-      
+
 <span class="cstat-no" title="statement not covered" >      if (onError) {</span>
 <span class="cstat-no" title="statement not covered" >        onError(error.message);</span>
       }
@@ -836,7 +836,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 } {
   const retryingCount = <span class="cstat-no" title="statement not covered" >Array.from(errorTracker.retryCount.values())</span>
     .filter(<span class="fstat-no" title="function not covered" >count =&gt; <span class="cstat-no" title="statement not covered" >c</span>ount &gt; 0 &amp;&amp; count &lt; MAX_RETRIES).l</span>ength;
-  
+
   const totalAttempts = <span class="cstat-no" title="statement not covered" >Array.from(errorTracker.retryCount.values())</span>
     .reduce(<span class="fstat-no" title="function not covered" >(s</span>um, count) =&gt; <span class="cstat-no" title="statement not covered" >sum + count, 0</span>);
 &nbsp;
@@ -865,4 +865,3 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

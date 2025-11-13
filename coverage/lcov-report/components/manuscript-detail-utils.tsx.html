@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">components</a> manuscript-detail-utils.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">34.69% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>17/49</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">16% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>4/25</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">6.25% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>1/16</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">43.24% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>16/37</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -478,14 +478,14 @@ export const <span class="cstat-no" title="statement not covered" >getQCIcon </s
 export const <span class="cstat-no" title="statement not covered" >getStatusBadge </span>= <span class="fstat-no" title="function not covered" >(s</span>tatus: string, priority: string) =&gt; {
   const statusVariants = <span class="cstat-no" title="statement not covered" >{</span>
     "under-review": "default",
-    "needs-revision": "destructive", 
+    "needs-revision": "destructive",
     "approved": "secondary",
     "published": "outline",
   } as const
 &nbsp;
   const priorityColors = <span class="cstat-no" title="statement not covered" >{</span>
     high: "border-red-200 bg-red-50 text-red-700",
-    medium: "border-yellow-200 bg-yellow-50 text-yellow-700", 
+    medium: "border-yellow-200 bg-yellow-50 text-yellow-700",
     low: "border-green-200 bg-green-50 text-green-700",
   } as const
 &nbsp;
@@ -494,8 +494,8 @@ export const <span class="cstat-no" title="statement not covered" >getStatusBadg
       &lt;Badge variant={statusVariants[status as keyof typeof statusVariants] || "default"}&gt;
         {status}
       &lt;/Badge&gt;
-      &lt;Badge 
-        variant="outline" 
+      &lt;Badge
+        variant="outline"
         className={priorityColors[priority as keyof typeof priorityColors] || ""}
       &gt;
         {priority} priority
@@ -515,7 +515,7 @@ export const getCheckId = (check: any, location: string, index: number) =&gt; {
 &nbsp;
 // QC Actions component
 export const <span class="cstat-no" title="statement not covered" >QCActions </span>= <span class="fstat-no" title="function not covered" >({ </span>
-  check, 
+  check,
   location = <span class="branch-0 cbranch-no" title="branch not covered" >"general", </span>
   index = <span class="branch-0 cbranch-no" title="branch not covered" >0, </span>
   approvedChecks,
@@ -661,4 +661,3 @@ export const <span class="cstat-no" title="statement not covered" >generateRepos
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

@@ -1,10 +1,10 @@
 // Data transformation utilities for converting API data to UI data structures
 
-import { 
-  ManuscriptDetails, 
-  FigureDetails, 
-  PanelDetails, 
-  CheckResultDetails, 
+import {
+  ManuscriptDetails,
+  FigureDetails,
+  PanelDetails,
+  CheckResultDetails,
   LinkDetails,
   SourceDataDetails,
   Manuscript,
@@ -30,20 +30,20 @@ export function transformApiManuscriptToUI(apiManuscript: ManuscriptDetails): an
     currentStatus: mapStatusToDisplay(apiManuscript.status),
     modifiedBy: "Dr. Sarah Chen", // Not available in API
     priority: derivePriorityFromStatus(apiManuscript.status).toLowerCase(),
-    
+
     // Content fields
     abstract: apiManuscript.note || "No abstract available",
     keywords: [], // Not in API, will be empty
     notes: apiManuscript.note || "No additional notes",
     dataAvailability: "Available", // Not in API
-    
+
     // Transform figures to match expected structure
     figures: apiManuscript.figures?.map(transformApiFigureToUI) || [],
-    
+
     // Transform other data
     linkedData: transformLinksToLinkedData(apiManuscript.links || []),
     linkedInfo: transformLinksToLinkedData(apiManuscript.links || []),
-    
+
     // Status mapping
     displayStatus: mapStatusToDisplay(apiManuscript.status),
     workflowState: mapStatusToWorkflow(apiManuscript.status),
@@ -53,37 +53,27 @@ export function transformApiManuscriptToUI(apiManuscript: ManuscriptDetails): an
   };
 }
 
-// Transform API figure to UI figure structure
+// Transform API figure to UI figure structure - match API structure exactly
 export function transformApiFigureToUI(apiFigure: FigureDetails): any {
   return {
-    // UI structure (matching mock data)
-    id: apiFigure.id.toString(),
-    title: apiFigure.label,
-    legend: apiFigure.caption,
-    panels: apiFigure.panels?.map(transformApiPanelToUI) || [],
-    qcChecks: transformCheckResultsToQCChecks(apiFigure.check_results || []),
-    
-    // API fields for compatibility
+    // Match API structure exactly
+    id: apiFigure.id,
     label: apiFigure.label,
     caption: apiFigure.caption,
+    image_file_id: (apiFigure as any).image_file_id,
     sort_order: apiFigure.sort_order,
-    links: apiFigure.links || [],
-    source_data: apiFigure.source_data || [],
-    check_results: apiFigure.check_results || [],
-    linkedData: transformLinksToLinkedData(apiFigure.links || [])
+    panels: apiFigure.panels?.map(transformApiPanelToUI) || [],
+    source_data: apiFigure.source_data,
+    links: apiFigure.links,
+    check_results: apiFigure.check_results,
   };
 }
 
 // Transform API panel to UI panel structure
 export function transformApiPanelToUI(apiPanel: PanelDetails): any {
   return {
-    // UI structure (matching mock data)
-    id: apiPanel.id.toString(),
-    description: apiPanel.label,
-    legend: apiPanel.caption,
-    hasIssues: hasPanelIssues(apiPanel.check_results || []),
-    
-    // API fields for compatibility
+    // Match API structure exactly - no transformation needed
+    id: apiPanel.id,
     label: apiPanel.label,
     caption: apiPanel.caption,
     x1: apiPanel.x1,
@@ -92,9 +82,9 @@ export function transformApiPanelToUI(apiPanel: PanelDetails): any {
     y2: apiPanel.y2,
     confidence: apiPanel.confidence,
     sort_order: apiPanel.sort_order,
-    links: apiPanel.links || [],
-    source_data: apiPanel.source_data || [],
-    check_results: apiPanel.check_results || []
+    source_data: apiPanel.source_data,
+    links: apiPanel.links,
+    check_results: apiPanel.check_results,
   };
 }
 
@@ -133,10 +123,10 @@ function derivePriorityFromStatus(status: string): string {
 
 function deriveQCStatusFromCheckResults(checkResults: CheckResultDetails[]): string {
   if (!checkResults || checkResults.length === 0) return 'Pending';
-  
+
   const hasErrors = checkResults.some(check => check.status === 'error');
   const hasWarnings = checkResults.some(check => check.status === 'warning');
-  
+
   if (hasErrors) return 'Issues Found';
   if (hasWarnings) return 'Warnings';
   return 'Passed';
@@ -186,7 +176,7 @@ function mapCheckStatusToType(status: string): 'info' | 'warning' | 'error' {
 }
 
 function hasPanelIssues(checkResults: CheckResultDetails[]): boolean {
-  return checkResults.some(check => 
+  return checkResults.some(check =>
     check.status === 'error' || check.status === 'warning' || check.status === 'fail'
   );
 }

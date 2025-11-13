@@ -12,13 +12,15 @@ interface UseManuscriptDetailApiProps {
     hasLinkedData: boolean
     hasQcData: boolean
   }) => void
+  setFullManuscriptData?: (data: any) => void
 }
 
 export function useManuscriptDetailApi({
   setManuscript,
   setIsLoading,
   setError,
-  setDataAvailability
+  setDataAvailability,
+  setFullManuscriptData
 }: UseManuscriptDetailApiProps) {
 
   const fetchApiManuscriptDetail = useCallback(async (manuscriptId: string) => {
@@ -30,26 +32,35 @@ export function useManuscriptDetailApi({
       const response = await api.manuscripts.getById(manuscriptId)
       const apiData = response // API client returns data directly, not wrapped in .data
 
-      console.log('🔍 Manuscript detail API response:', apiData)
-      console.log('🔍 Response keys:', Object.keys(apiData || {}))
-      console.log('🔍 Figures data:', apiData?.figures)
-
       if (!apiData) {
         throw new Error('No data received from API')
       }
 
       // Process figures from the API response
+      const data = (apiData as any).data || apiData
       let processedFigures = []
-      if (apiData && Array.isArray(apiData.figures)) {
-        processedFigures = apiData.figures.map((figure: any, index: number) => ({
-          id: figure.id || `figure-${index}`,
-          title: figure.label || figure.title || `Figure ${index + 1}`,
-          legend: figure.caption || figure.legend || 'No legend available',
+      if (data && Array.isArray(data.figures)) {
+        processedFigures = data.figures.map((figure: any, index: number) => ({
+          // Match API structure exactly
+          id: figure.id,
+          label: figure.label,
+          caption: figure.caption,
+          image_file_id: figure.image_file_id,
+          sort_order: figure.sort_order,
           panels: Array.isArray(figure.panels) ? figure.panels.map((panel: any, panelIndex: number) => ({
-            id: panel.id || `panel-${panelIndex}`,
-            description: panel.label || panel.description || `Panel ${String.fromCharCode(65 + panelIndex)}`,
-            legend: panel.caption || panel.legend || 'No panel legend',
-            imagePath: getImageUrl(manuscriptId, figure.id || `figure-${index}`, { type: 'full' }),
+            // Match API structure exactly
+            id: panel.id,
+            label: panel.label,
+            caption: panel.caption,
+            x1: panel.x1,
+            y1: panel.y1,
+            x2: panel.x2,
+            y2: panel.y2,
+            confidence: panel.confidence,
+            sort_order: panel.sort_order,
+            source_data: panel.source_data,
+            links: panel.links,
+            check_results: panel.check_results,
             qualityChecks: Array.isArray(panel.check_results) ? panel.check_results.map((check: any) => {
               // Ensure we transform any object to proper format
               if (typeof check === 'object' && check !== null) {
@@ -98,22 +109,22 @@ export function useManuscriptDetailApi({
         }))
       }
 
-      // Transform to our interface format using Data4Rev field names
+      // Transform to our interface format using Data4Rev field names (reuse data variable)
       const transformedManuscript: ManuscriptDetailData = {
-        id: apiData.id?.toString() || manuscriptId,
-        msid: apiData.msid || manuscriptId,
-        title: apiData.title || 'Untitled Manuscript',
-        authors: apiData.authors || 'Unknown Authors',
-        receivedDate: apiData.received_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-        doi: apiData.doi,
-        accessionNumber: apiData.accession_number,
-        assignedTo: apiData.assigned_to,
-        status: apiData.status || 'Under Review',
+        id: data.id?.toString() || manuscriptId,
+        msid: data.msid || manuscriptId,
+        title: data.title || 'Untitled Manuscript',
+        authors: data.authors || 'Unknown Authors',
+        receivedDate: data.received_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+        doi: data.doi,
+        accessionNumber: data.accession_number,
+        assignedTo: data.assigned_to,
+        status: data.status || 'Under Review',
         priority: 'medium', // Data4Rev doesn't provide priority, use default
-        notes: apiData.notes || '',
-        lastModified: apiData.last_modified || apiData.received_at || new Date().toISOString(),
+        notes: data.notes || '',
+        lastModified: data.last_modified || data.received_at || new Date().toISOString(),
         figures: processedFigures,
-        qcChecks: Array.isArray(apiData.check_results) ? apiData.check_results.map((check: any) => {
+        qcChecks: Array.isArray(data.check_results) ? data.check_results.map((check: any) => {
           // Ensure we transform any object to proper format
           if (typeof check === 'object' && check !== null) {
             return {
@@ -140,11 +151,16 @@ export function useManuscriptDetailApi({
 
       setManuscript(transformedManuscript)
 
+      // Store the full manuscript data for source data initialization
+      if (setFullManuscriptData) {
+        setFullManuscriptData(apiData)
+      }
+
       // Update data availability based on API response
       setDataAvailability({
-        hasSourceData: !!(Array.isArray(apiData.source_data) && apiData.source_data.length > 0),
-        hasLinkedData: !!(Array.isArray(apiData.linked_data) && apiData.linked_data.length > 0),
-        hasQcData: !!(Array.isArray(apiData.check_results) && apiData.check_results.length > 0)
+        hasSourceData: !!(Array.isArray(data.source_data) && data.source_data.length > 0),
+        hasLinkedData: !!(Array.isArray(data.linked_data) && data.linked_data.length > 0),
+        hasQcData: !!(Array.isArray(data.check_results) && data.check_results.length > 0)
       })
 
     } catch (error) {
@@ -157,12 +173,46 @@ export function useManuscriptDetailApi({
 
   const downloadFile = useCallback(async (manuscriptId: string, fileType: string) => {
     try {
-      // For static builds, we need to implement download differently or disable it
-      // This functionality would need to be handled by the Data4Rev API directly
-      console.warn('Download functionality not available in static build mode')
-      alert('Download functionality is not available in static mode. Please contact support for file access.')
+      console.log('📥 Downloading manuscript file from Data4Rev API:', manuscriptId)
+
+      // Fetch the manuscript files list
+      const filesResponse = await api.files.getByManuscriptId(manuscriptId)
+      const files = Array.isArray(filesResponse) ? filesResponse : (filesResponse as any)?.data || []
+
+      if (!files || files.length === 0) {
+        throw new Error('No manuscript files found to download')
+      }
+
+      // Find the main manuscript file (PDF or document)
+      // Priority: PDF files, then any document files
+      const manuscriptFile = files.find((f: any) =>
+        f.content_type?.includes('pdf') ||
+        f.filename?.toLowerCase().endsWith('.pdf')
+      ) || files.find((f: any) =>
+        f.content_type?.includes('document') ||
+        f.content_type?.includes('word') ||
+        f.filename?.toLowerCase().match(/\.(doc|docx|txt)$/)
+      ) || files[0] // Fallback to first file
+
+      console.log('📥 Downloading file:', manuscriptFile.filename, 'ID:', manuscriptFile.id)
+
+      // Download the file using the API
+      const blob = await api.files.download(manuscriptId, manuscriptFile.id.toString())
+
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = manuscriptFile.filename || `manuscript_${manuscriptId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      console.log('✅ Download completed for manuscript:', manuscriptId)
     } catch (error) {
       console.error('❌ Download failed:', error)
+      alert('Download failed. Please try again.')
       throw error
     }
   }, [])

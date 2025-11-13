@@ -1,8 +1,8 @@
 // API client for making HTTP requests to your backend
 
 import { config, endpoints } from './config';
-import type { 
-  ApiResponse, 
+import type {
+  ApiResponse,
   PaginatedResponse,
   ManuscriptsOverviewPage,
   ManuscriptDetails,
@@ -15,8 +15,10 @@ import type {
   SourceDataDetails,
   SourceDataCreate,
   FileDetails,
+  ManuscriptFileDetails,
   CheckResultDetails,
-  DepositionEventDetails
+  DepositionEventDetails,
+  SortOrderUpdate
 } from './types';
 
 export class ApiError extends Error {
@@ -42,6 +44,7 @@ class ApiClient {
     this.baseUrl = config.api.baseUrl;
     this.timeout = config.api.timeout;
     this.retries = config.api.retries;
+
   }
 
   private async makeRequest<T>(
@@ -50,16 +53,15 @@ class ApiClient {
     attempt: number = 1
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
     // Create cache key for GET requests only (avoid caching mutations)
     const method = options.method || 'GET';
     const cacheKey = method === 'GET' ? `${method}:${url}` : null;
-    
+
     // Check cache for duplicate GET requests
     if (cacheKey && this.requestCache.has(cacheKey)) {
       const cached = this.requestCache.get(cacheKey)!;
       const now = Date.now();
-      
+
       // If cache is still valid, return the existing promise
       if (now - cached.timestamp < this.CACHE_DURATION) {
         console.log(`🔄 Using cached request:`, method, url);
@@ -69,9 +71,9 @@ class ApiClient {
         this.requestCache.delete(cacheKey);
       }
     }
-    
+
     console.log(`🌐 API Request (attempt ${attempt}/${this.retries + 1}):`, method, url);
-    
+
     // Create the request promise
     const requestPromise = (async (): Promise<T> => {
       const controller = new AbortController();
@@ -81,11 +83,15 @@ class ApiClient {
       const authToken = config.api.token;
 
       try {
+        // Determine if this is a FormData request
+        const isFormData = options.body instanceof FormData;
+
         const response = await fetch(url, {
           ...options,
           signal: controller.signal,
           headers: {
-            'Content-Type': 'application/json',
+            // Only set Content-Type for non-FormData requests
+            ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
             ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
             ...options.headers,
           },
@@ -100,20 +106,25 @@ class ApiClient {
           );
         }
 
+        // For DELETE requests, return empty response if no content
+        if (response.status === 204 || response.headers.get('content-length') === '0') {
+          return {} as T;
+        }
+
         const data = await response.json();
         return data;
       } catch (error) {
         clearTimeout(timeoutId);
-        
+
         // Remove from cache on error
         if (cacheKey) {
           this.requestCache.delete(cacheKey);
         }
-        
+
         throw error;
       }
     })();
-    
+
     // Cache GET requests
     if (cacheKey) {
       this.requestCache.set(cacheKey, {
@@ -121,7 +132,7 @@ class ApiClient {
         timestamp: Date.now()
       });
     }
-    
+
     return requestPromise;
   }
 
@@ -131,16 +142,16 @@ class ApiClient {
     attempt: number = 1
   ): Promise<string> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     // Create cache key for GET requests only (avoid caching mutations)
     const method = options.method || 'GET';
     const cacheKey = method === 'GET' ? `${method}:${url}:text` : null;
-    
+
     // Check cache for duplicate GET requests
     if (cacheKey && this.requestCache.has(cacheKey)) {
       const cached = this.requestCache.get(cacheKey)!;
       const now = Date.now();
-      
+
       // If cache is still valid, return the existing promise
       if (now - cached.timestamp < this.CACHE_DURATION) {
         console.log(`🔄 Using cached text request:`, method, url);
@@ -150,9 +161,9 @@ class ApiClient {
         this.requestCache.delete(cacheKey);
       }
     }
-    
+
     console.log(`🌐 Text API Request (attempt ${attempt}/${this.retries + 1}):`, method, url);
-    
+
     // Create the request promise for text response
     const requestPromise = (async (): Promise<string> => {
       const controller = new AbortController();
@@ -185,16 +196,16 @@ class ApiClient {
         return text;
       } catch (error) {
         clearTimeout(timeoutId);
-        
+
         // Remove from cache on error
         if (cacheKey) {
           this.requestCache.delete(cacheKey);
         }
-        
+
         throw error;
       }
     })();
-    
+
     // Cache GET requests
     if (cacheKey) {
       this.requestCache.set(cacheKey, {
@@ -202,7 +213,7 @@ class ApiClient {
         timestamp: Date.now()
       });
     }
-    
+
     return requestPromise;
   }
 
@@ -217,6 +228,24 @@ class ApiClient {
     const searchParams = params ? new URLSearchParams(params).toString() : '';
     const url = searchParams ? `${endpoint}?${searchParams}` : endpoint;
     return this.makeTextRequest(url);
+  }
+
+  async getBlob(endpoint: string, params?: Record<string, any>): Promise<Blob> {
+    const searchParams = params ? new URLSearchParams(params).toString() : '';
+    const url = searchParams ? `${this.baseUrl}${endpoint}?${searchParams}` : `${this.baseUrl}${endpoint}`;
+
+    const authToken = config.api.token;
+    const response = await fetch(url, {
+      headers: {
+        ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+      },
+    });
+
+    if (!response.ok) {
+      throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status);
+    }
+
+    return response.blob();
   }
 
   async getList<T>(
@@ -257,10 +286,15 @@ class ApiClient {
 
   // File upload
   async upload<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
+    console.log('Uploading to endpoint:', endpoint)
+    console.log('FormData contents:')
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value)
+    }
+
     return this.makeRequest<ApiResponse<T>>(endpoint, {
       method: 'POST',
       body: formData,
-      headers: {}, // Don't set Content-Type for FormData
     });
   }
 }
@@ -272,12 +306,12 @@ export const apiClient = new ApiClient();
 export const api = {
   // Manuscripts
   manuscripts: {
-    getAll: (params?: { 
-      page?: number; 
-      pagesize?: number; 
-      states?: string[]; 
-      sort?: string; 
-      ascending?: boolean; 
+    getAll: (params?: {
+      page?: number;
+      pagesize?: number;
+      states?: string[];
+      sort?: string;
+      ascending?: boolean;
     }) => {
       const searchParams = new URLSearchParams();
       if (params?.page !== undefined) searchParams.append('page', params.page.toString());
@@ -293,7 +327,7 @@ export const api = {
     getContent: (id: string) =>
       apiClient.getText(endpoints.manuscriptContent(id)),
     deposit: (id: string) =>
-      apiClient.post<DepositionEventDetails[]>(endpoints.manuscriptDeposit(id), {}),  
+      apiClient.post<DepositionEventDetails[]>(endpoints.manuscriptDeposit(id), {}),
   },
 
   // Figures
@@ -304,6 +338,8 @@ export const api = {
       apiClient.put<FigureDetails>(endpoints.figure(manuscriptId, figureId), data),
     delete: (manuscriptId: string, figureId: string) =>
       apiClient.delete<void>(endpoints.figure(manuscriptId, figureId)),
+    move: (manuscriptId: string, sortOrderUpdates: SortOrderUpdate[]) =>
+      apiClient.put<FigureDetails[]>(endpoints.figuresMove(manuscriptId), sortOrderUpdates),
   },
 
   // Panels
@@ -314,16 +350,35 @@ export const api = {
       apiClient.put<PanelDetails>(endpoints.panel(manuscriptId, figureId, panelId), data),
     delete: (manuscriptId: string, figureId: string, panelId: string) =>
       apiClient.delete<void>(endpoints.panel(manuscriptId, figureId, panelId)),
+    move: (manuscriptId: string, figureId: string, sortOrderUpdates: SortOrderUpdate[]) =>
+      apiClient.put<PanelDetails[]>(endpoints.panelsMove(manuscriptId, figureId), sortOrderUpdates),
   },
 
   // Links
   links: {
-    create: (manuscriptId: string, data: LinkCreate) =>
+    // Manuscript level links
+    createManuscript: (manuscriptId: string, data: LinkCreate) =>
       apiClient.post<LinkDetails>(endpoints.links(manuscriptId), data),
-    update: (manuscriptId: string, linkId: string, data: Partial<LinkDetails>) =>
+    updateManuscript: (manuscriptId: string, linkId: string, data: Partial<LinkCreate>) =>
       apiClient.put<LinkDetails>(endpoints.link(manuscriptId, linkId), data),
-    delete: (manuscriptId: string, linkId: string) =>
+    deleteManuscript: (manuscriptId: string, linkId: string) =>
       apiClient.delete<void>(endpoints.link(manuscriptId, linkId)),
+
+    // Figure level links
+    createFigure: (manuscriptId: string, figureId: string, data: LinkCreate) =>
+      apiClient.post<LinkDetails>(endpoints.figureLinks(manuscriptId, figureId), data),
+    updateFigure: (manuscriptId: string, figureId: string, linkId: string, data: Partial<LinkCreate>) =>
+      apiClient.put<LinkDetails>(endpoints.figureLink(manuscriptId, figureId, linkId), data),
+    deleteFigure: (manuscriptId: string, figureId: string, linkId: string) =>
+      apiClient.delete<void>(endpoints.figureLink(manuscriptId, figureId, linkId)),
+
+    // Panel level links
+    createPanel: (manuscriptId: string, figureId: string, panelId: string, data: LinkCreate) =>
+      apiClient.post<LinkDetails>(endpoints.panelLinks(manuscriptId, figureId, panelId), data),
+    updatePanel: (manuscriptId: string, figureId: string, panelId: string, linkId: string, data: Partial<LinkCreate>) =>
+      apiClient.put<LinkDetails>(endpoints.panelLink(manuscriptId, figureId, panelId, linkId), data),
+    deletePanel: (manuscriptId: string, figureId: string, panelId: string, linkId: string) =>
+      apiClient.delete<void>(endpoints.panelLink(manuscriptId, figureId, panelId, linkId)),
   },
 
   // Source Data
@@ -332,19 +387,62 @@ export const api = {
       apiClient.post<SourceDataDetails>(endpoints.sourceData(manuscriptId), data),
     delete: (manuscriptId: string, sourceDataId: string) =>
       apiClient.delete<void>(endpoints.sourceDataItem(manuscriptId, sourceDataId)),
+
+    // File assignment methods
+    assignToManuscript: (manuscriptId: string, fileId: number) =>
+      apiClient.post<SourceDataDetails>(endpoints.sourceData(manuscriptId), { file_id: fileId }),
+    assignToFigure: (manuscriptId: string, figureId: string, fileId: number) =>
+      apiClient.post<SourceDataDetails>(endpoints.figureSourceData(manuscriptId, figureId), { file_id: fileId }),
+    assignToPanel: (manuscriptId: string, figureId: string, panelId: string, fileId: number) =>
+      apiClient.post<SourceDataDetails>(endpoints.panelSourceData(manuscriptId, figureId, panelId), { file_id: fileId }),
+
+    // Batch file assignment methods (for bulk operations)
+    // These call the individual endpoints in sequence for now, but can be optimized with batch API endpoints in the future
+    batchAssignToManuscript: async (manuscriptId: string, fileIds: number[]) => {
+      const results = await Promise.allSettled(
+        fileIds.map(fileId => apiClient.post<SourceDataDetails>(endpoints.sourceData(manuscriptId), { file_id: fileId }))
+      )
+      return results
+    },
+    batchAssignToFigure: async (manuscriptId: string, figureId: string, fileIds: number[]) => {
+      const results = await Promise.allSettled(
+        fileIds.map(fileId => apiClient.post<SourceDataDetails>(endpoints.figureSourceData(manuscriptId, figureId), { file_id: fileId }))
+      )
+      return results
+    },
+    batchAssignToPanel: async (manuscriptId: string, figureId: string, panelId: string, fileIds: number[]) => {
+      const results = await Promise.allSettled(
+        fileIds.map(fileId => apiClient.post<SourceDataDetails>(endpoints.panelSourceData(manuscriptId, figureId, panelId), { file_id: fileId }))
+      )
+      return results
+    },
+
+    // Delete source data mappings
+    deleteFromManuscript: (manuscriptId: string, sourceDataId: string) =>
+      apiClient.delete<void>(endpoints.sourceDataItem(manuscriptId, sourceDataId)),
+    deleteFromFigure: (manuscriptId: string, figureId: string, sourceDataId: string) =>
+      apiClient.delete<void>(endpoints.figureSourceData(manuscriptId, figureId) + `/${sourceDataId}`),
+    deleteFromPanel: (manuscriptId: string, figureId: string, panelId: string, sourceDataId: string) =>
+      apiClient.delete<void>(endpoints.panelSourceData(manuscriptId, figureId, panelId) + `/${sourceDataId}`),
   },
 
   // Files
   files: {
-    upload: (formData: FormData) =>
-      apiClient.upload<FileDetails>(endpoints.files, formData),
+    upload: (manuscriptId: string, formData: FormData) =>
+      apiClient.upload<FileDetails>(endpoints.manuscriptFiles(manuscriptId), formData),
     getById: (fileId: string) =>
       apiClient.get<FileDetails>(endpoints.file(fileId)),
-    delete: (fileId: string) =>
-      apiClient.delete<void>(endpoints.file(fileId)),
+    delete: (manuscriptId: string, fileId: string) =>
+      apiClient.delete<void>(endpoints.manuscriptFileDownload(manuscriptId, fileId)),
     // Get files for a specific manuscript
     getByManuscriptId: (manuscriptId: string) =>
-      apiClient.get<any>(endpoints.manuscriptFiles(manuscriptId)),
+      apiClient.get<ManuscriptFileDetails[]>(endpoints.manuscriptFiles(manuscriptId)),
+    // Get file preview
+    getPreview: (manuscriptId: string, fileId: string) =>
+      apiClient.getBlob(endpoints.manuscriptFilePreview(manuscriptId, fileId)),
+    // Download file
+    download: (manuscriptId: string, fileId: string) =>
+      apiClient.getBlob(endpoints.manuscriptFileDownload(manuscriptId, fileId)),
     // Note: The old /download?format=list endpoint doesn't exist in Data4Rev API
     // Use getByManuscriptId instead to get all files for a manuscript
   },
@@ -353,6 +451,22 @@ export const api = {
   checkResults: {
     getByManuscriptId: (manuscriptId: string) =>
       apiClient.get<CheckResultDetails[]>(endpoints.checkResults(manuscriptId)),
+  },
+
+  // Checks
+  checks: {
+    getByManuscriptId: (manuscriptId: string) =>
+      apiClient.get<any[]>(endpoints.checks(manuscriptId)),
+    create: (manuscriptId: string, data: any) =>
+      apiClient.post<any>(endpoints.checks(manuscriptId), data),
+    update: (manuscriptId: string, checkId: string, data: any) =>
+      apiClient.put<any>(`${endpoints.checks(manuscriptId)}/${checkId}`, data),
+  },
+
+  // Messages
+  messages: {
+    getAll: () =>
+      apiClient.get<any[]>(endpoints.messages),
   },
 
   // Validation

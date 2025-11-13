@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">lib/utils</a> sort-utils.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>0/50</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/43</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/10</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>0/42</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -279,19 +279,19 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="cstat-no" title="statement not covered" >  return [...manuscripts].sort(<span class="fstat-no" title="function not covered" >(a</span>, b) =&gt; {</span>
     let aValue: any = <span class="cstat-no" title="statement not covered" >a[field]</span>
     let bValue: any = <span class="cstat-no" title="statement not covered" >b[field]</span>
-    
+
     // Handle date fields
 <span class="cstat-no" title="statement not covered" >    if (field === 'receivedDate' || field === 'lastModified') {</span>
 <span class="cstat-no" title="statement not covered" >      aValue = new Date(aValue).getTime()</span>
 <span class="cstat-no" title="statement not covered" >      bValue = new Date(bValue).getTime()</span>
     }
-    
+
     // Handle string fields
 <span class="cstat-no" title="statement not covered" >    if (typeof aValue === 'string') {</span>
 <span class="cstat-no" title="statement not covered" >      aValue = aValue.toLowerCase()</span>
 <span class="cstat-no" title="statement not covered" >      bValue = bValue.toLowerCase()</span>
     }
-    
+
     // Compare values
 <span class="cstat-no" title="statement not covered" >    if (aValue &lt; bValue) <span class="cstat-no" title="statement not covered" >return direction === 'asc' ? -1 : 1</span></span>
 <span class="cstat-no" title="statement not covered" >    if (aValue &gt; bValue) <span class="cstat-no" title="statement not covered" >return direction === 'asc' ? 1 : -1</span></span>
@@ -312,29 +312,29 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
     // Search term filter
 <span class="cstat-no" title="statement not covered" >    if (filters.searchTerm) {</span>
       const searchLower = <span class="cstat-no" title="statement not covered" >filters.searchTerm.toLowerCase()</span>
-      const matchesSearch = 
+      const matchesSearch =
 <span class="cstat-no" title="statement not covered" >        manuscript.title.toLowerCase().includes(searchLower) ||</span>
         manuscript.authors.toLowerCase().includes(searchLower) ||
         manuscript.msid.toLowerCase().includes(searchLower)
-      
+
 <span class="cstat-no" title="statement not covered" >      if (!matchesSearch) <span class="cstat-no" title="statement not covered" >return false</span></span>
     }
-    
+
     // Status filter
 <span class="cstat-no" title="statement not covered" >    if (filters.statusFilter &amp;&amp; filters.statusFilter !== 'all') {</span>
 <span class="cstat-no" title="statement not covered" >      if (manuscript.status !== filters.statusFilter) <span class="cstat-no" title="statement not covered" >return false</span></span>
     }
-    
+
     // Priority filter
 <span class="cstat-no" title="statement not covered" >    if (filters.priorityFilter &amp;&amp; filters.priorityFilter !== 'all') {</span>
 <span class="cstat-no" title="statement not covered" >      if (manuscript.priority !== filters.priorityFilter) <span class="cstat-no" title="statement not covered" >return false</span></span>
     }
-    
+
     // Assignee filter
 <span class="cstat-no" title="statement not covered" >    if (filters.assigneeFilter &amp;&amp; filters.assigneeFilter !== 'all') {</span>
 <span class="cstat-no" title="statement not covered" >      if (manuscript.assignedTo !== filters.assigneeFilter) <span class="cstat-no" title="statement not covered" >return false</span></span>
     }
-    
+
 <span class="cstat-no" title="statement not covered" >    return true</span>
   })
 }
@@ -357,10 +357,10 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
 <span class="cstat-no" title="statement not covered" >    counts[manuscript.priority] = (counts[manuscript.priority] || 0) + 1</span>
 <span class="cstat-no" title="statement not covered" >    return counts</span>
   }, {} as Record&lt;string, number&gt;)
-  
+
   const withErrors = <span class="cstat-no" title="statement not covered" >manuscripts.filter(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.hasErrors)</span>.length</span>
   const withWarnings = <span class="cstat-no" title="statement not covered" >manuscripts.filter(<span class="fstat-no" title="function not covered" >m =&gt; <span class="cstat-no" title="statement not covered" >m</span>.hasWarnings)</span>.length</span>
-  
+
 <span class="cstat-no" title="statement not covered" >  return {</span>
     total,
     byStatus,
@@ -388,4 +388,3 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
-    
